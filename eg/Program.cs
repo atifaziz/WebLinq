@@ -14,13 +14,25 @@ namespace WebLinq.Samples
         public static void Main()
         {
             var q =
-                from com in DownloadString(new Uri("http://www.example.com/"), (id, html) => new { Id = id, Size = html.Length })
-                from net in DownloadString(new Uri("http://www.example.net/"), (id, html) => new { Id = id, Size = html.Length })
-                where com.Size == net.Size
-                select new { Com = com, Net = net };
+                from com in DownloadString(new Uri("http://www.example.com/"),
+                                           (id, html) => new { Id = id, Html = html })
+                from html in Html(com.Html)
+                select new { com.Id, Html = html.OuterHtml("p") } into com
+                from net in DownloadString(new Uri("http://www.example.net/"),
+                                           (id, html) => new { Id = id, Html = html })
+                from html in Html(net.Html)
+                select new
+                {
+                    Com = com,
+                    Net = new { net.Id, Html = html.OuterHtml("p") }
+                }
+                into e
+                where e.Com.Html.Length == e.Net.Html.Length
+                select e;
 
             var services = new ServiceContainer();
             services.AddServiceFactory<IWebClient>(ctx => new WebClient(ctx));
+            services.AddServiceFactory<IHtmlParser>(ctx => new HtmlParser(ctx));
             var context = new QueryContext(serviceProvider: services);
 
             Console.WriteLine(q.Invoke(context));

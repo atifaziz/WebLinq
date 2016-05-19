@@ -30,5 +30,8 @@ namespace WebLinq
             new Query<T>(context => QueryResult.Create(new QueryContext(id: context.Id + 1,
                                                                         serviceProvider: context.ServiceProvider),
                                                        context.Eval((IWebClient wc) => selector(context.Id, wc.DownloadString(url)))));
+
+        public static Query<IParsedHtml> Html(string html) =>
+            new Query<IParsedHtml>(context => QueryResult.Create(context, context.Eval((IHtmlParser hps) => hps.Parse(html)))); 
     }
 }
