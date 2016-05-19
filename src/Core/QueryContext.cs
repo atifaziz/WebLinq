@@ -31,16 +31,24 @@ namespace WebLinq
         }
 
         object IServiceProvider.GetService(Type serviceType) =>
-            GetService(serviceType);
+            FindService(serviceType);
 
-        object GetService(Type serviceType) =>
+        object FindService(Type serviceType) =>
             ServiceProvider?.GetService(serviceType);
+
+        protected T FindService<T>() =>
+            (T) FindService(typeof(T));
 
         public virtual T GetService<T>()
         {
-            var service = (T) GetService(typeof(T));
+            var service = FindService<T>();
             if (service == null)
-                throw new Exception($"Service {typeof(T).FullName} is unavailable.");
+            {
+                var factory = FindService<Func<QueryContext, T>>();
+                if (factory == null)
+                    throw new Exception($"Service {typeof (T).FullName} is unavailable.");
+                return factory(this);
+            }
             return service;
         }
 

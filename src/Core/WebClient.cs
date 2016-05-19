@@ -25,6 +25,13 @@ namespace WebLinq
 
     public class WebClient : IWebClient
     {
+        readonly QueryContext _context;
+
+        public WebClient(QueryContext context)
+        {
+            _context = context;
+        }
+
         public string DownloadString(Uri url) =>
             new System.Net.WebClient().DownloadString(url);
     }

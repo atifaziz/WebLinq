@@ -20,10 +20,16 @@ namespace WebLinq.Samples
                 select new { Com = com, Net = net };
 
             var services = new ServiceContainer();
-            services.AddService(typeof(IWebClient), new WebClient());
+            services.AddServiceFactory<IWebClient>(ctx => new WebClient(ctx));
             var context = new QueryContext(serviceProvider: services);
 
             Console.WriteLine(q.Invoke(context));
         }
+
+        static void AddServiceFactory<T>(this IServiceContainer sc, Func<QueryContext, T> factory) =>
+            sc.AddService(factory);
+
+        static void AddService<T>(this IServiceContainer sc, T service) =>
+            sc.AddService(typeof(T), service);
     }
 }
