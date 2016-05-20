@@ -18,6 +18,7 @@ namespace WebLinq
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Net.Http;
     using System.Net.Mime;
 
@@ -53,5 +54,11 @@ namespace WebLinq
 
         public static Query<IEnumerable<T>> Links<T>(HttpContent content, Uri baseUrl, Func<string, string, T> selector) =>
             Html(content).Bind(html => new Query<IEnumerable<T>>(context => QueryResult.Create(context, html.Links(selector))));
+
+        public static IEnumerable<T> ToEnumerable<T>(this Query<IEnumerable<T>> query, QueryContext context)
+        {
+            var result = query.Invoke(context);
+            return result.DataOrDefault() ?? Enumerable.Empty<T>();
+        }
     }
 }
