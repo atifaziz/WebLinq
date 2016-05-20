@@ -17,10 +17,19 @@
 namespace WebLinq
 {
     using System;
+    using System.Collections.Generic;
+    using System.Collections.Specialized;
+    using System.Linq;
+    using System.Net.Http;
+
+    public sealed class HttpOptions
+    {
+        public NameValueCollection Headers { get; set; }
+    }
 
     public interface IWebClient
     {
-        string DownloadString(Uri url);
+        string DownloadString(Uri url, HttpOptions options);
     }
 
     public class WebClient : IWebClient
@@ -32,7 +41,25 @@ namespace WebLinq
             _context = context;
         }
 
-        public string DownloadString(Uri url) =>
-            new System.Net.WebClient().DownloadString(url);
+        public string DownloadString(Uri url, HttpOptions options)
+        {
+            var http = new HttpClient();
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+
+            var headers = request.Headers;
+            foreach (var e in from hs in new[] { options?.Headers }
+                              where hs != null
+                              from i in Enumerable.Range(0, hs.Count)
+                              select new KeyValuePair<string, string[]>(hs.GetKey(i),
+                                                                        hs.GetValues(i)))
+            {
+                if (e.Value == null)
+                    headers.Add(e.Key, e.Value);
+                else
+                    headers.Remove(e.Key);
+            }
+
+            return http.SendAsync(request).Result.Content.ReadAsStringAsync().Result;
+        }
     }
 }

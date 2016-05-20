@@ -16,22 +16,14 @@
 
 namespace WebLinq
 {
-    using System;
-
     public static class Query
     {
+        public static HttpSpec Http => new HttpSpec();
+
         public static Query<T> Return<T>(T value) =>
             new Query<T>(context => new QueryResult<T>(context, value));
 
-        public static Query<string> DownloadString(Uri url) =>
-            DownloadString(url, (_, s) => s);
-
-        public static Query<T> DownloadString<T>(Uri url, Func<int, string, T> selector) =>
-            new Query<T>(context => QueryResult.Create(new QueryContext(id: context.Id + 1,
-                                                                        serviceProvider: context.ServiceProvider),
-                                                       context.Eval((IWebClient wc) => selector(context.Id, wc.DownloadString(url)))));
-
         public static Query<IParsedHtml> Html(string html) =>
-            new Query<IParsedHtml>(context => QueryResult.Create(context, context.Eval((IHtmlParser hps) => hps.Parse(html)))); 
+            new Query<IParsedHtml>(context => QueryResult.Create(context, context.Eval((IHtmlParser hps) => hps.Parse(html))));
     }
 }

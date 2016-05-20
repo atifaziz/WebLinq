@@ -59,6 +59,7 @@
       <DependentUpon>AssemblyInfo.g.tt</DependentUpon>
     </Compile>
     <Compile Include="Html.cs" />
+    <Compile Include="HttpSpec.cs" />
     <Compile Include="Query.cs" />
     <Compile Include="QueryContext.cs" />
     <Compile Include="QueryResult.cs" />
