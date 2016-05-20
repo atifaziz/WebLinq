@@ -46,6 +46,9 @@ namespace WebLinq
                 return QueryResult.Create(context, context.Eval((IHtmlParser hps) => hps.Parse(content.ReadAsStringAsync().Result)));
             });
 
+        public static SeqQuery<T> Spread<T>(this Query<IEnumerable<T>> query) =>
+            new SeqQuery<T>(query.Invoke);
+
         public static Query<IEnumerable<T>> Links<T>(string html, Func<string, string, T> selector) =>
             Links(new StringContent(html), null, selector);
 
@@ -56,6 +59,12 @@ namespace WebLinq
             Html(content).Bind(html => new Query<IEnumerable<T>>(context => QueryResult.Create(context, html.Links(selector))));
 
         public static IEnumerable<T> ToEnumerable<T>(this Query<IEnumerable<T>> query, QueryContext context)
+        {
+            var result = query.Invoke(context);
+            return result.DataOrDefault() ?? Enumerable.Empty<T>();
+        }
+
+        public static IEnumerable<T> ToEnumerable<T>(this SeqQuery<T> query, QueryContext context)
         {
             var result = query.Invoke(context);
             return result.DataOrDefault() ?? Enumerable.Empty<T>();

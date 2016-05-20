@@ -22,7 +22,7 @@ namespace WebLinq.Samples
                 select new { com.Id, Html = html.OuterHtml("p") } into com
                 from net in Http.Get(new Uri("http://www.example.net/"),
                                      (id, rsp) => new { Id = id, Response = rsp })
-                from links in Links(net.Response, delegate { return 1; })
+                from link in Links(net.Response, (href, _) => href).Spread()
                 from html in Html(net.Response)
                 select new
                 {
@@ -31,7 +31,7 @@ namespace WebLinq.Samples
                     {
                         net.Id,
                         Html = html.OuterHtml("p"),
-                        LinkCount = links.Count(),
+                        Link = link,
                     }
                 }
                 into e
@@ -43,7 +43,8 @@ namespace WebLinq.Samples
             services.AddServiceFactory<IHtmlParser>(ctx => new HtmlParser(ctx));
             var context = new QueryContext(serviceProvider: services);
 
-            Console.WriteLine(q.Invoke(context));
+            foreach (var e in q.ToEnumerable(context))
+                Console.WriteLine(e);
         }
 
         static void AddServiceFactory<T>(this IServiceContainer sc, Func<QueryContext, T> factory) =>

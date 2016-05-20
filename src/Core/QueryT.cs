@@ -17,6 +17,8 @@
 namespace WebLinq
 {
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
 
     public class Query<T>
     {
@@ -42,6 +44,17 @@ namespace WebLinq
             });
         }
 
+        public SeqQuery<TResult> Bind<TResult>(Func<T, SeqQuery<TResult>> func)
+        {
+            return new SeqQuery<TResult>(context =>
+            {
+                var result = Invoke(context);
+                return result.HasData
+                     ? func(result.Data).Invoke(result.Context)
+                     : QueryResult.Empty<IEnumerable<TResult>>(context);
+            });
+        }
+
         // LINQ support
 
         public Query<TResult> Select<TResult>(Func<T, TResult> selector) =>
@@ -53,5 +66,88 @@ namespace WebLinq
         public Query<TResult> SelectMany<T2, TResult>(Func<T, Query<T2>> then,
                                                       Func<T, T2, TResult> resultSelector) =>
             Bind(x => then(x).Bind(y => Query.Return(resultSelector(x, y))));
+
+        public SeqQuery<TResult> SelectMany<T2, TResult>(Func<T, SeqQuery<T2>> then, Func<T, T2, TResult> resultSelector) =>
+            Bind(x => then(x).Bind(ys => new SeqQuery<TResult>(context => QueryResult.Create(context, from y in ys select resultSelector(x, y)))));
+    }
+
+    public static class SeqQuery
+    {
+        public static SeqQuery<T> Return<T>(IEnumerable<T> value) =>
+            new SeqQuery<T>(context => QueryResult.Create(context, value));
+
+        public static SeqQuery<T> ToQuery<T>(this IEnumerable<T> value) =>
+            Return(value);
+    }
+
+    public class SeqQuery<T>
+    {
+        public static SeqQuery<T> Empty = new SeqQuery<T>(QueryResult.Empty<IEnumerable<T>>);
+
+        readonly Func<QueryContext, QueryResult<IEnumerable<T>>> _func;
+
+        internal SeqQuery(Func<QueryContext, QueryResult<IEnumerable<T>>> func)
+        {
+            _func = func;
+        }
+
+        public QueryResult<IEnumerable<T>> Invoke(QueryContext context) => _func(context);
+
+        public SeqQuery<TResult> Bind<TResult>(Func<IEnumerable<T>, SeqQuery<TResult>> func)
+        {
+            return new SeqQuery<TResult>(context =>
+            {
+                var result = Invoke(context);
+                return result.HasData
+                     ? func(result.Data).Invoke(result.Context)
+                     : QueryResult.Empty<IEnumerable<TResult>>(context);
+            });
+        }
+
+        // LINQ support
+
+        public SeqQuery<TResult> Select<TResult>(Func<T, TResult> selector) =>
+            Bind(xs => SeqQuery.Return(from x in xs select selector(x)));
+
+        public SeqQuery<T> Where(Func<T, bool> predicate) =>
+            Bind(xs => SeqQuery.Return(from x in xs where predicate(x) select x));
+
+        public SeqQuery<TResult> SelectMany<T2, TResult>(Func<T, Query<T2>> f, Func<T, T2, TResult> g) =>
+            Bind(xs => new SeqQuery<TResult>(s => QueryResult.Create(s, SelectManyIterator(s, xs, f, g))));
+
+        static IEnumerable<TResult> SelectManyIterator<T2, TResult>(QueryContext context, IEnumerable<T> xs, Func<T, Query<T2>> f, Func<T, T2, TResult> g)
+        {
+            foreach (var x in xs)
+            {
+                var y = f(x).Invoke(context);
+                if (y.HasData)
+                {
+                    context.UpdateFrom(y.Context);
+                    yield return g(x, y.Data);
+                }
+            }
+        }
+
+        public SeqQuery<TResult> SelectMany<T2, TResult>(Func<T, SeqQuery<T2>> f, Func<T, T2, TResult> g) =>
+            Bind(xs => new SeqQuery<TResult>(s => QueryResult.Create(s, SelectManyIterator(s, xs, f, g))));
+
+        static IEnumerable<TResult> SelectManyIterator<T2, TResult>(QueryContext context, IEnumerable<T> xs, Func<T, SeqQuery<T2>> f, Func<T, T2, TResult> g)
+        {
+            foreach (var x in xs)
+            {
+                var ys = f(x).Invoke(context);
+                if (ys.HasData)
+                {
+                    foreach (var y in ys.Data)
+                    {
+                        context.UpdateFrom(ys.Context);
+                        yield return g(x, y);
+                    }
+                }
+            }
+        }
+
+        public SeqQuery<T> Concat(SeqQuery<T> other) =>
+            Bind(xs => other.Bind(ys => SeqQuery.Return<T>(xs.Concat(ys))));
     }
 }

@@ -20,7 +20,7 @@ namespace WebLinq
 
     public class QueryContext : IServiceProvider
     {
-        public int Id { get; }
+        public int Id { get; private set; }
         public IServiceProvider ServiceProvider { get; }
 
         public QueryContext(int id = 1,
@@ -69,5 +69,10 @@ namespace WebLinq
                       GetService<TService2>(),
                       GetService<TService3>(),
                       GetService<TService4>());
+
+        public void UpdateFrom(QueryContext context)
+        {
+            Id = context.Id;
+        }
     }
 }
