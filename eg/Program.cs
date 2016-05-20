@@ -4,6 +4,7 @@ namespace WebLinq.Samples
 
     using System;
     using System.ComponentModel.Design;
+    using System.Linq;
     using static Query;
     using WebClient = WebClient;
 
@@ -21,11 +22,17 @@ namespace WebLinq.Samples
                 select new { com.Id, Html = html.OuterHtml("p") } into com
                 from net in Http.Get(new Uri("http://www.example.net/"),
                                      (id, rsp) => new { Id = id, Response = rsp })
+                from links in Links(net.Response, delegate { return 1; })
                 from html in Html(net.Response)
                 select new
                 {
                     Com = com,
-                    Net = new { net.Id, Html = html.OuterHtml("p") }
+                    Net = new
+                    {
+                        net.Id,
+                        Html = html.OuterHtml("p"),
+                        LinkCount = links.Count(),
+                    }
                 }
                 into e
                 where e.Com.Html.Length == e.Net.Html.Length

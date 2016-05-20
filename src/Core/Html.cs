@@ -16,8 +16,12 @@
 
 namespace WebLinq
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using Fizzler.Systems.HtmlAgilityPack;
     using HtmlAgilityPack;
+    using TryParsers;
 
     public interface IHtmlParser
     {
@@ -27,6 +31,7 @@ namespace WebLinq
     public interface IParsedHtml
     {
         string OuterHtml(string selector);
+        IEnumerable<T> Links<T>(Func<string, string, T> selector);
     }
 
     public sealed class HtmlParser : IHtmlParser
@@ -48,17 +53,60 @@ namespace WebLinq
         sealed class ParsedHtml : IParsedHtml
         {
             readonly HtmlDocument _document;
+            readonly Lazy<Uri> _cachedBaseUrl;
+
+            static class Selectors
+            {
+                public static readonly Func<HtmlNode, IEnumerable<HtmlNode>> DocBase = HtmlNodeSelection.CachableCompile("html > head > base[href]");
+                public static readonly Func<HtmlNode, IEnumerable<HtmlNode>> Anchor = HtmlNodeSelection.CachableCompile("a[href]");
+            }
 
             public ParsedHtml(HtmlDocument document)
             {
                 _document = document;
+                _cachedBaseUrl = new Lazy<Uri>(TryGetBaseUrl);
             }
 
+            HtmlNode DocumentNode => _document.DocumentNode;
+
             public string OuterHtml(string selector) =>
-                _document.DocumentNode.QuerySelector(selector)?.OuterHtml;
+                DocumentNode.QuerySelector(selector)?.OuterHtml;
+
+            public IEnumerable<T> Links<T>(Func<string, string, T> selector)
+            {
+                return
+                    from a in Selectors.Anchor(DocumentNode)
+                    let href = a.GetAttributeValue("href", null)
+                    where !string.IsNullOrWhiteSpace(href)
+                    select selector(Href(href), a.InnerHtml);
+            }
+
+            string Href(string href)
+            {
+                return CachedBaseUrl != null
+                     ? TryParse.Uri(CachedBaseUrl, href)?.OriginalString ?? href
+                     : href;
+            }
+
+            Uri CachedBaseUrl => _cachedBaseUrl.Value;
+
+            Uri TryGetBaseUrl()
+            {
+                var baseRef = Selectors.DocBase(DocumentNode)
+                                       .FirstOrDefault()
+                                      ?.GetAttributeValue("href", null);
+
+                if (baseRef == null)
+                    return null;
+
+                var baseUrl = TryParse.Uri(baseRef, UriKind.Absolute);
+
+                return baseUrl.Scheme == Uri.UriSchemeHttp || baseUrl.Scheme == Uri.UriSchemeHttps
+                     ? baseUrl : null;
+            }
 
             public override string ToString() =>
-                _document.DocumentNode.OuterHtml;
+                DocumentNode.OuterHtml;
         }
     }
 }
