@@ -16,6 +16,10 @@
 
 namespace WebLinq
 {
+    using System;
+    using System.Net.Http;
+    using System.Net.Mime;
+
     public static class Query
     {
         public static HttpSpec Http => new HttpSpec();
@@ -24,6 +28,20 @@ namespace WebLinq
             new Query<T>(context => new QueryResult<T>(context, value));
 
         public static Query<IParsedHtml> Html(string html) =>
-            new Query<IParsedHtml>(context => QueryResult.Create(context, context.Eval((IHtmlParser hps) => hps.Parse(html))));
+            Html(new StringContent(html));
+
+        public static Query<IParsedHtml> Html(HttpResponseMessage response) =>
+            Html(response.Content);
+
+        public static Query<IParsedHtml> Html(HttpContent content) =>
+            new Query<IParsedHtml>(context =>
+            {
+                const string htmlMediaType = MediaTypeNames.Text.Html;
+                var actualMediaType = content.Headers.ContentType.MediaType;
+                if (!htmlMediaType.Equals(actualMediaType, StringComparison.OrdinalIgnoreCase))
+                    throw new Exception($"Expected content of type \"{htmlMediaType}\" but received \"{actualMediaType}\" instead.");
+
+                return QueryResult.Create(context, context.Eval((IHtmlParser hps) => hps.Parse(content.ReadAsStringAsync().Result)));
+            });
     }
 }

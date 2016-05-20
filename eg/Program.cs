@@ -15,13 +15,13 @@ namespace WebLinq.Samples
         {
             var q =
                 from com in Http.UserAgent(@"Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko")
-                                .DownloadString(new Uri("http://www.example.com/"),
-                                                (id, html) => new { Id = id, Html = html })
-                from html in Html(com.Html)
+                                .Get(new Uri("http://www.example.com/"),
+                                     (id, rsp) => new { Id = id, Response = rsp })
+                from html in Html(com.Response)
                 select new { com.Id, Html = html.OuterHtml("p") } into com
-                from net in Http.DownloadString(new Uri("http://www.example.net/"),
-                                                (id, html) => new { Id = id, Html = html })
-                from html in Html(net.Html)
+                from net in Http.Get(new Uri("http://www.example.net/"),
+                                     (id, rsp) => new { Id = id, Response = rsp })
+                from html in Html(net.Response)
                 select new
                 {
                     Com = com,

@@ -20,6 +20,7 @@ namespace WebLinq
     using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.Linq;
+    using System.Net;
     using System.Net.Http;
 
     public sealed class HttpOptions
@@ -29,7 +30,7 @@ namespace WebLinq
 
     public interface IWebClient
     {
-        string DownloadString(Uri url, HttpOptions options);
+        HttpResponseMessage Get(Uri url, HttpOptions options);
     }
 
     public class WebClient : IWebClient
@@ -41,7 +42,7 @@ namespace WebLinq
             _context = context;
         }
 
-        public string DownloadString(Uri url, HttpOptions options)
+        public HttpResponseMessage Get(Uri url, HttpOptions options)
         {
             var http = new HttpClient();
             var request = new HttpRequestMessage(HttpMethod.Get, url);
@@ -59,7 +60,7 @@ namespace WebLinq
                     headers.Remove(e.Key);
             }
 
-            return http.SendAsync(request).Result.Content.ReadAsStringAsync().Result;
+            return http.SendAsync(request).Result;
         }
     }
 }

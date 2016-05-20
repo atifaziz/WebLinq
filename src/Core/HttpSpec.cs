@@ -18,6 +18,7 @@ namespace WebLinq
 {
     using System;
     using System.Collections.Specialized;
+    using System.Net.Http;
 
     public sealed class HttpSpec
     {
@@ -40,11 +41,12 @@ namespace WebLinq
             return this;
         }
 
-        public Query<string> DownloadString(Uri url) => DownloadString(url, (_, s) => s);
+        public Query<HttpResponseMessage> Get(Uri url) =>
+            Get(url, (_, s) => s);
 
-        public Query<T> DownloadString<T>(Uri url, Func<int, string, T> selector) =>
+        public Query<T> Get<T>(Uri url, Func<int, HttpResponseMessage, T> selector) =>
             new Query<T>(context => QueryResult.Create(new QueryContext(id: context.Id + 1,
                                                                         serviceProvider: context.ServiceProvider),
-                                                                        context.Eval((IWebClient wc) => selector(context.Id, wc.DownloadString(url, new HttpOptions { Headers = Headers })))));
+                                                                        context.Eval((IWebClient wc) => selector(context.Id, wc.Get(url, new HttpOptions { Headers = Headers })))));
     }
 }
