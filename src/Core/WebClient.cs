@@ -20,8 +20,8 @@ namespace WebLinq
     using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.Linq;
-    using System.Net;
     using System.Net.Http;
+    using System.Net.Http.Headers;
 
     public sealed class HttpOptions
     {
@@ -31,6 +31,7 @@ namespace WebLinq
     public interface IWebClient
     {
         HttpResponseMessage Get(Uri url, HttpOptions options);
+        HttpResponseMessage Post(Uri url, NameValueCollection data, HttpOptions options);
     }
 
     public class WebClient : IWebClient
@@ -61,6 +62,41 @@ namespace WebLinq
             }
 
             return http.SendAsync(request).Result;
+        }
+
+        public HttpResponseMessage Post(Uri url, NameValueCollection data, HttpOptions options)
+        {
+            var http = new HttpClient();
+            var request = new HttpRequestMessage(HttpMethod.Post, url);
+
+            var headers = request.Headers;
+            GetValue(options?.Headers, headers);
+
+            request.Content = new FormUrlEncodedContent(
+                from i in Enumerable.Range(0, data.Count)
+                from v in data.GetValues(i)
+                select new KeyValuePair<string, string>(data.GetKey(i), v));
+
+            return http.SendAsync(request).Result;
+        }
+
+        static void GetValue(NameValueCollection source, HttpRequestHeaders target)
+        {
+            if (source == null)
+                return;
+
+            var headers =
+                from i in Enumerable.Range(0, source.Count)
+                select new KeyValuePair<string, string[]>(source.GetKey(i),
+                source.GetValues(i));
+
+            foreach (var e in headers)
+            {
+                if (e.Value == null)
+                    target.Add(e.Key, e.Value);
+                else
+                    target.Remove(e.Key);
+            }
         }
     }
 }
