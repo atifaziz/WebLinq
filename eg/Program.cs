@@ -22,7 +22,7 @@ namespace WebLinq.Samples
                 select new { com.Id, Html = html.OuterHtml("p") } into com
                 from net in Http.Get(new Uri("http://www.example.net/"),
                                      (id, rsp) => new { Id = id, Response = rsp })
-                from link in Links(net.Response, (href, _) => href).Spread()
+                from link in Links(net.Response, (href, _) => href)
                 from html in Html(net.Response)
                 select new
                 {
