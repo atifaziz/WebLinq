@@ -56,7 +56,7 @@ namespace WebLinq
             Links(response.Content, response.RequestMessage.RequestUri, selector);
 
         public static SeqQuery<T> Links<T>(HttpContent content, Uri baseUrl, Func<string, string, T> selector) =>
-            Html(content).Bind(html => new SeqQuery<T>(context => QueryResult.Create(context, html.Links(selector))));
+            Html(content).Bind(html => new SeqQuery<T>(context => QueryResult.Create(context, html.Links(baseUrl, selector))));
 
         public static IEnumerable<T> ToEnumerable<T>(this Query<IEnumerable<T>> query, QueryContext context)
         {

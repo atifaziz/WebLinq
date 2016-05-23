@@ -31,7 +31,7 @@ namespace WebLinq
     public interface IParsedHtml
     {
         string OuterHtml(string selector);
-        IEnumerable<T> Links<T>(Func<string, string, T> selector);
+        IEnumerable<T> Links<T>(Uri baseUrl, Func<string, string, T> selector);
     }
 
     public sealed class HtmlParser : IHtmlParser
@@ -72,19 +72,22 @@ namespace WebLinq
             public string OuterHtml(string selector) =>
                 DocumentNode.QuerySelector(selector)?.OuterHtml;
 
-            public IEnumerable<T> Links<T>(Func<string, string, T> selector)
+            public IEnumerable<T> Links<T>(Uri baseUrl, Func<string, string, T> selector)
             {
                 return
                     from a in Selectors.Anchor(DocumentNode)
                     let href = a.GetAttributeValue("href", null)
                     where !string.IsNullOrWhiteSpace(href)
-                    select selector(Href(href), a.InnerHtml);
+                    select selector(Href(baseUrl, href), a.InnerHtml);
             }
 
-            string Href(string href)
+            string Href(Uri baseUrl, string href) =>
+                HrefImpl(baseUrl ?? CachedBaseUrl, href);
+
+            static string HrefImpl(Uri baseUrl, string href)
             {
-                return CachedBaseUrl != null
-                     ? TryParse.Uri(CachedBaseUrl, href)?.OriginalString ?? href
+                return baseUrl != null
+                     ? TryParse.Uri(baseUrl, href)?.OriginalString ?? href
                      : href;
             }
 
