@@ -19,6 +19,7 @@ namespace WebLinq
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Net.Mime;
     using Fizzler.Systems.HtmlAgilityPack;
     using HtmlAgilityPack;
     using TryParsers;
@@ -33,7 +34,10 @@ namespace WebLinq
         string OuterHtml(string selector);
         IEnumerable<T> Links<T>(Uri baseUrl, Func<string, string, T> selector);
         IEnumerable<string> Tables(string selector);
+        IEnumerable<T> Forms<T>(string cssSelector, Func<string, string, string, HtmlFormMethod, ContentType, string, T> selector);
     }
+
+    public enum HtmlFormMethod { Get, Post }
 
     public sealed class HtmlParser : IHtmlParser
     {
@@ -120,6 +124,20 @@ namespace WebLinq
                 return baseUrl.Scheme == Uri.UriSchemeHttp || baseUrl.Scheme == Uri.UriSchemeHttps
                      ? baseUrl : null;
             }
+
+            public IEnumerable<T> Forms<T>(string cssSelector, Func<string, string, string, HtmlFormMethod, ContentType, string, T> selector) =>
+                from form in DocumentNode.QuerySelectorAll(cssSelector ?? "form[action]")
+                where "form".Equals(form.Name, StringComparison.OrdinalIgnoreCase)
+                let method = form.GetAttributeValue("method", null)?.Trim()
+                let enctype = form.GetAttributeValue("enctype", null)?.Trim()
+                select selector(form.GetAttributeValue("id", null),
+                                form.GetAttributeValue("name", null),
+                                form.GetAttributeValue("action", null),
+                                "post".Equals(method, StringComparison.OrdinalIgnoreCase)
+                                    ? HtmlFormMethod.Post
+                                    : HtmlFormMethod.Get,
+                                enctype != null ? new ContentType(enctype) : null,
+                                form.OuterHtml);
 
             public override string ToString() =>
                 DocumentNode.OuterHtml;
