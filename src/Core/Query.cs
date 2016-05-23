@@ -29,13 +29,13 @@ namespace WebLinq
         public static Query<T> Return<T>(T value) =>
             new Query<T>(context => new QueryResult<T>(context, value));
 
-        public static Query<IParsedHtml> Html(string html) =>
-            Html(new StringContent(html));
+        public static Query<IParsedHtml> Html(string html, Uri baseUrl) =>
+            Html(new StringContent(html), baseUrl);
 
         public static Query<IParsedHtml> Html(HttpResponseMessage response) =>
-            Html(response.Content);
+            Html(response.Content, response.RequestMessage.RequestUri);
 
-        public static Query<IParsedHtml> Html(HttpContent content) =>
+        public static Query<IParsedHtml> Html(HttpContent content, Uri baseUrl) =>
             new Query<IParsedHtml>(context =>
             {
                 const string htmlMediaType = MediaTypeNames.Text.Html;
@@ -43,20 +43,20 @@ namespace WebLinq
                 if (!htmlMediaType.Equals(actualMediaType, StringComparison.OrdinalIgnoreCase))
                     throw new Exception($"Expected content of type \"{htmlMediaType}\" but received \"{actualMediaType}\" instead.");
 
-                return QueryResult.Create(context, context.Eval((IHtmlParser hps) => hps.Parse(content.ReadAsStringAsync().Result)));
+                return QueryResult.Create(context, context.Eval((IHtmlParser hps) => hps.Parse(content.ReadAsStringAsync().Result, baseUrl)));
             });
 
         public static SeqQuery<T> Spread<T>(this Query<IEnumerable<T>> query) =>
             new SeqQuery<T>(query.Invoke);
 
-        public static SeqQuery<T> Links<T>(string html, Func<string, string, T> selector) =>
+        public static SeqQuery<T> Links<T>(string html, Uri baseUrl, Func<string, string, T> selector) =>
             Links(new StringContent(html), null, selector);
 
         public static SeqQuery<T> Links<T>(HttpResponseMessage response, Func<string, string, T> selector) =>
             Links(response.Content, response.RequestMessage.RequestUri, selector);
 
         public static SeqQuery<T> Links<T>(HttpContent content, Uri baseUrl, Func<string, string, T> selector) =>
-            Html(content).Bind(html => new SeqQuery<T>(context => QueryResult.Create(context, html.Links(baseUrl, selector))));
+            Html(content, baseUrl).Bind(html => new SeqQuery<T>(context => QueryResult.Create(context, html.Links(selector))));
 
         public static SeqQuery<string> Tables(string html) =>
             Tables(new StringContent(html));
@@ -65,7 +65,7 @@ namespace WebLinq
             Tables(response.Content);
 
         public static SeqQuery<string> Tables(HttpContent content) =>
-            Html(content).Bind(html => new SeqQuery<string>(context => QueryResult.Create(context, html.Tables(null))));
+            Html(content, null).Bind(html => new SeqQuery<string>(context => QueryResult.Create(context, html.Tables(null))));
 
         public static IEnumerable<T> ToEnumerable<T>(this Query<IEnumerable<T>> query, QueryContext context)
         {

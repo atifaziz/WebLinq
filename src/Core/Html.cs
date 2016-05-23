@@ -26,13 +26,14 @@ namespace WebLinq
 
     public interface IHtmlParser
     {
-        IParsedHtml Parse(string html);
+        IParsedHtml Parse(string html, Uri baseUrl);
     }
 
     public interface IParsedHtml
     {
+        Uri BaseUrl { get; }
         string OuterHtml(string selector);
-        IEnumerable<T> Links<T>(Uri baseUrl, Func<string, string, T> selector);
+        IEnumerable<T> Links<T>(Func<string, string, T> selector);
         IEnumerable<string> Tables(string selector);
         IEnumerable<T> Forms<T>(string cssSelector, Func<string, string, string, HtmlFormMethod, ContentType, string, T> selector);
     }
@@ -48,16 +49,17 @@ namespace WebLinq
             _context = context;
         }
 
-        public IParsedHtml Parse(string html)
+        public IParsedHtml Parse(string html, Uri baseUrl)
         {
             var doc = new HtmlDocument();
             doc.LoadHtml2(html);
-            return new ParsedHtml(doc);
+            return new ParsedHtml(doc, baseUrl);
         }
 
         sealed class ParsedHtml : IParsedHtml
         {
             readonly HtmlDocument _document;
+            readonly Uri _baseUrl;
             readonly Lazy<Uri> _cachedBaseUrl;
 
             static class Selectors
@@ -67,24 +69,27 @@ namespace WebLinq
                 public static readonly Func<HtmlNode, IEnumerable<HtmlNode>> Table = HtmlNodeSelection.CachableCompile("table");
             }
 
-            public ParsedHtml(HtmlDocument document)
+            public ParsedHtml(HtmlDocument document, Uri baseUrl)
             {
                 _document = document;
-                _cachedBaseUrl = new Lazy<Uri>(TryGetBaseUrl);
+                _baseUrl = baseUrl;
+                _cachedBaseUrl = new Lazy<Uri>(TryGetInlineBaseUrl);
             }
+
+            public Uri BaseUrl => _baseUrl ?? CachedInlineBaseUrl;
 
             HtmlNode DocumentNode => _document.DocumentNode;
 
             public string OuterHtml(string selector) =>
                 DocumentNode.QuerySelector(selector)?.OuterHtml;
 
-            public IEnumerable<T> Links<T>(Uri baseUrl, Func<string, string, T> selector)
+            public IEnumerable<T> Links<T>(Func<string, string, T> selector)
             {
                 return
                     from a in Selectors.Anchor(DocumentNode)
                     let href = a.GetAttributeValue("href", null)
                     where !string.IsNullOrWhiteSpace(href)
-                    select selector(Href(baseUrl, href), a.InnerHtml);
+                    select selector(Href(href), a.InnerHtml);
             }
 
             public IEnumerable<string> Tables(string selector)
@@ -98,19 +103,17 @@ namespace WebLinq
                     select e.OuterHtml;
             }
 
-            string Href(Uri baseUrl, string href) =>
-                HrefImpl(baseUrl ?? CachedBaseUrl, href);
+            string Href(string href) =>
+                HrefImpl(BaseUrl, href);
 
-            static string HrefImpl(Uri baseUrl, string href)
-            {
-                return baseUrl != null
-                     ? TryParse.Uri(baseUrl, href)?.OriginalString ?? href
-                     : href;
-            }
+            static string HrefImpl(Uri baseUrl, string href) =>
+                baseUrl != null
+                ? TryParse.Uri(baseUrl, href)?.OriginalString ?? href
+                : href;
 
-            Uri CachedBaseUrl => _cachedBaseUrl.Value;
+            Uri CachedInlineBaseUrl => _cachedBaseUrl.Value;
 
-            Uri TryGetBaseUrl()
+            Uri TryGetInlineBaseUrl()
             {
                 var baseRef = Selectors.DocBase(DocumentNode)
                                        .FirstOrDefault()
@@ -130,9 +133,10 @@ namespace WebLinq
                 where "form".Equals(form.Name, StringComparison.OrdinalIgnoreCase)
                 let method = form.GetAttributeValue("method", null)?.Trim()
                 let enctype = form.GetAttributeValue("enctype", null)?.Trim()
+                let action = form.GetAttributeValue("action", null)
                 select selector(form.GetAttributeValue("id", null),
                                 form.GetAttributeValue("name", null),
-                                form.GetAttributeValue("action", null),
+                                action != null ? Href(action) : action,
                                 "post".Equals(method, StringComparison.OrdinalIgnoreCase)
                                     ? HtmlFormMethod.Post
                                     : HtmlFormMethod.Get,
