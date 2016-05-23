@@ -32,6 +32,7 @@ namespace WebLinq
     {
         string OuterHtml(string selector);
         IEnumerable<T> Links<T>(Uri baseUrl, Func<string, string, T> selector);
+        IEnumerable<string> Tables(string selector);
     }
 
     public sealed class HtmlParser : IHtmlParser
@@ -59,6 +60,7 @@ namespace WebLinq
             {
                 public static readonly Func<HtmlNode, IEnumerable<HtmlNode>> DocBase = HtmlNodeSelection.CachableCompile("html > head > base[href]");
                 public static readonly Func<HtmlNode, IEnumerable<HtmlNode>> Anchor = HtmlNodeSelection.CachableCompile("a[href]");
+                public static readonly Func<HtmlNode, IEnumerable<HtmlNode>> Table = HtmlNodeSelection.CachableCompile("table");
             }
 
             public ParsedHtml(HtmlDocument document)
@@ -79,6 +81,17 @@ namespace WebLinq
                     let href = a.GetAttributeValue("href", null)
                     where !string.IsNullOrWhiteSpace(href)
                     select selector(Href(baseUrl, href), a.InnerHtml);
+            }
+
+            public IEnumerable<string> Tables(string selector)
+            {
+                var sel = selector == null
+                        ? Selectors.Table
+                        : HtmlNodeSelection.CachableCompile(selector);
+                return
+                    from e in sel(DocumentNode)
+                    where "table".Equals(e.Name, StringComparison.OrdinalIgnoreCase)
+                    select e.OuterHtml;
             }
 
             string Href(Uri baseUrl, string href) =>

@@ -58,6 +58,15 @@ namespace WebLinq
         public static SeqQuery<T> Links<T>(HttpContent content, Uri baseUrl, Func<string, string, T> selector) =>
             Html(content).Bind(html => new SeqQuery<T>(context => QueryResult.Create(context, html.Links(baseUrl, selector))));
 
+        public static SeqQuery<string> Tables(string html) =>
+            Tables(new StringContent(html));
+
+        public static SeqQuery<string> Tables(HttpResponseMessage response) =>
+            Tables(response.Content);
+
+        public static SeqQuery<string> Tables(HttpContent content) =>
+            Html(content).Bind(html => new SeqQuery<string>(context => QueryResult.Create(context, html.Tables(null))));
+
         public static IEnumerable<T> ToEnumerable<T>(this Query<IEnumerable<T>> query, QueryContext context)
         {
             var result = query.Invoke(context);
