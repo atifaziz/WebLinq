@@ -90,6 +90,12 @@ namespace WebLinq
         public virtual bool HasChildElements => ChildElements.Any();
         public abstract IEnumerable<HtmlObject> ChildElements { get; }
         public override string ToString() => OuterHtml;
+
+        public virtual IEnumerable<HtmlObject> QuerySelectorAll(string selector) =>
+            Owner.QuerySelectorAll(selector, this);
+
+        public virtual HtmlObject QuerySelector(string selector) =>
+            Owner.QuerySelector(selector, this);
     }
 
     public enum HtmlControlType { Input, Select, TextArea }
@@ -230,7 +236,7 @@ namespace WebLinq
             const string disabled = "disabled";
 
             return
-                from e in formElement.Owner.QuerySelectorAll("input, select, textarea", formElement)
+                from e in formElement.QuerySelectorAll("input, select, textarea")
                 let name = e.GetAttributeValue("name")?.Trim() ?? string.Empty
                 where name.Length > 0
                 let controlType = "select".Equals(e.Name, StringComparison.OrdinalIgnoreCase)
