@@ -56,9 +56,9 @@ namespace WebLinq
                                                                         hs.GetValues(i)))
             {
                 if (e.Value == null)
-                    headers.Add(e.Key, e.Value);
-                else
                     headers.Remove(e.Key);
+                else
+                    headers.Add(e.Key, e.Value);
             }
 
             return http.SendAsync(request).Result;
