@@ -36,8 +36,14 @@ namespace WebLinq
         IEnumerable<T> Links<T>(Func<string, string, T> selector);
         IEnumerable<string> Tables(string selector);
         IEnumerable<T> Forms<T>(string cssSelector, Func<string, string, string, HtmlFormMethod, ContentType, string, T> selector);
+        IEnumerable<TForm> FormsWithControls<TControl, TForm>(string cssSelector,
+            Func<string, HtmlControlType, HtmlInputType, HtmlDisabledFlag, HtmlReadOnlyFlag, string, TControl> controlSelector,
+            Func<string, string, string, HtmlFormMethod, ContentType, string, IEnumerable<TControl>, TForm> formSelector);
     }
 
+    public enum HtmlControlType { Input, Select, TextArea }
+    public enum HtmlDisabledFlag { Default, Disabled }
+    public enum HtmlReadOnlyFlag { Default, ReadOnly }
     public enum HtmlFormMethod { Get, Post }
 
     public sealed class HtmlParser : IHtmlParser
@@ -67,6 +73,7 @@ namespace WebLinq
                 public static readonly Func<HtmlNode, IEnumerable<HtmlNode>> DocBase = HtmlNodeSelection.CachableCompile("html > head > base[href]");
                 public static readonly Func<HtmlNode, IEnumerable<HtmlNode>> Anchor = HtmlNodeSelection.CachableCompile("a[href]");
                 public static readonly Func<HtmlNode, IEnumerable<HtmlNode>> Table = HtmlNodeSelection.CachableCompile("table");
+                public static readonly Func<HtmlNode, IEnumerable<HtmlNode>> FormControls = HtmlNodeSelection.CachableCompile("input, select, textarea");
             }
 
             public ParsedHtml(HtmlDocument document, Uri baseUrl)
@@ -129,19 +136,74 @@ namespace WebLinq
             }
 
             public IEnumerable<T> Forms<T>(string cssSelector, Func<string, string, string, HtmlFormMethod, ContentType, string, T> selector) =>
+                GetForms(cssSelector, (e, id, name, action, method, enctype) => selector(id, name, action, method, enctype, e.OuterHtml));
+
+            IEnumerable<T> GetForms<T>(string cssSelector, Func<HtmlNode, string, string, string, HtmlFormMethod, ContentType, T> selector) =>
                 from form in DocumentNode.QuerySelectorAll(cssSelector ?? "form[action]")
                 where "form".Equals(form.Name, StringComparison.OrdinalIgnoreCase)
                 let method = form.GetAttributeValue("method", null)?.Trim()
                 let enctype = form.GetAttributeValue("enctype", null)?.Trim()
                 let action = form.GetAttributeValue("action", null)
-                select selector(form.GetAttributeValue("id", null),
+                select selector(form,
+                                form.GetAttributeValue("id", null),
                                 form.GetAttributeValue("name", null),
                                 action != null ? Href(action) : action,
                                 "post".Equals(method, StringComparison.OrdinalIgnoreCase)
                                     ? HtmlFormMethod.Post
                                     : HtmlFormMethod.Get,
-                                enctype != null ? new ContentType(enctype) : null,
-                                form.OuterHtml);
+                                enctype != null ? new ContentType(enctype) : null);
+
+            public IEnumerable<TForm> FormsWithControls<TControl, TForm>(string cssSelector, Func<string, HtmlControlType, HtmlInputType, HtmlDisabledFlag, HtmlReadOnlyFlag, string, TControl> controlSelector, Func<string, string, string, HtmlFormMethod, ContentType, string, IEnumerable<TControl>, TForm> formSelector) =>
+                GetForms(cssSelector, (fe, id, name, action, method, enctype) =>
+                    formSelector(id, name, action, method, enctype, fe.OuterHtml,
+                        GetFormWithControls(fe, (ce, cn, ct, it, cd, cro) =>
+                            controlSelector(cn, ct, it, cd, cro, ce.OuterHtml))));
+
+
+            static IEnumerable<T> GetFormWithControls<T>(HtmlNode formElement,
+                Func<HtmlNode, string, HtmlControlType, HtmlInputType, HtmlDisabledFlag, HtmlReadOnlyFlag, T> selector)
+            {
+                //
+                // Grab all INPUT and SELECT elements belonging to the form.
+                //
+                // TODO: BUTTON
+                // TODO: formaction https://developer.mozilla.org/en-US/docs/Web/HTML/Element/button#attr-formaction
+                // TODO: formenctype https://developer.mozilla.org/en-US/docs/Web/HTML/Element/button#attr-formenctype
+                // TODO: formmethod https://developer.mozilla.org/en-US/docs/Web/HTML/Element/button#attr-formmethod
+                //
+
+                const string @readonly = "readonly";
+                const string disabled = "disabled";
+
+                return
+                    from e in Selectors.FormControls(formElement)
+                    let name = e.GetAttributeValue("name", null)?.Trim() ?? string.Empty
+                    where name.Length > 0
+                    let controlType = "select".Equals(e.Name, StringComparison.OrdinalIgnoreCase)
+                                    ? HtmlControlType.Select
+                                    : "textarea".Equals(e.Name, StringComparison.OrdinalIgnoreCase)
+                                    ? HtmlControlType.TextArea
+                                    : HtmlControlType.Input
+                    let attrs = new
+                    {
+                        Disabled  = e.Attributes[disabled]?.Value.Trim(),
+                        ReadOnly  = e.Attributes[@readonly]?.Value.Trim(),
+                        InputType = controlType == HtmlControlType.Input
+                                  ? e.GetAttributeValue("type", null)?.Trim().Map(HtmlInputType.Parse)
+                                    // Missing "type" attribute implies "text" since HTML 3.2
+                                    ?? HtmlInputType.Default
+                                  : null,
+                    }
+                    select selector
+                    (
+                        e,
+                        name,
+                        controlType,
+                        attrs.InputType,
+                        disabled.Equals(attrs.Disabled, StringComparison.OrdinalIgnoreCase) ? HtmlDisabledFlag.Disabled : HtmlDisabledFlag.Default,
+                        @readonly.Equals(attrs.ReadOnly, StringComparison.OrdinalIgnoreCase) ? HtmlReadOnlyFlag.ReadOnly : HtmlReadOnlyFlag.Default
+                    );
+            }
 
             public override string ToString() =>
                 DocumentNode.OuterHtml;

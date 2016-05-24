@@ -42,6 +42,10 @@
       <HintPath>..\..\packages\HtmlAgilityPack.1.4.6\lib\Net45\HtmlAgilityPack.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Mannex, Version=2.14.19222.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Mannex.2.14.0\lib\net45\Mannex.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -63,7 +67,9 @@
       <DependentUpon>AssemblyInfo.g.tt</DependentUpon>
     </Compile>
     <Compile Include="Html.cs" />
+    <Compile Include="HtmlInputType.cs" />
     <Compile Include="HttpSpec.cs" />
+    <Compile Include="Mapper.cs" />
     <Compile Include="Query.cs" />
     <Compile Include="QueryContext.cs" />
     <Compile Include="QueryResult.cs" />
