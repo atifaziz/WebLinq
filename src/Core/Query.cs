@@ -18,9 +18,13 @@ namespace WebLinq
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Specialized;
     using System.Linq;
     using System.Net.Http;
     using System.Net.Mime;
+    using Mannex.Collections.Generic;
+    using Mannex.Collections.Specialized;
+    using Mannex.Web;
 
     public static class Query
     {
@@ -78,5 +82,41 @@ namespace WebLinq
             var result = query.Invoke(context);
             return result.DataOrDefault() ?? Enumerable.Empty<T>();
         }
+
+        public static Query<HttpResponseMessage> Submit(HttpResponseMessage response, string formSelector, NameValueCollection data) =>
+            Html(response).Bind(html => new Query<HttpResponseMessage>(context => context.Eval((IWebClient wc) =>
+            {
+                var forms = html.GetForms(formSelector, (fe, id, name, fa, fm, enctype) => fe.GetForm(fd => new
+                {
+                    Action  = new Uri(html.BaseUrl, fa),
+                    Method  = fm,
+                    EncType = enctype, // TODO validate
+                    Data    = fd,
+                }));
+
+                var form = forms.FirstOrDefault();
+                if (form == null)
+                    throw new Exception("No HTML form for submit.");
+
+                if (data != null)
+                {
+                    foreach (var e in from e in data.AsEnumerable()
+                                      from v in e.Value
+                                      select e.Key.AsKeyTo(v))
+                    {
+                        if (e.Value == null)
+                            form.Data.Remove(e.Key);
+                        else
+                            form.Data.Add(e.Key, e.Value);
+                    }
+                }
+
+                var submissionResponse =
+                    form.Method == HtmlFormMethod.Post
+                    ? wc.Post(form.Action, form.Data, null)
+                    : wc.Get(new UriBuilder(form.Action) { Query = form.Data.ToW3FormEncoded() }.Uri, null);
+
+                return QueryResult.Create(context, submissionResponse);
+            })));
     }
 }
