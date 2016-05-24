@@ -19,7 +19,7 @@ namespace WebLinq.Samples
                                 .Get(new Uri("http://www.example.com/"),
                                      (id, rsp) => new { Id = id, Response = rsp })
                 from html in Html(com.Response)
-                select new { com.Id, Html = html.OuterHtml("p") } into com
+                select new { com.Id, Html = html.QuerySelector("p")?.OuterHtml } into com
                 from net in Http.Get(new Uri("http://www.example.net/"),
                                      (id, rsp) => new { Id = id, Response = rsp })
                 from link in Links(net.Response, (href, _) => href)
@@ -30,17 +30,17 @@ namespace WebLinq.Samples
                     Net = new
                     {
                         net.Id,
-                        Html = html.OuterHtml("p"),
+                        Html = html.QuerySelector("p")?.OuterHtml,
                         Link = link,
                     }
                 }
                 into e
-                where e.Com.Html.Length == e.Net.Html.Length
+                where e.Com.Html?.Length == e.Net.Html?.Length
                 select e;
 
             var services = new ServiceContainer();
             services.AddServiceFactory<IWebClient>(ctx => new WebClient(ctx));
-            services.AddServiceFactory<IHtmlParser>(ctx => new HtmlParser(ctx));
+            services.AddServiceFactory<IHtmlParser>(ctx => new HapHtmlParser(ctx));
             var context = new QueryContext(serviceProvider: services);
 
             foreach (var e in q.ToEnumerable(context))

@@ -20,25 +20,75 @@ namespace WebLinq
     using System.Collections.Generic;
     using System.Linq;
     using System.Net.Mime;
+    using System.Runtime.CompilerServices;
     using Fizzler.Systems.HtmlAgilityPack;
     using HtmlAgilityPack;
     using TryParsers;
 
     public interface IHtmlParser
     {
-        IParsedHtml Parse(string html, Uri baseUrl);
+        ParsedHtml Parse(string html, Uri baseUrl);
     }
 
-    public interface IParsedHtml
+    public abstract class ParsedHtml
     {
-        Uri BaseUrl { get; }
-        string OuterHtml(string selector);
-        IEnumerable<T> Links<T>(Func<string, string, T> selector);
-        IEnumerable<string> Tables(string selector);
-        IEnumerable<T> Forms<T>(string cssSelector, Func<string, string, string, HtmlFormMethod, ContentType, string, T> selector);
-        IEnumerable<TForm> FormsWithControls<TControl, TForm>(string cssSelector,
-            Func<string, HtmlControlType, HtmlInputType, HtmlDisabledFlag, HtmlReadOnlyFlag, string, TControl> controlSelector,
-            Func<string, string, string, HtmlFormMethod, ContentType, string, IEnumerable<TControl>, TForm> formSelector);
+        readonly Uri _baseUrl;
+        readonly Lazy<Uri> _inlineBaseUrl;
+
+        protected ParsedHtml() :
+            this(null) {}
+
+        protected ParsedHtml(Uri baseUrl)
+        {
+            _baseUrl = baseUrl;
+            _inlineBaseUrl = new Lazy<Uri>(TryGetInlineBaseUrl);
+        }
+
+        public Uri BaseUrl => _baseUrl ?? _inlineBaseUrl.Value;
+
+        Uri TryGetInlineBaseUrl()
+        {
+            var baseRef = QuerySelector("html > head > base[href]")?.GetAttributeValue("href");
+
+            if (baseRef == null)
+                return null;
+
+            var baseUrl = TryParse.Uri(baseRef, UriKind.Absolute);
+
+            return baseUrl.Scheme == Uri.UriSchemeHttp || baseUrl.Scheme == Uri.UriSchemeHttps
+                 ? baseUrl : null;
+        }
+
+        public IEnumerable<HtmlObject> QuerySelectorAll(string selector) =>
+            QuerySelectorAll(selector, null);
+
+        public abstract IEnumerable<HtmlObject> QuerySelectorAll(string selector, HtmlObject context);
+
+        public HtmlObject QuerySelector(string selector) =>
+            QuerySelector(selector, null);
+
+        public virtual HtmlObject QuerySelector(string selector, HtmlObject context) =>
+            QuerySelectorAll(selector, context).FirstOrDefault();
+
+        public abstract HtmlObject Root { get; }
+
+        public override string ToString() => Root?.OuterHtml ?? string.Empty;
+    }
+
+    public abstract class HtmlObject
+    {
+        public abstract ParsedHtml Owner { get; }
+        public abstract string Name { get; }
+        public virtual bool HasAttributes => AttributeNames.Any();
+        public abstract IEnumerable<string> AttributeNames { get; }
+        public abstract bool HasAttribute(string name);
+        public abstract string GetAttributeValue(string name);
+        public abstract string OuterHtml { get; }
+        public abstract string InnerHtml { get; }
+        public abstract string InnerText { get; }
+        public virtual bool HasChildElements => ChildElements.Any();
+        public abstract IEnumerable<HtmlObject> ChildElements { get; }
+        public override string ToString() => OuterHtml;
     }
 
     public enum HtmlControlType { Input, Select, TextArea }
@@ -46,167 +96,166 @@ namespace WebLinq
     public enum HtmlReadOnlyFlag { Default, ReadOnly }
     public enum HtmlFormMethod { Get, Post }
 
-    public sealed class HtmlParser : IHtmlParser
+    public sealed class HapHtmlParser : IHtmlParser
     {
         readonly QueryContext _context;
 
-        public HtmlParser(QueryContext context)
+        public HapHtmlParser(QueryContext context)
         {
             _context = context;
         }
 
-        public IParsedHtml Parse(string html, Uri baseUrl)
+        public ParsedHtml Parse(string html, Uri baseUrl)
         {
             var doc = new HtmlDocument();
             doc.LoadHtml2(html);
-            return new ParsedHtml(doc, baseUrl);
+            return new HapParsedHtml(doc, baseUrl);
         }
 
-        sealed class ParsedHtml : IParsedHtml
+        sealed class HapParsedHtml : ParsedHtml
         {
             readonly HtmlDocument _document;
-            readonly Uri _baseUrl;
-            readonly Lazy<Uri> _cachedBaseUrl;
+            readonly ConditionalWeakTable<HtmlNode, HtmlObject> _map = new ConditionalWeakTable<HtmlNode, HtmlObject>();
 
-            static class Selectors
-            {
-                public static readonly Func<HtmlNode, IEnumerable<HtmlNode>> DocBase = HtmlNodeSelection.CachableCompile("html > head > base[href]");
-                public static readonly Func<HtmlNode, IEnumerable<HtmlNode>> Anchor = HtmlNodeSelection.CachableCompile("a[href]");
-                public static readonly Func<HtmlNode, IEnumerable<HtmlNode>> Table = HtmlNodeSelection.CachableCompile("table");
-                public static readonly Func<HtmlNode, IEnumerable<HtmlNode>> FormControls = HtmlNodeSelection.CachableCompile("input, select, textarea");
-            }
-
-            public ParsedHtml(HtmlDocument document, Uri baseUrl)
+            public HapParsedHtml(HtmlDocument document, Uri baseUrl) :
+                base(baseUrl)
             {
                 _document = document;
-                _baseUrl = baseUrl;
-                _cachedBaseUrl = new Lazy<Uri>(TryGetInlineBaseUrl);
             }
 
-            public Uri BaseUrl => _baseUrl ?? CachedInlineBaseUrl;
-
-            HtmlNode DocumentNode => _document.DocumentNode;
-
-            public string OuterHtml(string selector) =>
-                DocumentNode.QuerySelector(selector)?.OuterHtml;
-
-            public IEnumerable<T> Links<T>(Func<string, string, T> selector)
+            HtmlObject GetPublicObject(HtmlNode node)
             {
-                return
-                    from a in Selectors.Anchor(DocumentNode)
-                    let href = a.GetAttributeValue("href", null)
-                    where !string.IsNullOrWhiteSpace(href)
-                    select selector(Href(href), a.InnerHtml);
+                HtmlObject obj;
+                if (!_map.TryGetValue(node, out obj))
+                    _map.Add(node, obj = new HapHtmlObject(node, this));
+                return obj;
             }
 
-            public IEnumerable<string> Tables(string selector)
+            public override IEnumerable<HtmlObject> QuerySelectorAll(string selector, HtmlObject context) =>
+                (_document.DocumentNode ?? ((HapHtmlObject)context).Node).QuerySelectorAll(selector).Select(GetPublicObject);
+
+            public override HtmlObject Root => GetPublicObject(_document.DocumentNode);
+
+            sealed class HapHtmlObject : HtmlObject
             {
-                var sel = selector == null
-                        ? Selectors.Table
-                        : HtmlNodeSelection.CachableCompile(selector);
-                return
-                    from e in sel(DocumentNode)
-                    where "table".Equals(e.Name, StringComparison.OrdinalIgnoreCase)
-                    select e.OuterHtml;
+                readonly HapParsedHtml _owner;
+
+                public HapHtmlObject(HtmlNode node, HapParsedHtml owner)
+                {
+                    Node = node;
+                    _owner = owner;
+                }
+
+                public override ParsedHtml Owner => _owner;
+                public HtmlNode Node { get; }
+                public override string Name => Node.Name;
+
+                public override IEnumerable<string> AttributeNames =>
+                    from a in Node.Attributes select a.Name;
+
+                public override bool HasAttribute(string name) =>
+                    GetAttributeValue(name) == null;
+
+                public override string GetAttributeValue(string name) =>
+                    Node.GetAttributeValue(name, null);
+
+                public override string OuterHtml => Node.OuterHtml;
+                public override string InnerHtml => Node.InnerHtml;
+                public override string InnerText => Node.InnerText;
+
+                public override IEnumerable<HtmlObject> ChildElements =>
+                    from e in Node.ChildNodes
+                    where e.NodeType == HtmlNodeType.Element
+                    select _owner.GetPublicObject(e);
             }
+        }
+    }
 
-            string Href(string href) =>
-                HrefImpl(BaseUrl, href);
+    public static class ParsedHtmlExtensions
+    {
+        public static IEnumerable<T> Links<T>(this ParsedHtml self, Func<string, HtmlObject, T> selector)
+        {
+            return
+                from a in self.QuerySelectorAll("a[href]")
+                let href = a.GetAttributeValue("href")
+                where !string.IsNullOrWhiteSpace(href)
+                select selector(Href(self.BaseUrl, href), a);
+        }
 
-            static string HrefImpl(Uri baseUrl, string href) =>
-                baseUrl != null
-                ? TryParse.Uri(baseUrl, href)?.OriginalString ?? href
-                : href;
+        public static IEnumerable<string> Tables(this ParsedHtml self, string selector) =>
+            from e in self.QuerySelectorAll(selector ?? "table")
+            where "table".Equals(e.Name, StringComparison.OrdinalIgnoreCase)
+            select e.OuterHtml;
 
-            Uri CachedInlineBaseUrl => _cachedBaseUrl.Value;
+        static string Href(Uri baseUrl, string href) =>
+            baseUrl != null
+            ? TryParse.Uri(baseUrl, href)?.OriginalString ?? href
+            : href;
 
-            Uri TryGetInlineBaseUrl()
-            {
-                var baseRef = Selectors.DocBase(DocumentNode)
-                                       .FirstOrDefault()
-                                      ?.GetAttributeValue("href", null);
+        public static IEnumerable<T> GetForms<T>(this ParsedHtml self, string cssSelector, Func<HtmlObject, string, string, string, HtmlFormMethod, ContentType, T> selector) =>
+            from form in self.QuerySelectorAll(cssSelector ?? "form[action]")
+            where "form".Equals(form.Name, StringComparison.OrdinalIgnoreCase)
+            let method = form.GetAttributeValue("method")?.Trim()
+            let enctype = form.GetAttributeValue("enctype")?.Trim()
+            let action = form.GetAttributeValue("action")
+            select selector(form,
+                            form.GetAttributeValue("id"),
+                            form.GetAttributeValue("name"),
+                            action != null ? Href(form.Owner.BaseUrl, action) : action,
+                            "post".Equals(method, StringComparison.OrdinalIgnoreCase)
+                                ? HtmlFormMethod.Post
+                                : HtmlFormMethod.Get,
+                            enctype != null ? new ContentType(enctype) : null);
 
-                if (baseRef == null)
-                    return null;
+        public static IEnumerable<TForm> FormsWithControls<TControl, TForm>(this ParsedHtml self, string cssSelector, Func<string, HtmlControlType, HtmlInputType, HtmlDisabledFlag, HtmlReadOnlyFlag, string, TControl> controlSelector, Func<string, string, string, HtmlFormMethod, ContentType, string, IEnumerable<TControl>, TForm> formSelector) =>
+            self.GetForms(cssSelector, (fe, id, name, action, method, enctype) =>
+                formSelector(id, name, action, method, enctype, fe.OuterHtml,
+                    fe.GetFormWithControls((ce, cn, ct, it, cd, cro) =>
+                        controlSelector(cn, ct, it, cd, cro, ce.OuterHtml))));
 
-                var baseUrl = TryParse.Uri(baseRef, UriKind.Absolute);
+        public static IEnumerable<T> GetFormWithControls<T>(this HtmlObject formElement,
+            Func<HtmlObject, string, HtmlControlType, HtmlInputType, HtmlDisabledFlag, HtmlReadOnlyFlag, T> selector)
+        {
+            //
+            // Grab all INPUT and SELECT elements belonging to the form.
+            //
+            // TODO: BUTTON
+            // TODO: formaction https://developer.mozilla.org/en-US/docs/Web/HTML/Element/button#attr-formaction
+            // TODO: formenctype https://developer.mozilla.org/en-US/docs/Web/HTML/Element/button#attr-formenctype
+            // TODO: formmethod https://developer.mozilla.org/en-US/docs/Web/HTML/Element/button#attr-formmethod
+            //
 
-                return baseUrl.Scheme == Uri.UriSchemeHttp || baseUrl.Scheme == Uri.UriSchemeHttps
-                     ? baseUrl : null;
-            }
+            const string @readonly = "readonly";
+            const string disabled = "disabled";
 
-            public IEnumerable<T> Forms<T>(string cssSelector, Func<string, string, string, HtmlFormMethod, ContentType, string, T> selector) =>
-                GetForms(cssSelector, (e, id, name, action, method, enctype) => selector(id, name, action, method, enctype, e.OuterHtml));
-
-            IEnumerable<T> GetForms<T>(string cssSelector, Func<HtmlNode, string, string, string, HtmlFormMethod, ContentType, T> selector) =>
-                from form in DocumentNode.QuerySelectorAll(cssSelector ?? "form[action]")
-                where "form".Equals(form.Name, StringComparison.OrdinalIgnoreCase)
-                let method = form.GetAttributeValue("method", null)?.Trim()
-                let enctype = form.GetAttributeValue("enctype", null)?.Trim()
-                let action = form.GetAttributeValue("action", null)
-                select selector(form,
-                                form.GetAttributeValue("id", null),
-                                form.GetAttributeValue("name", null),
-                                action != null ? Href(action) : action,
-                                "post".Equals(method, StringComparison.OrdinalIgnoreCase)
-                                    ? HtmlFormMethod.Post
-                                    : HtmlFormMethod.Get,
-                                enctype != null ? new ContentType(enctype) : null);
-
-            public IEnumerable<TForm> FormsWithControls<TControl, TForm>(string cssSelector, Func<string, HtmlControlType, HtmlInputType, HtmlDisabledFlag, HtmlReadOnlyFlag, string, TControl> controlSelector, Func<string, string, string, HtmlFormMethod, ContentType, string, IEnumerable<TControl>, TForm> formSelector) =>
-                GetForms(cssSelector, (fe, id, name, action, method, enctype) =>
-                    formSelector(id, name, action, method, enctype, fe.OuterHtml,
-                        GetFormWithControls(fe, (ce, cn, ct, it, cd, cro) =>
-                            controlSelector(cn, ct, it, cd, cro, ce.OuterHtml))));
-
-
-            static IEnumerable<T> GetFormWithControls<T>(HtmlNode formElement,
-                Func<HtmlNode, string, HtmlControlType, HtmlInputType, HtmlDisabledFlag, HtmlReadOnlyFlag, T> selector)
-            {
-                //
-                // Grab all INPUT and SELECT elements belonging to the form.
-                //
-                // TODO: BUTTON
-                // TODO: formaction https://developer.mozilla.org/en-US/docs/Web/HTML/Element/button#attr-formaction
-                // TODO: formenctype https://developer.mozilla.org/en-US/docs/Web/HTML/Element/button#attr-formenctype
-                // TODO: formmethod https://developer.mozilla.org/en-US/docs/Web/HTML/Element/button#attr-formmethod
-                //
-
-                const string @readonly = "readonly";
-                const string disabled = "disabled";
-
-                return
-                    from e in Selectors.FormControls(formElement)
-                    let name = e.GetAttributeValue("name", null)?.Trim() ?? string.Empty
-                    where name.Length > 0
-                    let controlType = "select".Equals(e.Name, StringComparison.OrdinalIgnoreCase)
-                                    ? HtmlControlType.Select
-                                    : "textarea".Equals(e.Name, StringComparison.OrdinalIgnoreCase)
-                                    ? HtmlControlType.TextArea
-                                    : HtmlControlType.Input
-                    let attrs = new
-                    {
-                        Disabled  = e.Attributes[disabled]?.Value.Trim(),
-                        ReadOnly  = e.Attributes[@readonly]?.Value.Trim(),
-                        InputType = controlType == HtmlControlType.Input
-                                  ? e.GetAttributeValue("type", null)?.Trim().Map(HtmlInputType.Parse)
-                                    // Missing "type" attribute implies "text" since HTML 3.2
-                                    ?? HtmlInputType.Default
-                                  : null,
-                    }
-                    select selector
-                    (
-                        e,
-                        name,
-                        controlType,
-                        attrs.InputType,
-                        disabled.Equals(attrs.Disabled, StringComparison.OrdinalIgnoreCase) ? HtmlDisabledFlag.Disabled : HtmlDisabledFlag.Default,
-                        @readonly.Equals(attrs.ReadOnly, StringComparison.OrdinalIgnoreCase) ? HtmlReadOnlyFlag.ReadOnly : HtmlReadOnlyFlag.Default
-                    );
-            }
-
-            public override string ToString() =>
-                DocumentNode.OuterHtml;
+            return
+                from e in formElement.Owner.QuerySelectorAll("input, select, textarea", formElement)
+                let name = e.GetAttributeValue("name")?.Trim() ?? string.Empty
+                where name.Length > 0
+                let controlType = "select".Equals(e.Name, StringComparison.OrdinalIgnoreCase)
+                                ? HtmlControlType.Select
+                                : "textarea".Equals(e.Name, StringComparison.OrdinalIgnoreCase)
+                                ? HtmlControlType.TextArea
+                                : HtmlControlType.Input
+                let attrs = new
+                {
+                    Disabled  = e.GetAttributeValue(disabled)?.Trim(),
+                    ReadOnly  = e.GetAttributeValue(@readonly)?.Trim(),
+                    InputType = controlType == HtmlControlType.Input
+                                ? e.GetAttributeValue("type")?.Trim().Map(HtmlInputType.Parse)
+                                // Missing "type" attribute implies "text" since HTML 3.2
+                                ?? HtmlInputType.Default
+                                : null,
+                }
+                select selector
+                (
+                    e,
+                    name,
+                    controlType,
+                    attrs.InputType,
+                    disabled.Equals(attrs.Disabled, StringComparison.OrdinalIgnoreCase) ? HtmlDisabledFlag.Disabled : HtmlDisabledFlag.Default,
+                    @readonly.Equals(attrs.ReadOnly, StringComparison.OrdinalIgnoreCase) ? HtmlReadOnlyFlag.ReadOnly : HtmlReadOnlyFlag.Default
+                );
         }
     }
 }

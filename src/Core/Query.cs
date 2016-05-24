@@ -29,14 +29,14 @@ namespace WebLinq
         public static Query<T> Return<T>(T value) =>
             new Query<T>(context => new QueryResult<T>(context, value));
 
-        public static Query<IParsedHtml> Html(string html, Uri baseUrl) =>
+        public static Query<ParsedHtml> Html(string html, Uri baseUrl) =>
             Html(new StringContent(html), baseUrl);
 
-        public static Query<IParsedHtml> Html(HttpResponseMessage response) =>
+        public static Query<ParsedHtml> Html(HttpResponseMessage response) =>
             Html(response.Content, response.RequestMessage.RequestUri);
 
-        public static Query<IParsedHtml> Html(HttpContent content, Uri baseUrl) =>
-            new Query<IParsedHtml>(context =>
+        public static Query<ParsedHtml> Html(HttpContent content, Uri baseUrl) =>
+            new Query<ParsedHtml>(context =>
             {
                 const string htmlMediaType = MediaTypeNames.Text.Html;
                 var actualMediaType = content.Headers.ContentType.MediaType;
@@ -56,7 +56,7 @@ namespace WebLinq
             Links(response.Content, response.RequestMessage.RequestUri, selector);
 
         public static SeqQuery<T> Links<T>(HttpContent content, Uri baseUrl, Func<string, string, T> selector) =>
-            Html(content, baseUrl).Bind(html => new SeqQuery<T>(context => QueryResult.Create(context, html.Links(selector))));
+            Html(content, baseUrl).Bind(html => new SeqQuery<T>(context => QueryResult.Create(context, html.Links((href, ho) => selector(href, ho.InnerHtml)))));
 
         public static SeqQuery<string> Tables(string html) =>
             Tables(new StringContent(html));
