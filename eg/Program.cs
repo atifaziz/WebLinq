@@ -36,12 +36,7 @@ namespace WebLinq.Samples
                 where e.Com.Html?.Length == e.Net.Html?.Length
                 select e;
 
-            var context = new QueryContext(
-                serviceProvider: ServiceProvider.Create(
-                    new WebClient().Register,
-                    new HapHtmlParser().Register));
-
-            foreach (var e in q.ToEnumerable(context))
+            foreach (var e in q.ToEnumerable(DefaultQueryContext.Create()))
                 Console.WriteLine(e);
         }
     }

@@ -18,6 +18,15 @@ namespace WebLinq
 {
     using System;
 
+    public static class DefaultQueryContext
+    {
+        public static QueryContext Create() =>
+            new QueryContext(
+                serviceProvider: ServiceProvider.Create(
+                    new WebClient().Register,
+                    new HapHtmlParser().Register));
+    }
+
     public class QueryContext : IServiceProvider
     {
         public int Id { get; private set; }
