@@ -39,16 +39,13 @@ namespace WebLinq.Samples
                 select e;
 
             var services = new ServiceContainer();
-            services.AddServiceFactory<IWebClient>(ctx => new WebClient(ctx));
-            services.AddServiceFactory<IHtmlParser>(ctx => new HapHtmlParser(ctx));
+            services.AddService<IWebClient>(new WebClient());
+            services.AddService<IHtmlParser>(new HapHtmlParser());
             var context = new QueryContext(serviceProvider: services);
 
             foreach (var e in q.ToEnumerable(context))
                 Console.WriteLine(e);
         }
-
-        static void AddServiceFactory<T>(this IServiceContainer sc, Func<QueryContext, T> factory) =>
-            sc.AddService(factory);
 
         static void AddService<T>(this IServiceContainer sc, T service) =>
             sc.AddService(typeof(T), service);

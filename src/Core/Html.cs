@@ -105,13 +105,6 @@ namespace WebLinq
 
     public sealed class HapHtmlParser : IHtmlParser
     {
-        readonly QueryContext _context;
-
-        public HapHtmlParser(QueryContext context)
-        {
-            _context = context;
-        }
-
         public ParsedHtml Parse(string html, Uri baseUrl)
         {
             var doc = new HtmlDocument();

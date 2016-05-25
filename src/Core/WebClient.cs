@@ -36,23 +36,24 @@ namespace WebLinq
 
     public class WebClient : IWebClient
     {
-        readonly QueryContext _context;
+        public HttpClient HttpClient { get; }
 
-        public WebClient(QueryContext context)
+        public WebClient() : this(null) {}
+
+        public WebClient(HttpClient client)
         {
-            _context = context;
+            HttpClient = client ?? new HttpClient();
         }
 
         public HttpResponseMessage Get(Uri url, HttpOptions options)
         {
-            var http = new HttpClient();
             var request = new HttpRequestMessage(HttpMethod.Get, url);
 
             var headers = request.Headers;
             foreach (var e in from hs in new[] { options?.Headers }
-                              where hs != null
-                              from i in Enumerable.Range(0, hs.Count)
-                              select new KeyValuePair<string, string[]>(hs.GetKey(i),
+                                where hs != null
+                                from i in Enumerable.Range(0, hs.Count)
+                                select new KeyValuePair<string, string[]>(hs.GetKey(i),
                                                                         hs.GetValues(i)))
             {
                 if (e.Value == null)
@@ -61,12 +62,11 @@ namespace WebLinq
                     headers.Add(e.Key, e.Value);
             }
 
-            return http.SendAsync(request).Result;
+            return HttpClient.SendAsync(request).Result;
         }
 
         public HttpResponseMessage Post(Uri url, NameValueCollection data, HttpOptions options)
         {
-            var http = new HttpClient();
             var request = new HttpRequestMessage(HttpMethod.Post, url);
 
             var headers = request.Headers;
@@ -77,7 +77,7 @@ namespace WebLinq
                 from v in data.GetValues(i)
                 select new KeyValuePair<string, string>(data.GetKey(i), v));
 
-            return http.SendAsync(request).Result;
+            return HttpClient.SendAsync(request).Result;
         }
 
         static void GetValue(NameValueCollection source, HttpRequestHeaders target)
