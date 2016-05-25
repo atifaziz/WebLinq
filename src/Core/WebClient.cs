@@ -22,6 +22,7 @@ namespace WebLinq
     using System.Linq;
     using System.Net.Http;
     using System.Net.Http.Headers;
+    using Mannex.Collections.Generic;
 
     public sealed class HttpOptions
     {
@@ -51,29 +52,14 @@ namespace WebLinq
         public HttpResponseMessage Get(Uri url, HttpOptions options)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, url);
-
-            var headers = request.Headers;
-            foreach (var e in from hs in new[] { options?.Headers }
-                                where hs != null
-                                from i in Enumerable.Range(0, hs.Count)
-                                select new KeyValuePair<string, string[]>(hs.GetKey(i),
-                                                                        hs.GetValues(i)))
-            {
-                if (e.Value == null)
-                    headers.Remove(e.Key);
-                else
-                    headers.Add(e.Key, e.Value);
-            }
-
+            MergeHeaders(options?.Headers, request.Headers);
             return HttpClient.SendAsync(request).Result;
         }
 
         public HttpResponseMessage Post(Uri url, NameValueCollection data, HttpOptions options)
         {
             var request = new HttpRequestMessage(HttpMethod.Post, url);
-
-            var headers = request.Headers;
-            GetValue(options?.Headers, headers);
+            MergeHeaders(options?.Headers, request.Headers);
 
             request.Content = new FormUrlEncodedContent(
                 from i in Enumerable.Range(0, data.Count)
@@ -83,22 +69,18 @@ namespace WebLinq
             return HttpClient.SendAsync(request).Result;
         }
 
-        static void GetValue(NameValueCollection source, HttpRequestHeaders target)
+        static void MergeHeaders(NameValueCollection source, HttpHeaders target)
         {
             if (source == null)
                 return;
 
-            var headers =
-                from i in Enumerable.Range(0, source.Count)
-                select new KeyValuePair<string, string[]>(source.GetKey(i),
-                source.GetValues(i));
-
-            foreach (var e in headers)
+            foreach (var e in from i in Enumerable.Range(0, source.Count)
+                              select source.GetKey(i).AsKeyTo(source.GetValues(i)))
             {
                 if (e.Value == null)
-                    target.Add(e.Key, e.Value);
-                else
                     target.Remove(e.Key);
+                else
+                    target.Add(e.Key, e.Value);
             }
         }
     }
