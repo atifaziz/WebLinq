@@ -100,14 +100,13 @@ namespace WebLinq
 
                 if (data != null)
                 {
-                    foreach (var e in from e in data.AsEnumerable()
-                                      from v in e.Value
-                                      select e.Key.AsKeyTo(v))
+                    foreach (var e in data.AsEnumerable())
                     {
-                        if (e.Value == null)
-                            form.Data.Remove(e.Key);
-                        else
-                            form.Data.Add(e.Key, e.Value);
+                        form.Data.Remove(e.Key);
+                        if (e.Value.Length == 1 && e.Value[0] == null)
+                            continue;
+                        foreach (var value in e.Value)
+                            form.Data.Add(e.Key, value);
                     }
                 }
 
