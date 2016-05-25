@@ -48,6 +48,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.IO.Compression" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -69,6 +70,8 @@
     <Compile Include="Html.cs" />
     <Compile Include="HtmlInputType.cs" />
     <Compile Include="HttpSpec.cs" />
+    <Compile Include="MimeMap.cs" />
+    <Compile Include="Zip.cs" />
     <Compile Include="Mapper.cs" />
     <Compile Include="Query.cs" />
     <Compile Include="QueryContext.cs" />

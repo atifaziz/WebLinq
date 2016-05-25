@@ -19,6 +19,7 @@ namespace WebLinq
     using System;
     using System.Collections.Generic;
     using System.Collections.Specialized;
+    using System.IO;
     using System.Linq;
     using System.Net.Http;
     using System.Net.Mime;
@@ -117,5 +118,14 @@ namespace WebLinq
 
                 return QueryResult.Create(context, submissionResponse);
             })));
+
+        public static Query<Zip> Unzip(HttpContent content) =>
+            new Query<Zip>(context =>
+            {
+                var path = Path.GetTempFileName();
+                using (var output = File.Create(path))
+                    content.CopyToAsync(output).Wait();
+                return QueryResult.Create(context, new Zip(path));
+            });
     }
 }
