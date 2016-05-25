@@ -74,6 +74,7 @@
     <Compile Include="QueryContext.cs" />
     <Compile Include="QueryResult.cs" />
     <Compile Include="QueryT.cs" />
+    <Compile Include="ServiceProvider.cs" />
     <Compile Include="WebClient.cs" />
   </ItemGroup>
   <ItemGroup>

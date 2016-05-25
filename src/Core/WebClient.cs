@@ -45,6 +45,9 @@ namespace WebLinq
             HttpClient = client ?? new HttpClient();
         }
 
+        public void Register(Action<Type, object> registrationHandler) =>
+            registrationHandler(typeof(IWebClient), this);
+
         public HttpResponseMessage Get(Uri url, HttpOptions options)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, url);

@@ -3,8 +3,6 @@ namespace WebLinq.Samples
     #region Imports
 
     using System;
-    using System.ComponentModel.Design;
-    using System.Linq;
     using static Query;
     using WebClient = WebClient;
 
@@ -38,16 +36,13 @@ namespace WebLinq.Samples
                 where e.Com.Html?.Length == e.Net.Html?.Length
                 select e;
 
-            var services = new ServiceContainer();
-            services.AddService<IWebClient>(new WebClient());
-            services.AddService<IHtmlParser>(new HapHtmlParser());
-            var context = new QueryContext(serviceProvider: services);
+            var context = new QueryContext(
+                serviceProvider: ServiceProvider.Create(
+                    new WebClient().Register,
+                    new HapHtmlParser().Register));
 
             foreach (var e in q.ToEnumerable(context))
                 Console.WriteLine(e);
         }
-
-        static void AddService<T>(this IServiceContainer sc, T service) =>
-            sc.AddService(typeof(T), service);
     }
 }

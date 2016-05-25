@@ -105,6 +105,9 @@ namespace WebLinq
 
     public sealed class HapHtmlParser : IHtmlParser
     {
+        public void Register(Action<Type, object> registrationHandler) =>
+            registrationHandler(typeof(IHtmlParser), this);
+
         public ParsedHtml Parse(string html, Uri baseUrl)
         {
             var doc = new HtmlDocument();
