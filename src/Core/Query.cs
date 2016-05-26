@@ -122,6 +122,9 @@ namespace WebLinq
                 return QueryResult.Create(context, submissionResponse);
             })));
 
+        public static Query<Zip> Unzip(this Query<HttpResponseMessage> query) =>
+            query.Bind(response => Unzip(response.Content));
+
         public static Query<Zip> Unzip(HttpContent content) =>
             new Query<Zip>(context =>
             {
