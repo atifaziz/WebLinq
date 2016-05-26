@@ -148,6 +148,6 @@ namespace WebLinq
         }
 
         public SeqQuery<T> Concat(SeqQuery<T> other) =>
-            Bind(xs => other.Bind(ys => SeqQuery.Return<T>(xs.Concat(ys))));
+            Bind(xs => other.Bind(ys => SeqQuery.Return(xs.Concat(ys))));
     }
 }
