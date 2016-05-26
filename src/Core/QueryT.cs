@@ -149,5 +149,8 @@ namespace WebLinq
 
         public SeqQuery<T> Concat(SeqQuery<T> other) =>
             Bind(xs => other.Bind(ys => SeqQuery.Return(xs.Concat(ys))));
+
+        public SeqQuery<T> OrderBy<TKey>(Func<T, TKey> keySelector) =>
+            Bind(xs => SeqQuery.Return(xs.OrderBy(keySelector)));
     }
 }
