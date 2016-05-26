@@ -84,6 +84,9 @@ namespace WebLinq
             return result.DataOrDefault() ?? Enumerable.Empty<T>();
         }
 
+        public static Query<HttpResponseMessage> Submit(this Query<HttpResponseMessage> query, string formSelector, NameValueCollection data) =>
+            query.Bind(response => Submit(response, formSelector, data));
+
         public static Query<HttpResponseMessage> Submit(HttpResponseMessage response, string formSelector, NameValueCollection data) =>
             Html(response).Bind(html => new Query<HttpResponseMessage>(context => context.Eval((IWebClient wc) =>
             {
