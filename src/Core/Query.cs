@@ -125,13 +125,20 @@ namespace WebLinq
         public static Query<Zip> Unzip(this Query<HttpResponseMessage> query) =>
             query.Bind(response => Unzip(response.Content));
 
-        public static Query<Zip> Unzip(HttpContent content) =>
-            new Query<Zip>(context =>
+        public static Query<Zip> Unzip(HttpContent content)
+        {
+            var actualMediaType = content.Headers.ContentType.MediaType;
+            const string zipMediaType = MediaTypeNames.Application.Zip;
+            if (actualMediaType != null && !zipMediaType.Equals(actualMediaType, StringComparison.OrdinalIgnoreCase))
+                throw new Exception($"Expected content of type \"{zipMediaType}\" but received \"{actualMediaType}\" instead.");
+
+            return new Query<Zip>(context =>
             {
                 var path = Path.GetTempFileName();
                 using (var output = File.Create(path))
                     content.CopyToAsync(output).Wait();
                 return QueryResult.Create(context, new Zip(path));
             });
+        }
     }
 }
