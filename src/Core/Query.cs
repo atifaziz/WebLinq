@@ -19,12 +19,14 @@ namespace WebLinq
     using System;
     using System.Collections.Generic;
     using System.Collections.Specialized;
+    using System.Data;
     using System.IO;
     using System.Linq;
     using System.Net.Http;
     using System.Net.Mime;
-    using Mannex.Collections.Generic;
     using Mannex.Collections.Specialized;
+    using Mannex.Data;
+    using Mannex.IO;
     using Mannex.Web;
 
     public static class Query
@@ -140,5 +142,9 @@ namespace WebLinq
                 return QueryResult.Create(context, new Zip(path));
             });
         }
+
+        public static Query<DataTable> XsvToDataTable(string text, string delimiter, bool quoted, params DataColumn[] columns) =>
+            new Query<DataTable>(context =>
+                QueryResult.Create(context, text.Read().ParseXsvAsDataTable(delimiter, quoted, columns)));
     }
 }
