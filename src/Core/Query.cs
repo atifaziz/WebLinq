@@ -24,6 +24,7 @@ namespace WebLinq
     using System.Linq;
     using System.Net.Http;
     using System.Net.Mime;
+    using System.Xml.Linq;
     using Mannex.Collections.Specialized;
     using Mannex.Data;
     using Mannex.IO;
@@ -55,6 +56,12 @@ namespace WebLinq
 
                 return QueryResult.Create(context, context.Eval((IHtmlParser hps) => hps.Parse(content.ReadAsStringAsync().Result, baseUrl)));
             });
+
+        public static Query<XDocument> XDocument(this Query<HttpResponseMessage> query) =>
+            XDocument(query, LoadOptions.None);
+
+        public static Query<XDocument> XDocument(this Query<HttpResponseMessage> query, LoadOptions options) =>
+            query.Bind(response => new Query<XDocument>(context => QueryResult.Create(context, System.Xml.Linq.XDocument.Load(response.Content.ReadAsStreamAsync().Result, options))));
 
         public static SeqQuery<T> Spread<T>(this Query<IEnumerable<T>> query) =>
             SeqQuery.Create(query.Invoke);
