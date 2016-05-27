@@ -74,7 +74,7 @@
     <Compile Include="Html\HtmlQuery.cs" />
     <Compile Include="HttpSpec.cs" />
     <Compile Include="Mime\MimeMap.cs" />
-    <Compile Include="Text\Query.cs" />
+    <Compile Include="Text\TextQuery.cs" />
     <Compile Include="Xml\XmlQuery.cs" />
     <Compile Include="Xsv\XsvQuery.cs" />
     <Compile Include="Zip\ZipQuery.cs" />
