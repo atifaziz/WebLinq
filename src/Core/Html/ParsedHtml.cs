@@ -21,15 +21,7 @@ namespace WebLinq.Html
     using System.Collections.Specialized;
     using System.Linq;
     using System.Net.Mime;
-    using System.Runtime.CompilerServices;
-    using Fizzler.Systems.HtmlAgilityPack;
-    using HtmlAgilityPack;
     using TryParsers;
-
-    public interface IHtmlParser
-    {
-        ParsedHtml Parse(string html, Uri baseUrl);
-    }
 
     public abstract class ParsedHtml
     {
@@ -81,103 +73,10 @@ namespace WebLinq.Html
         public override string ToString() => Root?.OuterHtml ?? string.Empty;
     }
 
-    public abstract class HtmlObject
-    {
-        public abstract ParsedHtml Owner { get; }
-        public abstract string Name { get; }
-        public virtual bool HasAttributes => AttributeNames.Any();
-        public abstract IEnumerable<string> AttributeNames { get; }
-        public abstract bool HasAttribute(string name);
-        public abstract string GetAttributeValue(string name);
-        public abstract string OuterHtml { get; }
-        public abstract string InnerHtml { get; }
-        public abstract string InnerText { get; }
-        public virtual bool HasChildElements => ChildElements.Any();
-        public abstract IEnumerable<HtmlObject> ChildElements { get; }
-        public override string ToString() => OuterHtml;
-
-        public virtual IEnumerable<HtmlObject> QuerySelectorAll(string selector) =>
-            Owner.QuerySelectorAll(selector, this);
-
-        public virtual HtmlObject QuerySelector(string selector) =>
-            Owner.QuerySelector(selector, this);
-    }
-
     public enum HtmlControlType { Input, Select, TextArea }
     public enum HtmlDisabledFlag { Default, Disabled }
     public enum HtmlReadOnlyFlag { Default, ReadOnly }
     public enum HtmlFormMethod { Get, Post }
-
-    public sealed class HapHtmlParser : IHtmlParser
-    {
-        public void Register(Action<Type, object> registrationHandler) =>
-            registrationHandler(typeof(IHtmlParser), this);
-
-        public ParsedHtml Parse(string html, Uri baseUrl)
-        {
-            var doc = new HtmlDocument();
-            doc.LoadHtml2(html);
-            return new HapParsedHtml(doc, baseUrl);
-        }
-
-        sealed class HapParsedHtml : ParsedHtml
-        {
-            readonly HtmlDocument _document;
-            readonly ConditionalWeakTable<HtmlNode, HtmlObject> _map = new ConditionalWeakTable<HtmlNode, HtmlObject>();
-
-            public HapParsedHtml(HtmlDocument document, Uri baseUrl) :
-                base(baseUrl)
-            {
-                _document = document;
-            }
-
-            HtmlObject GetPublicObject(HtmlNode node)
-            {
-                HtmlObject obj;
-                if (!_map.TryGetValue(node, out obj))
-                    _map.Add(node, obj = new HapHtmlObject(node, this));
-                return obj;
-            }
-
-            public override IEnumerable<HtmlObject> QuerySelectorAll(string selector, HtmlObject context) =>
-                (((HapHtmlObject)context)?.Node ?? _document.DocumentNode).QuerySelectorAll(selector).Select(GetPublicObject);
-
-            public override HtmlObject Root => GetPublicObject(_document.DocumentNode);
-
-            sealed class HapHtmlObject : HtmlObject
-            {
-                readonly HapParsedHtml _owner;
-
-                public HapHtmlObject(HtmlNode node, HapParsedHtml owner)
-                {
-                    Node = node;
-                    _owner = owner;
-                }
-
-                public override ParsedHtml Owner => _owner;
-                public HtmlNode Node { get; }
-                public override string Name => Node.Name;
-
-                public override IEnumerable<string> AttributeNames =>
-                    from a in Node.Attributes select a.Name;
-
-                public override bool HasAttribute(string name) =>
-                    GetAttributeValue(name) == null;
-
-                public override string GetAttributeValue(string name) =>
-                    Node.GetAttributeValue(name, null);
-
-                public override string OuterHtml => Node.OuterHtml;
-                public override string InnerHtml => Node.InnerHtml;
-                public override string InnerText => Node.InnerText;
-
-                public override IEnumerable<HtmlObject> ChildElements =>
-                    from e in Node.ChildNodes
-                    where e.NodeType == HtmlNodeType.Element
-                    select _owner.GetPublicObject(e);
-            }
-        }
-    }
 
     public static class ParsedHtmlExtensions
     {

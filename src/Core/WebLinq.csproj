@@ -67,7 +67,9 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>AssemblyInfo.g.tt</DependentUpon>
     </Compile>
-    <Compile Include="Html\Html.cs" />
+    <Compile Include="Html\ParsedHtml.cs" />
+    <Compile Include="Html\HtmlObject.cs" />
+    <Compile Include="Html\HtmlParser.cs" />
     <Compile Include="Html\HtmlInputType.cs" />
     <Compile Include="Html\HtmlQuery.cs" />
     <Compile Include="HttpSpec.cs" />
