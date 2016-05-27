@@ -19,15 +19,10 @@ namespace WebLinq
     using System;
     using System.Collections.Generic;
     using System.Collections.Specialized;
-    using System.Data;
-    using System.IO;
     using System.Linq;
     using System.Net.Http;
-    using System.Net.Mime;
     using Html;
     using Mannex.Collections.Specialized;
-    using Mannex.Data;
-    using Mannex.IO;
     using Mannex.Web;
 
     public static class Query
