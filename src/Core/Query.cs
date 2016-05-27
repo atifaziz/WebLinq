@@ -24,7 +24,7 @@ namespace WebLinq
     using System.Linq;
     using System.Net.Http;
     using System.Net.Mime;
-    using System.Xml.Linq;
+    using Html;
     using Mannex.Collections.Specialized;
     using Mannex.Data;
     using Mannex.IO;
@@ -40,81 +40,8 @@ namespace WebLinq
         public static Query<T> Return<T>(T value) =>
             Create(context => QueryResult.Create(context, value));
 
-        public static Query<string> Text(this Query<HttpResponseMessage> query) =>
-            query.Bind(response => Create(context => QueryResult.Create(context, response.Content.ReadAsStringAsync().Result)));
-
-        public static Query<ParsedHtml> Html(string html) =>
-            Html(html, null);
-
-        public static Query<ParsedHtml> Html(string html, Uri baseUrl) =>
-            Create(context => Html(context, html, baseUrl, p => p));
-
-        public static Query<ParsedHtml> Html(this Query<HttpResponseMessage> query) =>
-            Html(query, (_, html) => html);
-
-        public static Query<T> Html<T>(this Query<HttpResponseMessage> query, Func<int, ParsedHtml, T> selector) =>
-            query.Bind(response => Create(context =>
-            {
-                var content = response.Content;
-
-                const string htmlMediaType = MediaTypeNames.Text.Html;
-                var actualMediaType = content.Headers.ContentType.MediaType;
-                if (!htmlMediaType.Equals(actualMediaType, StringComparison.OrdinalIgnoreCase))
-                    throw new Exception($"Expected content of type \"{htmlMediaType}\" but received \"{actualMediaType}\" instead.");
-
-                return Html(context, content.ReadAsStringAsync().Result, response.RequestMessage.RequestUri, html => selector(HttpId.Get(response), html));
-            }));
-
-        static QueryResult<T> Html<T>(QueryContext context, string html, Uri baseUrl, Func<ParsedHtml, T> selector) =>
-            QueryResult.Create(context, context.Eval((IHtmlParser hps) => selector(hps.Parse(html, baseUrl))));
-
-        public static Query<XDocument> XDocument(this Query<HttpResponseMessage> query) =>
-            XDocument(query, LoadOptions.None);
-
-        public static Query<XDocument> XDocument(this Query<HttpResponseMessage> query, LoadOptions options) =>
-            query.Bind(response => new Query<XDocument>(context => QueryResult.Create(context, System.Xml.Linq.XDocument.Load(response.Content.ReadAsStreamAsync().Result, options))));
-
         public static SeqQuery<T> Spread<T>(this Query<IEnumerable<T>> query) =>
             SeqQuery.Create(query.Invoke);
-
-        public static SeqQuery<string> Links(string html) =>
-            Links(html, null, (href, _) => href);
-
-        public static SeqQuery<T> Links<T>(string html, Func<string, string, T> selector) =>
-            Links(html, null, selector);
-
-        public static SeqQuery<string> Links(string html, Uri baseUrl) =>
-            Links(html, baseUrl, (href, _) => href);
-
-        public static SeqQuery<T> Links<T>(string html, Uri baseUrl, Func<string, string, T> selector) =>
-            Html(html, baseUrl).Bind(ph => Links(ph, selector));
-
-        public static SeqQuery<string> Links(ParsedHtml html) =>
-            Links(html, (href, _) => href);
-
-        public static SeqQuery<T> Links<T>(ParsedHtml html, Func<string, string, T> selector) =>
-            SeqQuery.Create(context => Links(context, html, selector));
-
-        public static SeqQuery<T> Links<T>(this Query<HttpResponseMessage> query, Func<string, string, T> selector) =>
-            Links(query, null, selector);
-
-        public static SeqQuery<T> Links<T>(this Query<HttpResponseMessage> query, Uri baseUrl, Func<string, string, T> selector) =>
-            query.Html().Bind(html => SeqQuery.Create(context => Links(context, html, selector)));
-
-        static QueryResult<IEnumerable<T>> Links<T>(QueryContext context, ParsedHtml html, Func<string, string, T> selector) =>
-            QueryResult.Create(context, html.Links((href, ho) => selector(href, ho.InnerHtml)));
-
-        public static SeqQuery<string> Tables(string html) =>
-            Html(html).Bind(Tables);
-
-        public static SeqQuery<string> Tables(ParsedHtml html) =>
-            SeqQuery.Create(context => Tables(context, html));
-
-        public static SeqQuery<string> Tables(this Query<HttpResponseMessage> query) =>
-            query.Html().Bind(html => SeqQuery.Create(context => Tables(context, html)));
-
-        static QueryResult<IEnumerable<string>> Tables(QueryContext context, ParsedHtml html) =>
-            QueryResult.Create(context, html.Tables(null));
 
         public static IEnumerable<T> ToEnumerable<T>(this Query<IEnumerable<T>> query, QueryContext context)
         {
@@ -167,27 +94,5 @@ namespace WebLinq
 
                 return QueryResult.Create(context, submissionResponse);
             }));
-
-        public static Query<Zip> Unzip(this Query<HttpResponseMessage> query) =>
-            query.Bind(response =>
-            {
-                var content = response.Content;
-                var actualMediaType = content.Headers.ContentType.MediaType;
-                const string zipMediaType = MediaTypeNames.Application.Zip;
-                if (actualMediaType != null && !zipMediaType.Equals(actualMediaType, StringComparison.OrdinalIgnoreCase))
-                    throw new Exception($"Expected content of type \"{zipMediaType}\" but received \"{actualMediaType}\" instead.");
-
-                return Create(context =>
-                {
-                    var path = Path.GetTempFileName();
-                    using (var output = File.Create(path))
-                        content.CopyToAsync(output).Wait();
-                    return QueryResult.Create(context, new Zip(path));
-                });
-            });
-
-        public static Query<DataTable> XsvToDataTable(string text, string delimiter, bool quoted, params DataColumn[] columns) =>
-            Create(context =>
-                QueryResult.Create(context, text.Read().ParseXsvAsDataTable(delimiter, quoted, columns)));
     }
 }

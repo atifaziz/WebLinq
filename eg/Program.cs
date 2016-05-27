@@ -4,6 +4,7 @@ namespace WebLinq.Samples
 
     using System;
     using static Query;
+    using static Html.HtmlQuery;
 
     #endregion
 

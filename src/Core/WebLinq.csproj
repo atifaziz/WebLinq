@@ -67,11 +67,16 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>AssemblyInfo.g.tt</DependentUpon>
     </Compile>
-    <Compile Include="Html.cs" />
-    <Compile Include="HtmlInputType.cs" />
+    <Compile Include="Html\Html.cs" />
+    <Compile Include="Html\HtmlInputType.cs" />
+    <Compile Include="Html\HtmlQuery.cs" />
     <Compile Include="HttpSpec.cs" />
-    <Compile Include="MimeMap.cs" />
-    <Compile Include="Zip.cs" />
+    <Compile Include="Mime\MimeMap.cs" />
+    <Compile Include="Text\Query.cs" />
+    <Compile Include="Xml\XmlQuery.cs" />
+    <Compile Include="Xsv\XsvQuery.cs" />
+    <Compile Include="Zip\ZipQuery.cs" />
+    <Compile Include="Zip\Zip.cs" />
     <Compile Include="Mapper.cs" />
     <Compile Include="Query.cs" />
     <Compile Include="QueryContext.cs" />

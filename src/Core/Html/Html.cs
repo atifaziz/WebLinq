@@ -14,7 +14,7 @@
 //
 #endregion
 
-namespace WebLinq
+namespace WebLinq.Html
 {
     using System;
     using System.Collections.Generic;

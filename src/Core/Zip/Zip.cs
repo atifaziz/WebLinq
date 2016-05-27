@@ -14,7 +14,7 @@
 //
 #endregion
 
-namespace WebLinq
+namespace WebLinq.Zip
 {
     #region Imports
 
@@ -27,6 +27,7 @@ namespace WebLinq
     using System.Net.Http.Headers;
     using System.Text;
     using Mannex.IO;
+    using Mime;
 
     #endregion
 

@@ -17,6 +17,7 @@
 namespace WebLinq
 {
     using System;
+    using Html;
 
     public static class DefaultQueryContext
     {
