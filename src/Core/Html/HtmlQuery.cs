@@ -47,29 +47,7 @@ namespace WebLinq.Html
 
         static QueryResult<T> Html<T>(QueryContext context, string html, Uri baseUrl, Func<ParsedHtml, T> selector) =>
             QueryResult.Create(context, context.Eval((IHtmlParser hps) => selector(hps.Parse(html, baseUrl))));
-/*
-        public static Query<ParsedHtml> Html(string html) =>
-            Html(html, null);
 
-        public static Query<ParsedHtml> Html(string html, Uri baseUrl) =>
-            Query.Create(context => Html(context, html, baseUrl));
-
-        public static Query<ParsedHtml> Html(this Query<HttpResponseMessage> query) =>
-            query.Bind(response => Query.Create(context =>
-            {
-                var content = response.Content;
-
-                const string htmlMediaType = MediaTypeNames.Text.Html;
-                var actualMediaType = content.Headers.ContentType.MediaType;
-                if (!htmlMediaType.Equals(actualMediaType, StringComparison.OrdinalIgnoreCase))
-                    throw new Exception($"Expected content of type \"{htmlMediaType}\" but received \"{actualMediaType}\" instead.");
-
-                return Html(context, content.ReadAsStringAsync().Result, response.RequestMessage.RequestUri);
-            }));
-
-        static QueryResult<ParsedHtml> Html(QueryContext context, string html, Uri baseUrl) =>
-            QueryResult.Create(context, context.Eval((IHtmlParser hps) => hps.Parse(html, baseUrl)));
-*/
         public static SeqQuery<string> Links(string html) =>
             Links(html, null, (href, _) => href);
 
