@@ -17,7 +17,7 @@ namespace WebLinq.Samples
                                 .Html((id, html) => new { Id = id, Html = html.QuerySelector("p")?.OuterHtml })
                 from net in Http.Get(new Uri("http://www.example.net/"))
                                 .Html((id, html) => new { Id = id, Html = html })
-                from link in Links(net.Html, (href, _) => href)
+                from link in Links(net.Html)
                 select new
                 {
                     Com = com,

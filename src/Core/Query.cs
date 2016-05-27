@@ -77,11 +77,20 @@ namespace WebLinq
         public static SeqQuery<T> Spread<T>(this Query<IEnumerable<T>> query) =>
             SeqQuery.Create(query.Invoke);
 
+        public static SeqQuery<string> Links(string html) =>
+            Links(html, null, (href, _) => href);
+
         public static SeqQuery<T> Links<T>(string html, Func<string, string, T> selector) =>
             Links(html, null, selector);
 
+        public static SeqQuery<string> Links(string html, Uri baseUrl) =>
+            Links(html, baseUrl, (href, _) => href);
+
         public static SeqQuery<T> Links<T>(string html, Uri baseUrl, Func<string, string, T> selector) =>
             Html(html, baseUrl).Bind(ph => Links(ph, selector));
+
+        public static SeqQuery<string> Links(ParsedHtml html) =>
+            Links(html, (href, _) => href);
 
         public static SeqQuery<T> Links<T>(ParsedHtml html, Func<string, string, T> selector) =>
             SeqQuery.Create(context => Links(context, html, selector));
