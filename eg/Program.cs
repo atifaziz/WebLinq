@@ -36,7 +36,7 @@ namespace WebLinq.Samples
                 where e.Com.Html?.Length == e.Net.Html?.Length
                 select e;
 
-            foreach (var e in q.ToEnumerable(DefaultQueryContext.Create()))
+            foreach (var e in q.ToEnumerable(DefaultQueryContext.Create))
                 Console.WriteLine(e);
         }
     }

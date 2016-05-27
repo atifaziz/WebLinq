@@ -83,10 +83,12 @@ namespace WebLinq
             return result.DataOrDefault() ?? Enumerable.Empty<T>();
         }
 
-        public static IEnumerable<T> ToEnumerable<T>(this SeqQuery<T> query, QueryContext context)
+        public static IEnumerable<T> ToEnumerable<T>(this SeqQuery<T> query, Func<QueryContext> contextFactory)
         {
-            var result = query.Invoke(context);
-            return result.DataOrDefault() ?? Enumerable.Empty<T>();
+            var result = query.Invoke(contextFactory());
+            // ReSharper disable once LoopCanBeConvertedToQuery
+            foreach (var e in result.DataOrDefault() ?? Enumerable.Empty<T>())
+                yield return e;
         }
 
         public static Query<HttpResponseMessage> Submit(this Query<HttpResponseMessage> query, string formSelector, NameValueCollection data) =>
