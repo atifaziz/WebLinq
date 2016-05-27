@@ -45,7 +45,7 @@ namespace WebLinq
             Get(url, (_, s) => s);
 
         public Query<T> Get<T>(Uri url, Func<int, HttpResponseMessage, T> selector) =>
-            new Query<T>(context => QueryResult.Create(new QueryContext(id: context.Id + 1,
+            Query.Create(context => QueryResult.Create(new QueryContext(id: context.Id + 1,
                                                                         serviceProvider: context.ServiceProvider),
                                                                         context.Eval((IWebClient wc) => selector(context.Id, wc.Get(url, new HttpOptions { Headers = Headers })))));
 
@@ -53,7 +53,7 @@ namespace WebLinq
             Post(url, data, (_, s) => s);
 
         public Query<T> Post<T>(Uri url, NameValueCollection data, Func<int, HttpResponseMessage, T> selector) =>
-            new Query<T>(context => QueryResult.Create(new QueryContext(id: context.Id + 1,
+            Query.Create(context => QueryResult.Create(new QueryContext(id: context.Id + 1,
                                                                         serviceProvider: context.ServiceProvider),
                                                                         context.Eval((IWebClient wc) => selector(context.Id, wc.Post(url, data, new HttpOptions { Headers = Headers })))));
     }

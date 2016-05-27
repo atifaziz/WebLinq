@@ -22,7 +22,7 @@ namespace WebLinq
 
     public class Query<T>
     {
-        public static Query<T> Empty = new Query<T>(QueryResult.Empty<T>);
+        public static Query<T> Empty = Query.Create(QueryResult.Empty<T>);
 
         readonly Func<QueryContext, QueryResult<T>> _func;
 
@@ -35,7 +35,7 @@ namespace WebLinq
 
         public Query<TResult> Bind<TResult>(Func<T, Query<TResult>> func)
         {
-            return new Query<TResult>(context =>
+            return Query.Create(context =>
             {
                 var result = Invoke(context);
                 return result.HasData
@@ -46,7 +46,7 @@ namespace WebLinq
 
         public SeqQuery<TResult> Bind<TResult>(Func<T, SeqQuery<TResult>> func)
         {
-            return new SeqQuery<TResult>(context =>
+            return SeqQuery.Create(context =>
             {
                 var result = Invoke(context);
                 return result.HasData
@@ -68,13 +68,16 @@ namespace WebLinq
             Bind(x => then(x).Bind(y => Query.Return(resultSelector(x, y))));
 
         public SeqQuery<TResult> SelectMany<T2, TResult>(Func<T, SeqQuery<T2>> then, Func<T, T2, TResult> resultSelector) =>
-            Bind(x => then(x).Bind(ys => new SeqQuery<TResult>(context => QueryResult.Create(context, from y in ys select resultSelector(x, y)))));
+            Bind(x => then(x).Bind(ys => SeqQuery.Create(context => QueryResult.Create(context, from y in ys select resultSelector(x, y)))));
     }
 
     public static class SeqQuery
     {
+        public static SeqQuery<T> Create<T>(Func<QueryContext, QueryResult<IEnumerable<T>>> func) =>
+            new SeqQuery<T>(func);
+
         public static SeqQuery<T> Return<T>(IEnumerable<T> value) =>
-            new SeqQuery<T>(context => QueryResult.Create(context, value));
+            Create(context => QueryResult.Create(context, value));
 
         public static SeqQuery<T> ToQuery<T>(this IEnumerable<T> value) =>
             Return(value);
@@ -82,7 +85,7 @@ namespace WebLinq
 
     public class SeqQuery<T>
     {
-        public static SeqQuery<T> Empty = new SeqQuery<T>(QueryResult.Empty<IEnumerable<T>>);
+        public static SeqQuery<T> Empty = SeqQuery.Create(QueryResult.Empty<IEnumerable<T>>);
 
         readonly Func<QueryContext, QueryResult<IEnumerable<T>>> _func;
 
@@ -95,7 +98,7 @@ namespace WebLinq
 
         public SeqQuery<TResult> Bind<TResult>(Func<IEnumerable<T>, SeqQuery<TResult>> func)
         {
-            return new SeqQuery<TResult>(context =>
+            return SeqQuery.Create(context =>
             {
                 var result = Invoke(context);
                 return result.HasData
@@ -113,7 +116,7 @@ namespace WebLinq
             Bind(xs => SeqQuery.Return(from x in xs where predicate(x) select x));
 
         public SeqQuery<TResult> SelectMany<T2, TResult>(Func<T, Query<T2>> f, Func<T, T2, TResult> g) =>
-            Bind(xs => new SeqQuery<TResult>(s => QueryResult.Create(s, SelectManyIterator(s, xs, f, g))));
+            Bind(xs => SeqQuery.Create(s => QueryResult.Create(s, SelectManyIterator(s, xs, f, g))));
 
         static IEnumerable<TResult> SelectManyIterator<T2, TResult>(QueryContext context, IEnumerable<T> xs, Func<T, Query<T2>> f, Func<T, T2, TResult> g)
         {
@@ -129,7 +132,7 @@ namespace WebLinq
         }
 
         public SeqQuery<TResult> SelectMany<T2, TResult>(Func<T, SeqQuery<T2>> f, Func<T, T2, TResult> g) =>
-            Bind(xs => new SeqQuery<TResult>(s => QueryResult.Create(s, SelectManyIterator(s, xs, f, g))));
+            Bind(xs => SeqQuery.Create(s => QueryResult.Create(s, SelectManyIterator(s, xs, f, g))));
 
         static IEnumerable<TResult> SelectManyIterator<T2, TResult>(QueryContext context, IEnumerable<T> xs, Func<T, SeqQuery<T2>> f, Func<T, T2, TResult> g)
         {

@@ -33,8 +33,11 @@ namespace WebLinq
     {
         public static HttpSpec Http => new HttpSpec();
 
+        public static Query<T> Create<T>(Func<QueryContext, QueryResult<T>> func) =>
+            new Query<T>(func);
+
         public static Query<T> Return<T>(T value) =>
-            new Query<T>(context => new QueryResult<T>(context, value));
+            Create(context => QueryResult.Create(context, value));
 
         public static Query<ParsedHtml> Html(string html, Uri baseUrl) =>
             Html(new StringContent(html), baseUrl);
@@ -43,7 +46,7 @@ namespace WebLinq
             Html(response.Content, response.RequestMessage.RequestUri);
 
         public static Query<ParsedHtml> Html(HttpContent content, Uri baseUrl) =>
-            new Query<ParsedHtml>(context =>
+            Create(context =>
             {
                 const string htmlMediaType = MediaTypeNames.Text.Html;
                 var actualMediaType = content.Headers.ContentType.MediaType;
@@ -54,7 +57,7 @@ namespace WebLinq
             });
 
         public static SeqQuery<T> Spread<T>(this Query<IEnumerable<T>> query) =>
-            new SeqQuery<T>(query.Invoke);
+            SeqQuery.Create(query.Invoke);
 
         public static SeqQuery<T> Links<T>(string html, Uri baseUrl, Func<string, string, T> selector) =>
             Links(new StringContent(html), null, selector);
@@ -63,7 +66,7 @@ namespace WebLinq
             Links(response.Content, response.RequestMessage.RequestUri, selector);
 
         public static SeqQuery<T> Links<T>(HttpContent content, Uri baseUrl, Func<string, string, T> selector) =>
-            Html(content, baseUrl).Bind(html => new SeqQuery<T>(context => QueryResult.Create(context, html.Links((href, ho) => selector(href, ho.InnerHtml)))));
+            Html(content, baseUrl).Bind(html => SeqQuery.Create(context => QueryResult.Create(context, html.Links((href, ho) => selector(href, ho.InnerHtml)))));
 
         public static SeqQuery<string> Tables(string html) =>
             Tables(new StringContent(html));
@@ -72,7 +75,7 @@ namespace WebLinq
             Tables(response.Content);
 
         public static SeqQuery<string> Tables(HttpContent content) =>
-            Html(content, null).Bind(html => new SeqQuery<string>(context => QueryResult.Create(context, html.Tables(null))));
+            Html(content, null).Bind(html => SeqQuery.Create(context => QueryResult.Create(context, html.Tables(null))));
 
         public static IEnumerable<T> ToEnumerable<T>(this Query<IEnumerable<T>> query, QueryContext context)
         {
@@ -90,7 +93,7 @@ namespace WebLinq
             query.Bind(response => Submit(response, formSelector, data));
 
         public static Query<HttpResponseMessage> Submit(HttpResponseMessage response, string formSelector, NameValueCollection data) =>
-            Html(response).Bind(html => new Query<HttpResponseMessage>(context => context.Eval((IWebClient wc) =>
+            Html(response).Bind(html => Create(context => context.Eval((IWebClient wc) =>
             {
                 var forms = html.GetForms(formSelector, (fe, id, name, fa, fm, enctype) => fe.GetForm(fd => new
                 {
@@ -134,7 +137,7 @@ namespace WebLinq
             if (actualMediaType != null && !zipMediaType.Equals(actualMediaType, StringComparison.OrdinalIgnoreCase))
                 throw new Exception($"Expected content of type \"{zipMediaType}\" but received \"{actualMediaType}\" instead.");
 
-            return new Query<Zip>(context =>
+            return Create(context =>
             {
                 var path = Path.GetTempFileName();
                 using (var output = File.Create(path))
@@ -144,7 +147,7 @@ namespace WebLinq
         }
 
         public static Query<DataTable> XsvToDataTable(string text, string delimiter, bool quoted, params DataColumn[] columns) =>
-            new Query<DataTable>(context =>
+            Create(context =>
                 QueryResult.Create(context, text.Read().ParseXsvAsDataTable(delimiter, quoted, columns)));
     }
 }
