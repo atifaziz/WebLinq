@@ -129,7 +129,7 @@ namespace WebLinq
             {
                 var forms = html.GetForms(formSelector, (fe, id, name, fa, fm, enctype) => fe.GetForm(fd => new
                 {
-                    Action  = new Uri(html.BaseUrl, fa),
+                    Action  = new Uri(html.TryBaseHref(fa), UriKind.Absolute),
                     Method  = fm,
                     EncType = enctype, // TODO validate
                     Data    = fd,

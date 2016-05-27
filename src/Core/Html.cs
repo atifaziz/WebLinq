@@ -73,6 +73,11 @@ namespace WebLinq
 
         public abstract HtmlObject Root { get; }
 
+        public string TryBaseHref(string href) =>
+            BaseUrl != null
+            ? TryParse.Uri(BaseUrl, href)?.OriginalString ?? href
+            : href;
+
         public override string ToString() => Root?.OuterHtml ?? string.Empty;
     }
 
@@ -182,18 +187,13 @@ namespace WebLinq
                 from a in self.QuerySelectorAll("a[href]")
                 let href = a.GetAttributeValue("href")
                 where !string.IsNullOrWhiteSpace(href)
-                select selector(Href(self.BaseUrl, href), a);
+                select selector(self.TryBaseHref(href), a);
         }
 
         public static IEnumerable<string> Tables(this ParsedHtml self, string selector) =>
             from e in self.QuerySelectorAll(selector ?? "table")
             where "table".Equals(e.Name, StringComparison.OrdinalIgnoreCase)
             select e.OuterHtml;
-
-        static string Href(Uri baseUrl, string href) =>
-            baseUrl != null
-            ? TryParse.Uri(baseUrl, href)?.OriginalString ?? href
-            : href;
 
         public static IEnumerable<T> GetForms<T>(this ParsedHtml self, string cssSelector, Func<HtmlObject, string, string, string, HtmlFormMethod, ContentType, T> selector) =>
             from form in self.QuerySelectorAll(cssSelector ?? "form[action]")
@@ -204,7 +204,7 @@ namespace WebLinq
             select selector(form,
                             form.GetAttributeValue("id"),
                             form.GetAttributeValue("name"),
-                            action != null ? Href(form.Owner.BaseUrl, action) : action,
+                            action != null ? form.Owner.TryBaseHref(action) : action,
                             "post".Equals(method, StringComparison.OrdinalIgnoreCase)
                                 ? HtmlFormMethod.Post
                                 : HtmlFormMethod.Get,
