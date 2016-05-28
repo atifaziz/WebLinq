@@ -3,7 +3,7 @@ namespace WebLinq.Samples
     #region Imports
 
     using System;
-    using static Query;
+    using static HttpQuery;
     using static Html.HtmlQuery;
 
     #endregion

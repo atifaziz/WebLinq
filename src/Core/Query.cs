@@ -18,17 +18,10 @@ namespace WebLinq
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.Specialized;
     using System.Linq;
-    using System.Net.Http;
-    using Html;
-    using Mannex.Collections.Specialized;
-    using Mannex.Web;
 
     public static class Query
     {
-        public static HttpSpec Http => new HttpSpec();
-
         public static Query<T> Create<T>(Func<QueryContext, QueryResult<T>> func) =>
             new Query<T>(func);
 
@@ -51,43 +44,5 @@ namespace WebLinq
             foreach (var e in result.DataOrDefault() ?? Enumerable.Empty<T>())
                 yield return e;
         }
-
-        public static Query<HttpResponseMessage> Submit(this Query<HttpResponseMessage> query, string formSelector, NameValueCollection data) =>
-            query.Html().Bind(html => Submit(html, formSelector, data));
-
-        public static Query<HttpResponseMessage> Submit(ParsedHtml html, string formSelector, NameValueCollection data) =>
-            Create(context => context.Eval((IWebClient wc) =>
-            {
-                var forms = html.GetForms(formSelector, (fe, id, name, fa, fm, enctype) => fe.GetForm(fd => new
-                {
-                    Action  = new Uri(html.TryBaseHref(fa), UriKind.Absolute),
-                    Method  = fm,
-                    EncType = enctype, // TODO validate
-                    Data    = fd,
-                }));
-
-                var form = forms.FirstOrDefault();
-                if (form == null)
-                    throw new Exception("No HTML form for submit.");
-
-                if (data != null)
-                {
-                    foreach (var e in data.AsEnumerable())
-                    {
-                        form.Data.Remove(e.Key);
-                        if (e.Value.Length == 1 && e.Value[0] == null)
-                            continue;
-                        foreach (var value in e.Value)
-                            form.Data.Add(e.Key, value);
-                    }
-                }
-
-                var submissionResponse =
-                    form.Method == HtmlFormMethod.Post
-                    ? wc.Post(form.Action, form.Data, null)
-                    : wc.Get(new UriBuilder(form.Action) { Query = form.Data.ToW3FormEncoded() }.Uri, null);
-
-                return QueryResult.Create(context, submissionResponse);
-            }));
     }
 }
