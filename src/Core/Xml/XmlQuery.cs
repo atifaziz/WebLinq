@@ -21,10 +21,19 @@ namespace WebLinq.Xml
 
     public static class XmlQuery
     {
-        public static Query<XDocument> Xml(this Query<HttpResponseMessage> query) =>
+        public static Query<XDocument> Xml(HttpContent content) =>
+            Xml(content, LoadOptions.None);
+
+        public static Query<XDocument> Xml(HttpContent content, LoadOptions options) =>
+            Query.Create(context => QueryResult.Create(context, Xml(content.ReadAsStringAsync().Result, options)));
+
+        public static Query<HttpFetch<XDocument>> Xml(this Query<HttpFetch<HttpContent>> query) =>
             Xml(query, LoadOptions.None);
 
-        public static Query<XDocument> Xml(this Query<HttpResponseMessage> query, LoadOptions options) =>
-            query.Bind(response => new Query<XDocument>(context => QueryResult.Create(context, System.Xml.Linq.XDocument.Load(response.Content.ReadAsStreamAsync().Result, options))));
+        public static Query<HttpFetch<XDocument>> Xml(this Query<HttpFetch<HttpContent>> query, LoadOptions options) =>
+            query.Bind(fetch => Query.Create(context => QueryResult.Create(context, fetch.WithContent(Xml(fetch.Content.ReadAsStringAsync().Result, options)))));
+
+        static XDocument Xml(string xml, LoadOptions options) =>
+            XDocument.Parse(xml, options);
     }
 }

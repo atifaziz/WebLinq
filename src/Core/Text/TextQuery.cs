@@ -20,7 +20,7 @@ namespace WebLinq.Text
 
     public static class TextQuery
     {
-        public static Query<string> Text(this Query<HttpResponseMessage> query) =>
-            query.Bind(response => Query.Create(context => QueryResult.Create(context, response.Content.ReadAsStringAsync().Result)));
+        public static Query<HttpFetch<string>> Text(this Query<HttpFetch<HttpContent>> query) =>
+            query.Bind(fetch => Query.Create(context => QueryResult.Create(context, fetch.WithContent(fetch.Content.ReadAsStringAsync().Result))));
     }
 }

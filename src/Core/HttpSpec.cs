@@ -19,7 +19,6 @@ namespace WebLinq
     using System;
     using System.Collections.Specialized;
     using System.Net.Http;
-    using System.Runtime.CompilerServices;
 
     public sealed class HttpSpec
     {
@@ -42,38 +41,35 @@ namespace WebLinq
             return this;
         }
 
-        public Query<HttpResponseMessage> Get(Uri url) =>
+        public Query<HttpFetch<HttpContent>> Get(Uri url) =>
             Get(url, (_, s) => s);
 
-        public Query<T> Get<T>(Uri url, Func<int, HttpResponseMessage, T> selector) =>
+        public Query<T> Get<T>(Uri url, Func<int, HttpFetch<HttpContent>, T> selector) =>
             Query.Create(context => QueryResult.Create(new QueryContext(id: context.Id + 1,
                                                                         serviceProvider: context.ServiceProvider),
-                                                                        context.Eval((IWebClient wc) => selector(context.Id, wc.Get(url, new HttpOptions { Headers = Headers }).AttachingId(context.Id)))));
+                                                                        context.Eval((IWebClient wc) => selector(context.Id, wc.Get(url, new HttpOptions { Headers = Headers, FetchId = context.Id })))));
 
-        public Query<HttpResponseMessage> Post(Uri url, NameValueCollection data) =>
+        public Query<HttpFetch<HttpContent>> Post(Uri url, NameValueCollection data) =>
             Post(url, data, (_, s) => s);
 
-        public Query<T> Post<T>(Uri url, NameValueCollection data, Func<int, HttpResponseMessage, T> selector) =>
+        public Query<T> Post<T>(Uri url, NameValueCollection data, Func<int, HttpFetch<HttpContent>, T> selector) =>
             Query.Create(context => QueryResult.Create(new QueryContext(id: context.Id + 1,
                                                                         serviceProvider: context.ServiceProvider),
-                                                                        context.Eval((IWebClient wc) => selector(context.Id, wc.Post(url, data, new HttpOptions { Headers = Headers }).AttachingId(context.Id)))));
-
+                                                                        context.Eval((IWebClient wc) => selector(context.Id, wc.Post(url, data, new HttpOptions { Headers = Headers, FetchId = context.Id })))));
     }
 
-    static class HttpId
+    static class SysNetHttpExtensions
     {
-        static readonly ConditionalWeakTable<HttpResponseMessage, int[]> Ids = new ConditionalWeakTable<HttpResponseMessage, int[]>();
-
-        internal static HttpResponseMessage AttachingId(this HttpResponseMessage response, int id)
+        public static HttpFetch<HttpContent> ToHttpFetch(this HttpResponseMessage response, int id)
         {
-            Ids.Add(response, new[] { id });
-            return response;
-        }
-
-        public static int Get(HttpResponseMessage response)
-        {
-            int[] id;
-            return Ids.TryGetValue(response, out id) ? id[0] : 0;
+            if (response == null) throw new ArgumentNullException(nameof(response));
+            var request = response.RequestMessage;
+            return HttpFetch.Create(id, response.Content,
+                                    response.Version,
+                                    response.StatusCode, response.ReasonPhrase,
+                                    new HttpHeaderCollection(response.Headers),
+                                    request.RequestUri,
+                                    new HttpHeaderCollection(request.Headers));
         }
     }
 }

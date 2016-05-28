@@ -32,10 +32,16 @@ namespace WebLinq
     {
         public static HttpSpec Http => new HttpSpec();
 
-        public static Query<HttpResponseMessage> Submit(this Query<HttpResponseMessage> query, string formSelector, NameValueCollection data) =>
-            query.Html().Bind(html => Submit(html, formSelector, data));
+        public static Query<T> Content<T>(this Query<HttpFetch<T>> query) =>
+            from e in query select e.Content;
 
-        public static Query<HttpResponseMessage> Submit(ParsedHtml html, string formSelector, NameValueCollection data) =>
+        public static SeqQuery<T> Content<T>(this SeqQuery<HttpFetch<T>> query) =>
+            from e in query select e.Content;
+
+        public static Query<HttpFetch<HttpContent>> Submit(this Query<HttpFetch<HttpContent>> query, string formSelector, NameValueCollection data) =>
+            query.Html().Bind(html => Submit(html.Content, formSelector, data));
+
+        public static Query<HttpFetch<HttpContent>> Submit(ParsedHtml html, string formSelector, NameValueCollection data) =>
             Query.Create(context => context.Eval((IWebClient wc) =>
             {
                 var forms = html.GetForms(formSelector, (fe, id, name, fa, fm, enctype) => fe.GetForm(fd => new

@@ -26,13 +26,14 @@ namespace WebLinq
 
     public sealed class HttpOptions
     {
+        public int FetchId { get; set; }
         public NameValueCollection Headers { get; set; }
     }
 
     public interface IWebClient
     {
-        HttpResponseMessage Get(Uri url, HttpOptions options);
-        HttpResponseMessage Post(Uri url, NameValueCollection data, HttpOptions options);
+        HttpFetch<HttpContent> Get(Uri url, HttpOptions options);
+        HttpFetch<HttpContent> Post(Uri url, NameValueCollection data, HttpOptions options);
     }
 
     public class WebClient : IWebClient
@@ -49,14 +50,14 @@ namespace WebLinq
         public void Register(Action<Type, object> registrationHandler) =>
             registrationHandler(typeof(IWebClient), this);
 
-        public HttpResponseMessage Get(Uri url, HttpOptions options)
+        public HttpFetch<HttpContent> Get(Uri url, HttpOptions options)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, url);
             MergeHeaders(options?.Headers, request.Headers);
-            return HttpClient.SendAsync(request).Result;
+            return HttpClient.SendAsync(request).Result.ToHttpFetch((options?.FetchId).GetValueOrDefault());
         }
 
-        public HttpResponseMessage Post(Uri url, NameValueCollection data, HttpOptions options)
+        public HttpFetch<HttpContent> Post(Uri url, NameValueCollection data, HttpOptions options)
         {
             var request = new HttpRequestMessage(HttpMethod.Post, url);
             MergeHeaders(options?.Headers, request.Headers);
@@ -66,7 +67,7 @@ namespace WebLinq
                 from v in data.GetValues(i)
                 select new KeyValuePair<string, string>(data.GetKey(i), v));
 
-            return HttpClient.SendAsync(request).Result;
+            return HttpClient.SendAsync(request).Result.ToHttpFetch((options?.FetchId).GetValueOrDefault());
         }
 
         static void MergeHeaders(NameValueCollection source, HttpHeaders target)

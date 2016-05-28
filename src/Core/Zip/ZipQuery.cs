@@ -23,10 +23,10 @@ namespace WebLinq.Zip
 
     public static class ZipQuery
     {
-        public static Query<Zip> Unzip(this Query<HttpResponseMessage> query) =>
-            query.Bind(response =>
+        public static Query<HttpFetch<Zip>> Unzip(this Query<HttpFetch<HttpContent>> query) =>
+            query.Bind(fetch =>
             {
-                var content = response.Content;
+                var content = fetch.Content;
                 var actualMediaType = content.Headers.ContentType.MediaType;
                 const string zipMediaType = MediaTypeNames.Application.Zip;
                 if (actualMediaType != null && !zipMediaType.Equals(actualMediaType, StringComparison.OrdinalIgnoreCase))
@@ -37,7 +37,7 @@ namespace WebLinq.Zip
                     var path = Path.GetTempFileName();
                     using (var output = File.Create(path))
                         content.CopyToAsync(output).Wait();
-                    return QueryResult.Create(context, new Zip(path));
+                    return QueryResult.Create(context, fetch.WithContent(new Zip(path)));
                 });
             });
     }
