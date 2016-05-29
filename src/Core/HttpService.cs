@@ -27,7 +27,7 @@ namespace WebLinq
     public sealed class HttpOptions
     {
         public int FetchId { get; set; }
-        public NameValueCollection Headers { get; set; }
+        public HttpHeaderCollection Headers { get; set; }
     }
 
     public abstract class HttpService
