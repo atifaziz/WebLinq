@@ -41,39 +41,35 @@ namespace WebLinq
         public static Query<HttpFetch<HttpContent>> Submit(this Query<HttpFetch<HttpContent>> query, string formSelector, NameValueCollection data) =>
             query.Html().Bind(html => Submit(html.Content, formSelector, data));
 
-        public static Query<HttpFetch<HttpContent>> Submit(ParsedHtml html, string formSelector, NameValueCollection data) =>
-            Query.Create(context => context.Eval((HttpService http) =>
+        public static Query<HttpFetch<HttpContent>> Submit(ParsedHtml html, string formSelector, NameValueCollection data)
+        {
+            var forms = html.GetForms(formSelector, (fe, id, name, fa, fm, enctype) => fe.GetForm(fd => new
             {
-                var forms = html.GetForms(formSelector, (fe, id, name, fa, fm, enctype) => fe.GetForm(fd => new
-                {
-                    Action  = new Uri(html.TryBaseHref(fa), UriKind.Absolute),
-                    Method  = fm,
-                    EncType = enctype, // TODO validate
-                    Data    = fd,
-                }));
-
-                var form = forms.FirstOrDefault();
-                if (form == null)
-                    throw new Exception("No HTML form for submit.");
-
-                if (data != null)
-                {
-                    foreach (var e in data.AsEnumerable())
-                    {
-                        form.Data.Remove(e.Key);
-                        if (e.Value.Length == 1 && e.Value[0] == null)
-                            continue;
-                        foreach (var value in e.Value)
-                            form.Data.Add(e.Key, value);
-                    }
-                }
-
-                var submissionResponse =
-                    form.Method == HtmlFormMethod.Post
-                    ? http.Post(form.Action, form.Data, null)
-                    : http.Get(new UriBuilder(form.Action) { Query = form.Data.ToW3FormEncoded() }.Uri, null);
-
-                return QueryResult.Create(context, submissionResponse);
+                Action  = new Uri(html.TryBaseHref(fa), UriKind.Absolute),
+                Method  = fm,
+                EncType = enctype, // TODO validate
+                Data    = fd,
             }));
+
+            var form = forms.FirstOrDefault();
+            if (form == null)
+                throw new Exception("No HTML form for submit.");
+
+            if (data != null)
+            {
+                foreach (var e in data.AsEnumerable())
+                {
+                    form.Data.Remove(e.Key);
+                    if (e.Value.Length == 1 && e.Value[0] == null)
+                        continue;
+                    foreach (var value in e.Value)
+                        form.Data.Add(e.Key, value);
+                }
+            }
+
+            return form.Method == HtmlFormMethod.Post
+                 ? Http.Post(form.Action, form.Data)
+                 : Http.Get(new UriBuilder(form.Action) { Query = form.Data.ToW3FormEncoded() }.Uri);
+        }
     }
 }

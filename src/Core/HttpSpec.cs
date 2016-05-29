@@ -18,7 +18,9 @@ namespace WebLinq
 {
     using System;
     using System.Collections.Specialized;
+    using System.Linq;
     using System.Net.Http;
+    using Mannex.Collections.Generic;
 
     public sealed class HttpSpec
     {
@@ -50,12 +52,17 @@ namespace WebLinq
                                                                         context.Eval((HttpService http) => selector(context.Id, http.Get(url, new HttpOptions { Headers = new HttpHeaderCollection(Headers), FetchId = context.Id })))));
 
         public Query<HttpFetch<HttpContent>> Post(Uri url, NameValueCollection data) =>
-            Post(url, data, (_, s) => s);
+            Post(url, new FormUrlEncodedContent(from i in Enumerable.Range(0, data.Count)
+                                                from v in data.GetValues(i)
+                                                select data.GetKey(i).AsKeyTo(v)));
 
-        public Query<T> Post<T>(Uri url, NameValueCollection data, Func<int, HttpFetch<HttpContent>, T> selector) =>
+        public Query<HttpFetch<HttpContent>> Post(Uri url, HttpContent content) =>
+            Post(url, content, (_, s) => s);
+
+        public Query<T> Post<T>(Uri url, HttpContent content, Func<int, HttpFetch<HttpContent>, T> selector) =>
             Query.Create(context => QueryResult.Create(new QueryContext(id: context.Id + 1,
                                                                         serviceProvider: context.ServiceProvider),
-                                                                        context.Eval((HttpService http) => selector(context.Id, http.Post(url, data, new HttpOptions { Headers = new HttpHeaderCollection(Headers), FetchId = context.Id })))));
+                                                                        context.Eval((HttpService http) => selector(context.Id, http.Post(url, content, new HttpOptions { Headers = new HttpHeaderCollection(Headers), FetchId = context.Id })))));
     }
 
     static class SysNetHttpExtensions

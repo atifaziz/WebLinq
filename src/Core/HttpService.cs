@@ -17,7 +17,6 @@
 namespace WebLinq
 {
     using System;
-    using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.Linq;
     using System.Net.Http;
@@ -33,7 +32,7 @@ namespace WebLinq
     public abstract class HttpService
     {
         public abstract HttpFetch<HttpContent> Get(Uri url, HttpOptions options);
-        public abstract HttpFetch<HttpContent> Post(Uri url, NameValueCollection data, HttpOptions options);
+        public abstract HttpFetch<HttpContent> Post(Uri url, HttpContent content, HttpOptions options);
     }
 
     public class SysNetHttpService : HttpService
@@ -57,16 +56,13 @@ namespace WebLinq
             return HttpClient.SendAsync(request).Result.ToHttpFetch((options?.FetchId).GetValueOrDefault());
         }
 
-        public override HttpFetch<HttpContent> Post(Uri url, NameValueCollection data, HttpOptions options)
+        public override HttpFetch<HttpContent> Post(Uri url, HttpContent content, HttpOptions options)
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, url);
+            var request = new HttpRequestMessage(HttpMethod.Post, url)
+            {
+                Content = content
+            };
             MergeHeaders(options?.Headers, request.Headers);
-
-            request.Content = new FormUrlEncodedContent(
-                from i in Enumerable.Range(0, data.Count)
-                from v in data.GetValues(i)
-                select new KeyValuePair<string, string>(data.GetKey(i), v));
-
             return HttpClient.SendAsync(request).Result.ToHttpFetch((options?.FetchId).GetValueOrDefault());
         }
 
