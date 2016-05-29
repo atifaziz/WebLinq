@@ -62,24 +62,6 @@ namespace WebLinq
             return service;
         }
 
-        public TResult Eval<TService, TResult>(Func<TService, TResult> evaluator) =>
-            evaluator(GetService<TService>());
-
-        public TResult Eval<TService1, TService2, TResult>(Func<TService1, TService2, TResult> evaluator) =>
-            evaluator(GetService<TService1>(),
-                      GetService<TService2>());
-
-        public TResult Eval<TService1, TService2, TService3, TResult>(Func<TService1, TService2, TService3, TResult> evaluator) =>
-            evaluator(GetService<TService1>(),
-                      GetService<TService2>(),
-                      GetService<TService3>());
-
-        public TResult Eval<TService1, TService2, TService3, TService4, TResult>(Func<TService1, TService2, TService3, TService4, TResult> evaluator) =>
-            evaluator(GetService<TService1>(),
-                      GetService<TService2>(),
-                      GetService<TService3>(),
-                      GetService<TService4>());
-
         public void UpdateFrom(QueryContext context)
         {
             Id = context.Id;
