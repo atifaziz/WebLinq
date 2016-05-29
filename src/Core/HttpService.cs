@@ -30,34 +30,34 @@ namespace WebLinq
         public NameValueCollection Headers { get; set; }
     }
 
-    public interface IWebClient
+    public abstract class HttpService
     {
-        HttpFetch<HttpContent> Get(Uri url, HttpOptions options);
-        HttpFetch<HttpContent> Post(Uri url, NameValueCollection data, HttpOptions options);
+        public abstract HttpFetch<HttpContent> Get(Uri url, HttpOptions options);
+        public abstract HttpFetch<HttpContent> Post(Uri url, NameValueCollection data, HttpOptions options);
     }
 
-    public class WebClient : IWebClient
+    public class SysNetHttpService : HttpService
     {
         public HttpClient HttpClient { get; }
 
-        public WebClient() : this(null) {}
+        public SysNetHttpService() : this(null) {}
 
-        public WebClient(HttpClient client)
+        public SysNetHttpService(HttpClient client)
         {
             HttpClient = client ?? new HttpClient();
         }
 
         public void Register(Action<Type, object> registrationHandler) =>
-            registrationHandler(typeof(IWebClient), this);
+            registrationHandler(typeof(HttpService), this);
 
-        public HttpFetch<HttpContent> Get(Uri url, HttpOptions options)
+        public override HttpFetch<HttpContent> Get(Uri url, HttpOptions options)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, url);
             MergeHeaders(options?.Headers, request.Headers);
             return HttpClient.SendAsync(request).Result.ToHttpFetch((options?.FetchId).GetValueOrDefault());
         }
 
-        public HttpFetch<HttpContent> Post(Uri url, NameValueCollection data, HttpOptions options)
+        public override HttpFetch<HttpContent> Post(Uri url, NameValueCollection data, HttpOptions options)
         {
             var request = new HttpRequestMessage(HttpMethod.Post, url);
             MergeHeaders(options?.Headers, request.Headers);

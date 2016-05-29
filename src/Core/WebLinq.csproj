@@ -89,7 +89,7 @@
     <Compile Include="QueryResult.cs" />
     <Compile Include="QueryT.cs" />
     <Compile Include="ServiceProvider.cs" />
-    <Compile Include="WebClient.cs" />
+    <Compile Include="HttpService.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />

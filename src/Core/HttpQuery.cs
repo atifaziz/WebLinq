@@ -42,7 +42,7 @@ namespace WebLinq
             query.Html().Bind(html => Submit(html.Content, formSelector, data));
 
         public static Query<HttpFetch<HttpContent>> Submit(ParsedHtml html, string formSelector, NameValueCollection data) =>
-            Query.Create(context => context.Eval((IWebClient wc) =>
+            Query.Create(context => context.Eval((HttpService http) =>
             {
                 var forms = html.GetForms(formSelector, (fe, id, name, fa, fm, enctype) => fe.GetForm(fd => new
                 {
@@ -70,8 +70,8 @@ namespace WebLinq
 
                 var submissionResponse =
                     form.Method == HtmlFormMethod.Post
-                    ? wc.Post(form.Action, form.Data, null)
-                    : wc.Get(new UriBuilder(form.Action) { Query = form.Data.ToW3FormEncoded() }.Uri, null);
+                    ? http.Post(form.Action, form.Data, null)
+                    : http.Get(new UriBuilder(form.Action) { Query = form.Data.ToW3FormEncoded() }.Uri, null);
 
                 return QueryResult.Create(context, submissionResponse);
             }));

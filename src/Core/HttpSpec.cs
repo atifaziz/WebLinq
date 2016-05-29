@@ -47,7 +47,7 @@ namespace WebLinq
         public Query<T> Get<T>(Uri url, Func<int, HttpFetch<HttpContent>, T> selector) =>
             Query.Create(context => QueryResult.Create(new QueryContext(id: context.Id + 1,
                                                                         serviceProvider: context.ServiceProvider),
-                                                                        context.Eval((IWebClient wc) => selector(context.Id, wc.Get(url, new HttpOptions { Headers = Headers, FetchId = context.Id })))));
+                                                                        context.Eval((HttpService http) => selector(context.Id, http.Get(url, new HttpOptions { Headers = Headers, FetchId = context.Id })))));
 
         public Query<HttpFetch<HttpContent>> Post(Uri url, NameValueCollection data) =>
             Post(url, data, (_, s) => s);
@@ -55,7 +55,7 @@ namespace WebLinq
         public Query<T> Post<T>(Uri url, NameValueCollection data, Func<int, HttpFetch<HttpContent>, T> selector) =>
             Query.Create(context => QueryResult.Create(new QueryContext(id: context.Id + 1,
                                                                         serviceProvider: context.ServiceProvider),
-                                                                        context.Eval((IWebClient wc) => selector(context.Id, wc.Post(url, data, new HttpOptions { Headers = Headers, FetchId = context.Id })))));
+                                                                        context.Eval((HttpService http) => selector(context.Id, http.Post(url, data, new HttpOptions { Headers = Headers, FetchId = context.Id })))));
     }
 
     static class SysNetHttpExtensions

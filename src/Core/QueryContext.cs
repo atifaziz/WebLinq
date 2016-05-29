@@ -24,7 +24,7 @@ namespace WebLinq
         public static QueryContext Create() =>
             new QueryContext(
                 serviceProvider: ServiceProvider.Create(
-                    new WebClient().Register,
+                    new SysNetHttpService().Register,
                     new HapHtmlParser().Register));
     }
 
