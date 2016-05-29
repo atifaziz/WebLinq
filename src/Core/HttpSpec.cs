@@ -44,12 +44,9 @@ namespace WebLinq
         }
 
         public Query<HttpFetch<HttpContent>> Get(Uri url) =>
-            Get(url, (_, s) => s);
-
-        public Query<T> Get<T>(Uri url, Func<int, HttpFetch<HttpContent>, T> selector) =>
             Query.Create(context => QueryResult.Create(new QueryContext(id: context.Id + 1,
                                                                         serviceProvider: context.ServiceProvider),
-                                                                        context.Eval((HttpService http) => selector(context.Id, http.Get(url, new HttpOptions { Headers = new HttpHeaderCollection(Headers), FetchId = context.Id })))));
+                                                                        context.Eval((HttpService http) => http.Get(url, new HttpOptions { Headers = new HttpHeaderCollection(Headers), FetchId = context.Id }))));
 
         public Query<HttpFetch<HttpContent>> Post(Uri url, NameValueCollection data) =>
             Post(url, new FormUrlEncodedContent(from i in Enumerable.Range(0, data.Count)
@@ -57,12 +54,9 @@ namespace WebLinq
                                                 select data.GetKey(i).AsKeyTo(v)));
 
         public Query<HttpFetch<HttpContent>> Post(Uri url, HttpContent content) =>
-            Post(url, content, (_, s) => s);
-
-        public Query<T> Post<T>(Uri url, HttpContent content, Func<int, HttpFetch<HttpContent>, T> selector) =>
             Query.Create(context => QueryResult.Create(new QueryContext(id: context.Id + 1,
                                                                         serviceProvider: context.ServiceProvider),
-                                                                        context.Eval((HttpService http) => selector(context.Id, http.Post(url, content, new HttpOptions { Headers = new HttpHeaderCollection(Headers), FetchId = context.Id })))));
+                                                                        context.Eval((HttpService http) => http.Post(url, content, new HttpOptions { Headers = new HttpHeaderCollection(Headers), FetchId = context.Id }))));
     }
 
     static class SysNetHttpExtensions
