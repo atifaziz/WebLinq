@@ -107,6 +107,22 @@ namespace WebLinq
             });
         }
 
+        public Query<TResult> Aggregate<TState, TResult>(TState seed,
+                                                         Func<TState, T, TState> accumulator,
+                                                         Func<TState, TResult> resultSelector)
+        {
+            if (accumulator == null) throw new ArgumentNullException(nameof(accumulator));
+            if (resultSelector == null) throw new ArgumentNullException(nameof(resultSelector));
+
+            return Query.Create(context =>
+            {
+                var result = Invoke(context);
+                return result.HasData
+                     ? QueryResult.Create(context, result.Data.Aggregate(seed, accumulator, resultSelector))
+                     : QueryResult.Empty<TResult>(context);
+            });
+        }
+
         // LINQ support
 
         public SeqQuery<TResult> Select<TResult>(Func<T, TResult> selector) =>
