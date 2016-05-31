@@ -42,8 +42,8 @@
       <HintPath>..\..\packages\HtmlAgilityPack.1.4.6\lib\Net45\HtmlAgilityPack.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Mannex, Version=2.14.19626.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Mannex.2.14.2\lib\net45\Mannex.dll</HintPath>
+    <Reference Include="Mannex, Version=2.14.19631.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Mannex.2.15\lib\net45\Mannex.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
@@ -78,6 +78,8 @@
     <Compile Include="Mime\MimeMap.cs" />
     <Compile Include="HttpQuery.cs" />
     <Compile Include="ServiceProviderExtensions.cs" />
+    <Compile Include="Sys\SpawnServiceExtensions.cs" />
+    <Compile Include="Sys\SysQuery.cs" />
     <Compile Include="Text\TextQuery.cs" />
     <Compile Include="Xml\XmlQuery.cs" />
     <Compile Include="Xsv\XsvQuery.cs" />

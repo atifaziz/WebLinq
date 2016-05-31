@@ -18,6 +18,7 @@ namespace WebLinq
 {
     using System;
     using Html;
+    using Sys;
 
     public static class DefaultQueryContext
     {
@@ -25,7 +26,8 @@ namespace WebLinq
             new QueryContext(
                 serviceProvider: ServiceProvider.Create(
                     new SysNetHttpService().Register,
-                    new HapHtmlParser().Register));
+                    new HapHtmlParser().Register,
+                    new SysSpawnService().RegistrationHelper()));
     }
 
     public class QueryContext : IServiceProvider
