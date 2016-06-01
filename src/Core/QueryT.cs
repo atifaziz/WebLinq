@@ -55,6 +55,9 @@ namespace WebLinq
             });
         }
 
+        public Query<T> Do(Action<T> action) =>
+            Select(e => { action(e); return e; });
+
         // LINQ support
 
         public Query<TResult> Select<TResult>(Func<T, TResult> selector) =>
