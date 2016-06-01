@@ -25,15 +25,8 @@ namespace WebLinq
     public sealed class HttpSpec
     {
         NameValueCollection _headers;
-
         bool HasHeaders => _headers?.Count > 0;
-
-        NameValueCollection Headers
-        {
-            get { return _headers ?? (_headers = new NameValueCollection()); }
-            set { _headers = value; }
-        }
-
+        NameValueCollection Headers => _headers ?? (_headers = new NameValueCollection());
 
         public HttpSpec UserAgent(string value) { return Header("User-Agent", value); }
 
@@ -45,7 +38,7 @@ namespace WebLinq
 
         public Query<HttpFetch<HttpContent>> Get(Uri url) =>
             Query.Create(context => QueryResult.Create(context, context.Eval((HttpService http) =>
-                http.Get(url, new HttpOptions { Headers = new HttpHeaderCollection(Headers) }))));
+                http.Get(url, Options()))));
 
         public Query<HttpFetch<HttpContent>> Post(Uri url, NameValueCollection data) =>
             Post(url, new FormUrlEncodedContent(from i in Enumerable.Range(0, data.Count)
@@ -54,7 +47,14 @@ namespace WebLinq
 
         public Query<HttpFetch<HttpContent>> Post(Uri url, HttpContent content) =>
             Query.Create(context => QueryResult.Create(context, context.Eval((HttpService http) =>
-                http.Post(url, content, new HttpOptions { Headers = new HttpHeaderCollection(Headers) }))));
+                http.Post(url, content, Options()))));
+
+        HttpOptions Options() => new HttpOptions
+        {
+            Headers = HasHeaders
+                    ? new HttpHeaderCollection(Headers)
+                    : HttpHeaderCollection.Empty
+        };
     }
 
     static class SysNetHttpExtensions
