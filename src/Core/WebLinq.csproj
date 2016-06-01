@@ -42,8 +42,8 @@
       <HintPath>..\..\packages\HtmlAgilityPack.1.4.6\lib\Net45\HtmlAgilityPack.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Mannex, Version=2.14.19631.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Mannex.2.15\lib\net45\Mannex.dll</HintPath>
+    <Reference Include="Mannex, Version=2.15.19701.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Mannex.2.15.1\lib\net45\Mannex.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
