@@ -29,17 +29,17 @@ namespace WebLinq
             Create(context => QueryResult.Create(context, value));
 
         public static SeqQuery<T> Spread<T>(this Query<IEnumerable<T>> query) =>
-            SeqQuery.Create(query.Invoke);
+            SeqQuery.Create(query.GetResult);
 
         public static IEnumerable<T> ToEnumerable<T>(this Query<IEnumerable<T>> query, QueryContext context)
         {
-            var result = query.Invoke(context);
+            var result = query.GetResult(context);
             return result.DataOrDefault() ?? Enumerable.Empty<T>();
         }
 
         public static IEnumerable<T> ToEnumerable<T>(this SeqQuery<T> query, Func<QueryContext> contextFactory)
         {
-            var result = query.Invoke(contextFactory());
+            var result = query.GetResult(contextFactory());
             // ReSharper disable once LoopCanBeConvertedToQuery
             foreach (var e in result.DataOrDefault() ?? Enumerable.Empty<T>())
                 yield return e;

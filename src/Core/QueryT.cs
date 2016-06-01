@@ -31,15 +31,15 @@ namespace WebLinq
             _func = func;
         }
 
-        public QueryResult<T> Invoke(QueryContext context) => _func(context);
+        public QueryResult<T> GetResult(QueryContext context) => _func(context);
 
         public Query<TResult> Bind<TResult>(Func<T, Query<TResult>> func)
         {
             return Query.Create(context =>
             {
-                var result = Invoke(context);
+                var result = GetResult(context);
                 return result.HasData
-                     ? func(result.Data).Invoke(result.Context)
+                     ? func(result.Data).GetResult(result.Context)
                      : QueryResult.Empty<TResult>(context);
             });
         }
@@ -48,9 +48,9 @@ namespace WebLinq
         {
             return SeqQuery.Create(context =>
             {
-                var result = Invoke(context);
+                var result = GetResult(context);
                 return result.HasData
-                     ? func(result.Data).Invoke(result.Context)
+                     ? func(result.Data).GetResult(result.Context)
                      : QueryResult.Empty<IEnumerable<TResult>>(context);
             });
         }
@@ -94,15 +94,15 @@ namespace WebLinq
             _func = func;
         }
 
-        public QueryResult<IEnumerable<T>> Invoke(QueryContext context) => _func(context);
+        public QueryResult<IEnumerable<T>> GetResult(QueryContext context) => _func(context);
 
         public SeqQuery<TResult> Bind<TResult>(Func<IEnumerable<T>, SeqQuery<TResult>> func)
         {
             return SeqQuery.Create(context =>
             {
-                var result = Invoke(context);
+                var result = GetResult(context);
                 return result.HasData
-                     ? func(result.Data).Invoke(result.Context)
+                     ? func(result.Data).GetResult(result.Context)
                      : QueryResult.Empty<IEnumerable<TResult>>(context);
             });
         }
@@ -116,7 +116,7 @@ namespace WebLinq
 
             return Query.Create(context =>
             {
-                var result = Invoke(context);
+                var result = GetResult(context);
                 return result.HasData
                      ? QueryResult.Create(context, result.Data.Aggregate(seed, accumulator, resultSelector))
                      : QueryResult.Empty<TResult>(context);
@@ -138,7 +138,7 @@ namespace WebLinq
         {
             foreach (var x in xs)
             {
-                var y = f(x).Invoke(context);
+                var y = f(x).GetResult(context);
                 if (y.HasData)
                 {
                     context.UpdateFrom(y.Context);
@@ -154,7 +154,7 @@ namespace WebLinq
         {
             foreach (var x in xs)
             {
-                var ys = f(x).Invoke(context);
+                var ys = f(x).GetResult(context);
                 if (ys.HasData)
                 {
                     foreach (var y in ys.Data)
