@@ -25,12 +25,17 @@ namespace WebLinq
 
     public sealed class HttpOptions
     {
-        public int FetchId { get; set; }
         public HttpHeaderCollection Headers { get; set; }
     }
 
     public abstract class HttpService
     {
+        protected HttpService() : this(0) {}
+        protected HttpService(int fetchId) { FetchId = fetchId; }
+
+        public int FetchId { get; private set; }
+        protected int NextFetchId() => ++FetchId;
+
         public abstract HttpFetch<HttpContent> Get(Uri url, HttpOptions options);
         public abstract HttpFetch<HttpContent> Post(Uri url, HttpContent content, HttpOptions options);
     }
@@ -53,7 +58,7 @@ namespace WebLinq
         {
             var request = new HttpRequestMessage(HttpMethod.Get, url);
             MergeHeaders(options?.Headers, request.Headers);
-            return HttpClient.SendAsync(request).Result.ToHttpFetch((options?.FetchId).GetValueOrDefault());
+            return HttpClient.SendAsync(request).Result.ToHttpFetch(NextFetchId());
         }
 
         public override HttpFetch<HttpContent> Post(Uri url, HttpContent content, HttpOptions options)
@@ -63,7 +68,7 @@ namespace WebLinq
                 Content = content
             };
             MergeHeaders(options?.Headers, request.Headers);
-            return HttpClient.SendAsync(request).Result.ToHttpFetch((options?.FetchId).GetValueOrDefault());
+            return HttpClient.SendAsync(request).Result.ToHttpFetch(NextFetchId());
         }
 
         static void MergeHeaders(NameValueCollection source, HttpHeaders target)

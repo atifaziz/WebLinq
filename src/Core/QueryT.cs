@@ -140,10 +140,7 @@ namespace WebLinq
             {
                 var y = f(x).GetResult(context);
                 if (y.HasData)
-                {
-                    context.UpdateFrom(y.Context);
                     yield return g(x, y.Data);
-                }
             }
         }
 
@@ -158,10 +155,7 @@ namespace WebLinq
                 if (ys.HasData)
                 {
                     foreach (var y in ys.Data)
-                    {
-                        context.UpdateFrom(ys.Context);
                         yield return g(x, y);
-                    }
                 }
             }
         }

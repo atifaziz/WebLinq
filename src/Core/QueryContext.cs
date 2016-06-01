@@ -32,13 +32,10 @@ namespace WebLinq
 
     public class QueryContext : IServiceProvider
     {
-        public int Id { get; private set; }
         public IServiceProvider ServiceProvider { get; }
 
-        public QueryContext(int id = 1,
-                            IServiceProvider serviceProvider = null)
+        public QueryContext(IServiceProvider serviceProvider = null)
         {
-            Id = id;
             ServiceProvider = serviceProvider;
         }
 
@@ -62,11 +59,6 @@ namespace WebLinq
                 return factory(this);
             }
             return service;
-        }
-
-        public void UpdateFrom(QueryContext context)
-        {
-            Id = context.Id;
         }
     }
 }
