@@ -16,7 +16,6 @@
 
 namespace WebLinq.Zip
 {
-    using System;
     using System.IO;
     using System.Net.Http;
     using System.Net.Mime;
@@ -24,21 +23,16 @@ namespace WebLinq.Zip
     public static class ZipQuery
     {
         public static Query<HttpFetch<Zip>> Unzip(this Query<HttpFetch<HttpContent>> query) =>
-            query.Bind(fetch =>
-            {
-                var content = fetch.Content;
-                var actualMediaType = content.Headers.ContentType.MediaType;
-                const string zipMediaType = MediaTypeNames.Application.Zip;
-                if (actualMediaType != null && !zipMediaType.Equals(actualMediaType, StringComparison.OrdinalIgnoreCase))
-                    throw new Exception($"Expected content of type \"{zipMediaType}\" but received \"{actualMediaType}\" instead.");
-
-                return Query.Create(context =>
-                {
-                    var path = Path.GetTempFileName();
-                    using (var output = File.Create(path))
-                        content.CopyToAsync(output).Wait();
-                    return QueryResult.Create(context, fetch.WithContent(new Zip(path)));
-                });
-            });
+            query.Accept(MediaTypeNames.Application.Zip)
+                 .Bind(fetch =>
+                 {
+                     return Query.Create(context =>
+                     {
+                         var path = Path.GetTempFileName();
+                         using (var output = File.Create(path))
+                             fetch.Content.CopyToAsync(output).Wait();
+                         return QueryResult.Create(context, fetch.WithContent(new Zip(path)));
+                     });
+                 });
     }
 }

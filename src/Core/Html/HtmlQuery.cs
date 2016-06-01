@@ -30,17 +30,8 @@ namespace WebLinq.Html
             Query.Create(context => Html(context, html, baseUrl, p => p));
 
         public static Query<HttpFetch<ParsedHtml>> Html(this Query<HttpFetch<HttpContent>> query) =>
-            query.Bind(fetch => Query.Create(context =>
-            {
-                var content = fetch.Content;
-
-                const string htmlMediaType = MediaTypeNames.Text.Html;
-                var actualMediaType = content.Headers.ContentType.MediaType;
-                if (!htmlMediaType.Equals(actualMediaType, StringComparison.OrdinalIgnoreCase))
-                    throw new Exception($"Expected content of type \"{htmlMediaType}\" but received \"{actualMediaType}\" instead.");
-
-                return Html(context, content.ReadAsStringAsync().Result, fetch.RequestUrl, fetch.WithContent);
-            }));
+            query.Accept(MediaTypeNames.Text.Html)
+                 .Bind(fetch => Query.Create(context => Html(context, fetch.Content.ReadAsStringAsync().Result, fetch.RequestUrl, fetch.WithContent)));
 
         static QueryResult<T> Html<T>(QueryContext context, string html, Uri baseUrl, Func<ParsedHtml, T> selector) =>
             QueryResult.Create(context, context.Eval((IHtmlParser hps) => selector(hps.Parse(html, baseUrl))));

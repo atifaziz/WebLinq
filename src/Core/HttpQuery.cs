@@ -25,6 +25,7 @@ namespace WebLinq
     using Html;
     using Mannex.Collections.Specialized;
     using Mannex.Web;
+    using Mime;
 
     #endregion
 
@@ -37,6 +38,29 @@ namespace WebLinq
 
         public static SeqQuery<T> Content<T>(this SeqQuery<HttpFetch<T>> query) =>
             from e in query select e.Content;
+
+        public static Query<HttpFetch<HttpContent>> Accept(this Query<HttpFetch<HttpContent>> query, params string[] mediaTypes) =>
+            query.Do(e =>
+            {
+                var headers = e.Content.Headers;
+                var actualMediaType = headers.ContentType?.MediaType;
+                if (actualMediaType == null)
+                {
+                    var contentDisposition = headers.ContentDisposition;
+                    var filename = contentDisposition?.FileName ?? contentDisposition?.FileNameStar;
+                    if (!string.IsNullOrEmpty(filename))
+                        actualMediaType = MimeMapping.FindMimeTypeFromFileName(filename);
+                    if (actualMediaType == null)
+                    {
+                        throw new Exception($"Content has unspecified type when acceptable types are: {string.Join(", ", mediaTypes)}");
+                    }
+                }
+
+                if (mediaTypes.Any(mediaType => mediaType.Equals(actualMediaType, StringComparison.OrdinalIgnoreCase)))
+                    return;
+
+                throw new Exception($"Unexpected content of type \"{actualMediaType}\". Acceptable types are: {string.Join(", ", mediaTypes)}");
+            });
 
         public static Query<HttpFetch<HttpContent>> Submit(this Query<HttpFetch<HttpContent>> query, string formSelector, NameValueCollection data) =>
             query.Html().Bind(html => Submit(html.Content, formSelector, data));
