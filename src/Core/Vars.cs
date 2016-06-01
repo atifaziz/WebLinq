@@ -20,8 +20,8 @@ namespace WebLinq
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Globalization;
     using System.Linq;
+    using Mannex.Collections.Generic;
 
     [DebuggerDisplay("Count = {Count}")]
     public sealed class Vars : IDictionary<string, object>
@@ -87,6 +87,10 @@ namespace WebLinq
                      : Query<T>.Empty;
             });
 
+        public static Query<TResult> Var<T, TResult>(string name, Func<T, TResult> selector) =>
+            from a in Var<T>(name)
+            select selector(a);
+
         public static Query<TResult> Vars<T1, T2, TResult>(string name1, string name2, Func<T1, T2, TResult> selector) =>
             from a in Var<T1>(name1)
             from b in Var<T2>(name2)
@@ -97,6 +101,24 @@ namespace WebLinq
             from b in Var<T2>(name2)
             from c in Var<T3>(name3)
             select selector(a, b, c);
+
+        public static Query<TResult> Var<T, TResult>(Func<T, TResult> selector) =>
+            selector.GetParameterNames().GetEnumerator().Map(ns =>
+                from a in Var<T>(ns.Read())
+                select selector(a));
+
+        public static Query<TResult> Vars<T1, T2, TResult>(Func<T1, T2, TResult> selector) =>
+            selector.GetParameterNames().GetEnumerator().Map(ns =>
+                from a in Var<T1>(ns.Read())
+                from b in Var<T2>(ns.Read())
+                select selector(a, b));
+
+        public static Query<TResult> Vars<T1, T2, T3, TResult>(Func<T1, T2, T3, TResult> selector) =>
+            selector.GetParameterNames().GetEnumerator().Map(ns =>
+                from a in Var<T1>(ns.Read())
+                from b in Var<T2>(ns.Read())
+                from c in Var<T3>(ns.Read())
+                select selector(a, b, c));
 
         public static Query<T> Var<T>(string name, T value) =>
             Vars().Bind(vars =>
