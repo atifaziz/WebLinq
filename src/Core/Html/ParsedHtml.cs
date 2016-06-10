@@ -209,7 +209,7 @@ namespace WebLinq.Html
                     throw new Exception($"Unexpected type of form field (\"{field.Name}\").");
 
                 var valueElement = field.IsSelect
-                                 ? field.Element.Owner.QuerySelector("option[selected]")
+                                 ? field.Element.QuerySelector("option[selected]")
                                  : field.Element;
 
                 var value = valueElement?.GetAttributeValue("value") ?? string.Empty;
