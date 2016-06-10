@@ -21,6 +21,9 @@ namespace WebLinq
     using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.Diagnostics;
+    using System.Linq;
+    using System.Text;
+    using Mannex.Collections.Specialized;
 
     [DebuggerDisplay("Count = {Count}")]
     public sealed class HttpHeaderCollection : NameValueCollection
@@ -34,9 +37,12 @@ namespace WebLinq
         }
 
         public HttpHeaderCollection(NameValueCollection headers) :
+            this(headers, isntReadOnly: false) { }
+
+        HttpHeaderCollection(NameValueCollection headers, bool isntReadOnly) :
             base(headers)
         {
-            IsReadOnly = true;
+            IsReadOnly = !isntReadOnly;
         }
 
         public HttpHeaderCollection(IEnumerable<KeyValuePair<string, IEnumerable<string>>> entries) :
@@ -49,5 +55,20 @@ namespace WebLinq
                     Add(entry.Key, value);
             IsReadOnly = true;
         }
+
+        public HttpHeaderCollection Merge(NameValueCollection source)
+        {
+            var merged = new HttpHeaderCollection(this, isntReadOnly: true);
+            if (source != null)
+                merged.Update(source);
+            merged.IsReadOnly = true;
+            return merged;
+        }
+
+        public override string ToString() =>
+            Enumerable.Range(0, Count)
+                      .Aggregate(new StringBuilder(),
+                                 (sb, i) => sb.Append(GetKey(i)).Append(": ").AppendLine(this[i]),
+                                 sb => sb.ToString());
     }
 }

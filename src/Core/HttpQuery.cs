@@ -39,20 +39,36 @@ namespace WebLinq
         public static SeqQuery<T> Content<T>(this SeqQuery<HttpFetch<T>> query) =>
             from e in query select e.Content;
 
+        public static Query<HttpFetch<HttpContent>> OverrideMediaType(this Query<HttpFetch<HttpContent>> query, string newMediaType) =>
+            query.Select(fetch =>
+            {
+                /*
+                fetch.Content.ContentTypeOverride(newMediaType);
+                return HttpFetch.Create(fetch.Id, fetch.Content, fetch.HttpVersion, fetch.StatusCode, fetch.ReasonPhrase,
+                    fetch.Headers, fetch.RequestUrl, fetch.RequestHeaders);
+                    */
+                fetch.Content.Headers.ContentType.MediaType = newMediaType;
+                return fetch;// HttpFetch.Create(fetch.Id, fetch.Content, fetch.HttpVersion, fetch.StatusCode, fetch.ReasonPhrase, fetch.Headers, fetch.RequestUrl, fetch.RequestHeaders);
+            });
+
         public static Query<HttpFetch<HttpContent>> Accept(this Query<HttpFetch<HttpContent>> query, params string[] mediaTypes) =>
             query.Do(e =>
             {
-                var headers = e.Content.Headers;
-                var actualMediaType = headers.ContentType?.MediaType;
+                var actualMediaType = e.Content.ContentTypeOverride();
                 if (actualMediaType == null)
                 {
-                    var contentDisposition = headers.ContentDisposition;
-                    var filename = contentDisposition?.FileName ?? contentDisposition?.FileNameStar;
-                    if (!string.IsNullOrEmpty(filename))
-                        actualMediaType = MimeMapping.FindMimeTypeFromFileName(filename);
+                    var headers = e.Content.Headers;
+                    actualMediaType = headers.ContentType?.MediaType;
                     if (actualMediaType == null)
                     {
-                        throw new Exception($"Content has unspecified type when acceptable types are: {string.Join(", ", mediaTypes)}");
+                        var contentDisposition = headers.ContentDisposition;
+                        var filename = contentDisposition?.FileName ?? contentDisposition?.FileNameStar;
+                        if (!string.IsNullOrEmpty(filename))
+                            actualMediaType = MimeMapping.FindMimeTypeFromFileName(filename);
+                        if (actualMediaType == null)
+                        {
+                            throw new Exception($"Content has unspecified type when acceptable types are: {string.Join(", ", mediaTypes)}");
+                        }
                     }
                 }
 
