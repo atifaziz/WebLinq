@@ -100,7 +100,7 @@ namespace WebLinq
         public static Query<HttpFetch<T>> ExceptStatusCode<T>(this Query<HttpFetch<T>> query, params HttpStatusCode[] statusCodes) =>
             query.Do(e =>
             {
-                if (statusCodes.Any(sc => e.StatusCode == sc))
+                if (e.IsSuccessStatusCode || statusCodes.Any(sc => e.StatusCode == sc))
                     return;
                 (e.Content as IDisposable)?.Dispose();
                 throw new HttpRequestException($"Response status code does not indicate success: {e.StatusCode}.");
