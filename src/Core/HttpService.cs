@@ -25,6 +25,7 @@ namespace WebLinq
 
     public sealed class HttpOptions
     {
+        public bool ReturnErrorneousFetch { get; set; }
         public HttpHeaderCollection Headers { get; set; }
     }
 
@@ -58,7 +59,7 @@ namespace WebLinq
         {
             var request = new HttpRequestMessage(HttpMethod.Get, url);
             MergeHeaders(options?.Headers, request.Headers);
-            return HttpClient.SendAsync(request).Result.ToHttpFetch(NextFetchId());
+            return Send(request, options?.ReturnErrorneousFetch ?? false);
         }
 
         public override HttpFetch<HttpContent> Post(Uri url, HttpContent content, HttpOptions options)
@@ -68,7 +69,15 @@ namespace WebLinq
                 Content = content
             };
             MergeHeaders(options?.Headers, request.Headers);
-            return HttpClient.SendAsync(request).Result.ToHttpFetch(NextFetchId());
+            return Send(request, options?.ReturnErrorneousFetch ?? false);
+        }
+
+        HttpFetch<HttpContent> Send(HttpRequestMessage request, bool ignoreErroneousStatusCodes)
+        {
+            var response = HttpClient.SendAsync(request).Result;
+            if (!ignoreErroneousStatusCodes)
+                response.EnsureSuccessStatusCode();
+            return response.ToHttpFetch(NextFetchId());
         }
 
         static void MergeHeaders(NameValueCollection source, HttpHeaders target)
