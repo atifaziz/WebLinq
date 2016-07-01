@@ -21,6 +21,7 @@ namespace WebLinq
     using System;
     using System.Collections.Specialized;
     using System.Linq;
+    using System.Net;
     using System.Net.Http;
     using Html;
     using Mannex.Collections.Specialized;
@@ -95,5 +96,14 @@ namespace WebLinq
                  ? Http.Post(form.Action, form.Data)
                  : Http.Get(new UriBuilder(form.Action) { Query = form.Data.ToW3FormEncoded() }.Uri);
         }
+
+        public static Query<HttpFetch<T>> ExceptStatusCode<T>(this Query<HttpFetch<T>> query, params HttpStatusCode[] statusCodes) =>
+            query.Do(e =>
+            {
+                if (statusCodes.Any(sc => e.StatusCode == sc))
+                    return;
+                (e.Content as IDisposable)?.Dispose();
+                throw new HttpRequestException($"Response status code does not indicate success: {e.StatusCode}.");
+            });
     }
 }
