@@ -24,9 +24,17 @@ namespace WebLinq
 
     public sealed class HttpSpec
     {
+        bool _returnErrorneousFetch;
+
         NameValueCollection _headers;
         bool HasHeaders => _headers?.Count > 0;
         NameValueCollection Headers => _headers ?? (_headers = new NameValueCollection());
+
+        public HttpSpec ReturnErrorneousFetch()
+        {
+            _returnErrorneousFetch = true;
+            return this;
+        }
 
         public HttpSpec UserAgent(string value) { return Header("User-Agent", value); }
 
@@ -51,6 +59,7 @@ namespace WebLinq
 
         HttpOptions Options() => new HttpOptions
         {
+            ReturnErrorneousFetch = _returnErrorneousFetch,
             Headers = HasHeaders
                     ? new HttpHeaderCollection(Headers)
                     : HttpHeaderCollection.Empty
