@@ -36,7 +36,7 @@ namespace WebLinq.Html
         // TODO Search  , // Search             Text with no line breaks
         // TODO Tel     , // Telephone          Text with no line breaks
         // TODO Url     , // URL                An absolute URL
-        // TODO Email   , // E-mail             An e-mail address or list of e-mail addresses
+        Email   , // E-mail             An e-mail address or list of e-mail addresses
         Password, // Password           Text with no line breaks (sensitive information)
         // TODO Date    , // Date               A date (year, month, day) with no time zone
         // TODO Time    , // Time               A time (hour, minute, seconds, fractional seconds) with no time zone
@@ -59,6 +59,7 @@ namespace WebLinq.Html
         public KnownHtmlInputType KnownType { get; }
 
         public static readonly HtmlInputType Text     = new HtmlInputType(KnownHtmlInputType.Text    , "text");
+        public static readonly HtmlInputType Email    = new HtmlInputType(KnownHtmlInputType.Email   , "email");
         public static readonly HtmlInputType Password = new HtmlInputType(KnownHtmlInputType.Password, "password");
         public static readonly HtmlInputType Checkbox = new HtmlInputType(KnownHtmlInputType.Checkbox, "checkbox");
         public static readonly HtmlInputType Radio    = new HtmlInputType(KnownHtmlInputType.Radio   , "radio");
