@@ -27,6 +27,9 @@ namespace WebLinq.Xsv
         public static Query<HttpFetch<DataTable>> XsvToDataTable(this Query<HttpFetch<HttpContent>> query, string delimiter, bool quoted, params DataColumn[] columns) =>
             query.Text().Select(fetch => fetch.WithContent(fetch.Content.Read().ParseXsvAsDataTable(delimiter, quoted, columns)));
 
+        public static Query<DataTable> XsvToDataTable(this Query<string> query, string delimiter, bool quoted, params DataColumn[] columns) =>
+            query.Select(xsv => xsv.Read().ParseXsvAsDataTable(delimiter, quoted, columns));
+
         public static Query<DataTable> XsvToDataTable(string text, string delimiter, bool quoted, params DataColumn[] columns) =>
             Query.Create(context =>
                 QueryResult.Create(context, text.Read().ParseXsvAsDataTable(delimiter, quoted, columns)));
