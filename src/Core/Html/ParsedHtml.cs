@@ -20,6 +20,7 @@ namespace WebLinq.Html
     using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.Linq;
+    using System.Net;
     using System.Net.Mime;
     using TryParsers;
 
@@ -212,7 +213,7 @@ namespace WebLinq.Html
                                  ? field.Element.QuerySelector("option[selected]")
                                  : field.Element;
 
-                var value = valueElement?.GetAttributeValue("value") ?? string.Empty;
+                var value = WebUtility.HtmlDecode(valueElement?.GetAttributeValue("value") ?? string.Empty);
 
                 all?.Add(field.Name, value);
 
