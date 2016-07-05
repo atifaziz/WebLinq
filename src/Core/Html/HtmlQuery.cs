@@ -54,8 +54,14 @@ namespace WebLinq.Html
         public static SeqQuery<T> Links<T>(ParsedHtml html, Func<string, string, T> selector) =>
             SeqQuery.Create(context => Links(context, html, selector));
 
+        public static SeqQuery<HttpFetch<string>> Links(this Query<HttpFetch<HttpContent>> query) =>
+            query.Links(null);
+
         public static SeqQuery<HttpFetch<T>> Links<T>(this Query<HttpFetch<HttpContent>> query, Func<string, string, T> selector) =>
             Links(query, null, selector);
+
+        public static SeqQuery<HttpFetch<string>> Links(this Query<HttpFetch<HttpContent>> query, Uri baseUrl) =>
+            Links(query, baseUrl, (href, _) => href);
 
         public static SeqQuery<HttpFetch<T>> Links<T>(this Query<HttpFetch<HttpContent>> query, Uri baseUrl, Func<string, string, T> selector) =>
             query.Html().Bind(html => SeqQuery.Create(context => Links(context, html.Content, (href, txt) => html.WithContent(selector(href, txt)))));
