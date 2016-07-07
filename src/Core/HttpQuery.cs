@@ -68,13 +68,15 @@ namespace WebLinq
 
         public static Query<HttpFetch<HttpContent>> Submit(ParsedHtml html, string formSelector, NameValueCollection data)
         {
-            var forms = html.GetForms(formSelector, (fe, id, name, fa, fm, enctype) => fe.GetForm(fd => new
-            {
-                Action  = new Uri(html.TryBaseHref(fa), UriKind.Absolute),
-                Method  = fm,
-                EncType = enctype, // TODO validate
-                Data    = fd,
-            }));
+            var forms =
+                from f in html.GetForms(formSelector)
+                select f.GetForm(fd => new
+                {
+                    Action = new Uri(html.TryBaseHref(f.Action), UriKind.Absolute),
+                    f.Method,
+                    f.EncType, // TODO validate
+                    Data = fd,
+                });
 
             var form = forms.FirstOrDefault();
             if (form == null)
