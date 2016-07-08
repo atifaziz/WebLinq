@@ -68,6 +68,7 @@
       <DependentUpon>AssemblyInfo.g.tt</DependentUpon>
     </Compile>
     <Compile Include="DelegateExtensions.cs" />
+    <Compile Include="ArrayList.cs" />
     <Compile Include="Html\ParsedHtml.cs" />
     <Compile Include="Html\HtmlObject.cs" />
     <Compile Include="Html\HtmlParser.cs" />
