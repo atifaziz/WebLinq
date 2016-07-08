@@ -16,6 +16,7 @@
 
 namespace WebLinq.Html
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
 
@@ -23,6 +24,7 @@ namespace WebLinq.Html
     {
         public abstract ParsedHtml Owner { get; }
         public abstract string Name { get; }
+        public bool IsNamed(string name) => Name.Equals(name, StringComparison.OrdinalIgnoreCase);
         public virtual bool HasAttributes => AttributeNames.Any();
         public abstract IEnumerable<string> AttributeNames { get; }
         public abstract bool HasAttribute(string name);
