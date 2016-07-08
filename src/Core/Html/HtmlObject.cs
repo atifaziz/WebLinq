@@ -31,6 +31,7 @@ namespace WebLinq.Html
         public abstract string InnerHtml { get; }
         public abstract string InnerText { get; }
         public virtual bool HasChildElements => ChildElements.Any();
+        public abstract HtmlObject ParentElement { get; }
         public abstract IEnumerable<HtmlObject> ChildElements { get; }
         public override string ToString() => OuterHtml;
 

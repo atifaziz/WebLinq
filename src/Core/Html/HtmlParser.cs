@@ -91,6 +91,11 @@ namespace WebLinq.Html
                 public override string InnerHtml => Node.InnerHtml;
                 public override string InnerText => Node.InnerText;
 
+                public override HtmlObject ParentElement =>
+                    Node.ParentNode.NodeType == HtmlNodeType.Element
+                    ? _owner.GetPublicObject(Node.ParentNode)
+                    : null;
+
                 public override IEnumerable<HtmlObject> ChildElements =>
                     from e in Node.ChildNodes
                     where e.NodeType == HtmlNodeType.Element
