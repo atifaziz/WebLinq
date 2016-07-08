@@ -90,10 +90,10 @@ namespace WebLinq.Html
                 select selector(self.TryBaseHref(href), a);
         }
 
-        public static IEnumerable<string> Tables(this ParsedHtml self, string selector) =>
+        public static IEnumerable<HtmlObject> Tables(this ParsedHtml self, string selector) =>
             from e in self.QuerySelectorAll(selector ?? "table")
             where "table".Equals(e.Name, StringComparison.OrdinalIgnoreCase)
-            select e.OuterHtml;
+            select e;
 
         public static IEnumerable<T> GetForms<T>(this ParsedHtml self, string cssSelector, Func<HtmlObject, string, string, string, HtmlFormMethod, ContentType, T> selector) =>
             from form in self.QuerySelectorAll(cssSelector ?? "form[action]")

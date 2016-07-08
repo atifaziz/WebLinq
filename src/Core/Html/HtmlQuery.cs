@@ -69,16 +69,16 @@ namespace WebLinq.Html
         static QueryResult<IEnumerable<T>> Links<T>(QueryContext context, ParsedHtml html, Func<string, string, T> selector) =>
             QueryResult.Create(context, html.Links((href, ho) => selector(href, ho.InnerHtml)));
 
-        public static SeqQuery<string> Tables(string html) =>
+        public static SeqQuery<HtmlObject> Tables(string html) =>
             Html(html).Bind(Tables);
 
-        public static SeqQuery<string> Tables(ParsedHtml html) =>
+        public static SeqQuery<HtmlObject> Tables(ParsedHtml html) =>
             SeqQuery.Create(context => Tables(context, html));
 
-        public static SeqQuery<string> Tables(this Query<HttpFetch<HttpContent>> query) =>
+        public static SeqQuery<HtmlObject> Tables(this Query<HttpFetch<HttpContent>> query) =>
             query.Html().Bind(html => SeqQuery.Create(context => Tables(context, html.Content)));
 
-        static QueryResult<IEnumerable<string>> Tables(QueryContext context, ParsedHtml html) =>
+        static QueryResult<IEnumerable<HtmlObject>> Tables(QueryContext context, ParsedHtml html) =>
             QueryResult.Create(context, html.Tables(null));
     }
 }
