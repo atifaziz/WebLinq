@@ -100,7 +100,7 @@ namespace WebLinq.Html
         public static Query<DataTable> FormsAsDataTable(ParsedHtml html)
         {
             var forms =
-                from f in html.GetForms(null)
+                from f in html.Forms
                 select f.GetForm((fd, fs) => new
                 {
                     f.Name,
@@ -166,6 +166,6 @@ namespace WebLinq.Html
             select html.WithContent(forms);
 
         public static SeqQuery<HtmlForm> Forms(ParsedHtml html) =>
-            SeqQuery.Return(html.Forms());
+            SeqQuery.Return(html.Forms);
     }
 }

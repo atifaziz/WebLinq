@@ -18,6 +18,7 @@ namespace WebLinq.Html
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Globalization;
     using System.Linq;
     using System.Net.Mime;
@@ -27,6 +28,7 @@ namespace WebLinq.Html
     {
         readonly Uri _baseUrl;
         readonly Lazy<Uri> _inlineBaseUrl;
+        ReadOnlyCollection<HtmlForm> _forms;
 
         protected ParsedHtml() :
             this(null) {}
@@ -71,6 +73,29 @@ namespace WebLinq.Html
             : href;
 
         public override string ToString() => Root?.OuterHtml ?? string.Empty;
+
+        public ICollection<HtmlForm> Forms => _forms ?? (_forms = Array.AsReadOnly(GetFormsCore().ToArray()));
+
+        IEnumerable <HtmlForm> GetFormsCore() =>
+            from form in QuerySelectorAll("form[action]")
+            where "form".Equals(form.Name, StringComparison.OrdinalIgnoreCase)
+            let method = form.GetAttributeValue("method")?.Trim()
+            let enctype = form.GetAttributeValue("enctype")?.Trim()
+            let action = form.GetAttributeValue("action")
+            select new HtmlForm(form,
+                                form.GetAttributeValue("name"),
+                                action != null ? form.Owner.TryBaseHref(action) : action,
+                                "post".Equals(method, StringComparison.OrdinalIgnoreCase)
+                                    ? HtmlFormMethod.Post
+                                    : HtmlFormMethod.Get,
+                                enctype != null ? new ContentType(enctype) : null);
+
+        public IEnumerable<HtmlForm> QueryFormSelectorAll(string selector) =>
+            from e in QuerySelectorAll(selector ?? "form[action]")
+            where selector == null || e.IsNamed("form")
+            select Forms.FirstOrDefault(f => f.Element == e) into f
+            where f != null
+            select f;
     }
 
     public enum HtmlControlType { Input, Select, TextArea }
@@ -94,23 +119,7 @@ namespace WebLinq.Html
             where "table".Equals(e.Name, StringComparison.OrdinalIgnoreCase)
             select e;
 
-        public static IEnumerable<HtmlForm> GetForms(this ParsedHtml self, string cssSelector) =>
-            from form in self.QuerySelectorAll(cssSelector ?? "form[action]")
-            where "form".Equals(form.Name, StringComparison.OrdinalIgnoreCase)
-            let method = form.GetAttributeValue("method")?.Trim()
-            let enctype = form.GetAttributeValue("enctype")?.Trim()
-            let action = form.GetAttributeValue("action")
-            select new HtmlForm(form,
-                                form.GetAttributeValue("name"),
-                                action != null ? form.Owner.TryBaseHref(action) : action,
-                                "post".Equals(method, StringComparison.OrdinalIgnoreCase)
-                                    ? HtmlFormMethod.Post
-                                    : HtmlFormMethod.Get,
-                                enctype != null ? new ContentType(enctype) : null);
 
-
-        public static IEnumerable<HtmlForm> Forms(this ParsedHtml html) =>
-            html.GetForms(null);
 
         public static IEnumerable<T> TableRows<T>(this HtmlObject table, Func<HtmlObject, IEnumerable<HtmlObject>, T> rowSelector)
         {

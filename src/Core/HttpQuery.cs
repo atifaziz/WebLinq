@@ -69,7 +69,7 @@ namespace WebLinq
         public static Query<HttpFetch<HttpContent>> Submit(ParsedHtml html, string formSelector, NameValueCollection data)
         {
             var forms =
-                from f in html.GetForms(formSelector)
+                from f in html.QueryFormSelectorAll(formSelector)
                 select new
                 {
                     Action = new Uri(html.TryBaseHref(f.Action), UriKind.Absolute),
