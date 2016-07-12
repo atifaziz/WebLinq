@@ -20,6 +20,7 @@ namespace WebLinq.Html
 
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Collections.Specialized;
     using System.Linq;
     using System.Net.Mime;
@@ -28,7 +29,7 @@ namespace WebLinq.Html
 
     public sealed class HtmlForm
     {
-        ICollection<HtmlFormControl> _controls;
+        ReadOnlyCollection<HtmlFormControl> _controls;
 
         public HtmlObject Element { get; }
         public string Name { get; }
@@ -36,7 +37,7 @@ namespace WebLinq.Html
         public HtmlFormMethod Method { get; }
         public ContentType EncType { get; }
 
-        public ICollection<HtmlFormControl> Controls =>
+        public IReadOnlyList<HtmlFormControl> Controls =>
             _controls ?? (_controls = Array.AsReadOnly(GetControlsCore(Element).ToArray()));
 
         internal HtmlForm(HtmlObject element, string name, string action, HtmlFormMethod method, ContentType encType)

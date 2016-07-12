@@ -74,7 +74,7 @@ namespace WebLinq.Html
 
         public override string ToString() => Root?.OuterHtml ?? string.Empty;
 
-        public ICollection<HtmlForm> Forms => _forms ?? (_forms = Array.AsReadOnly(GetFormsCore().ToArray()));
+        public IReadOnlyList<HtmlForm> Forms => _forms ?? (_forms = Array.AsReadOnly(GetFormsCore().ToArray()));
 
         IEnumerable <HtmlForm> GetFormsCore() =>
             from form in QuerySelectorAll("form[action]")
