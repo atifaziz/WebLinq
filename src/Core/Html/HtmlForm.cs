@@ -38,7 +38,7 @@ namespace WebLinq.Html
         public ContentType EncType { get; }
 
         public IReadOnlyList<HtmlFormControl> Controls =>
-            _controls ?? (_controls = Array.AsReadOnly(GetControlsCore(Element).ToArray()));
+            _controls ?? (_controls = Array.AsReadOnly(GetControlsCore().ToArray()));
 
         internal HtmlForm(HtmlObject element, string name, string action, HtmlFormMethod method, ContentType encType)
         {
@@ -51,8 +51,7 @@ namespace WebLinq.Html
 
         public override string ToString() => Element.ToString();
 
-        static IEnumerable<HtmlFormControl> GetControlsCore(HtmlObject formElement)
-        {
+        IEnumerable<HtmlFormControl> GetControlsCore() =>
             //
             // Grab all INPUT and SELECT elements belonging to the form.
             //
@@ -61,23 +60,20 @@ namespace WebLinq.Html
             // TODO: formenctype https://developer.mozilla.org/en-US/docs/Web/HTML/Element/button#attr-formenctype
             // TODO: formmethod https://developer.mozilla.org/en-US/docs/Web/HTML/Element/button#attr-formmethod
             //
-
-            return
-                from e in formElement.QuerySelectorAll("input, select, textarea")
-                let name = e.GetAttributeValue("name")?.Trim() ?? string.Empty
-                where name.Length > 0
-                let controlType = "select".Equals(e.Name, StringComparison.OrdinalIgnoreCase)
-                                ? HtmlControlType.Select
-                                : "textarea".Equals(e.Name, StringComparison.OrdinalIgnoreCase)
-                                ? HtmlControlType.TextArea
-                                : HtmlControlType.Input
-                let inputType   = controlType == HtmlControlType.Input
-                                ? e.GetAttributeValue("type")?.Trim().Map(HtmlInputType.Parse)
-                                // Missing "type" attribute implies "text" since HTML 3.2
-                                ?? HtmlInputType.Default
-                                : null
-                select new HtmlFormControl(e, name, controlType, inputType);
-        }
+            from e in Element.QuerySelectorAll("input, select, textarea")
+            let name = e.GetAttributeValue("name")?.Trim() ?? string.Empty
+            where name.Length > 0
+            let controlType = "select".Equals(e.Name, StringComparison.OrdinalIgnoreCase)
+                            ? HtmlControlType.Select
+                            : "textarea".Equals(e.Name, StringComparison.OrdinalIgnoreCase)
+                            ? HtmlControlType.TextArea
+                            : HtmlControlType.Input
+            let inputType   = controlType == HtmlControlType.Input
+                            ? e.GetAttributeValue("type")?.Trim().Map(HtmlInputType.Parse)
+                            // Missing "type" attribute implies "text" since HTML 3.2
+                            ?? HtmlInputType.Default
+                            : null
+            select new HtmlFormControl(this, e, name, controlType, inputType);
 
         public NameValueCollection GetSubmissionData() =>
             GetFormCore(data => data);
