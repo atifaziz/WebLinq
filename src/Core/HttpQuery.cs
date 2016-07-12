@@ -70,13 +70,13 @@ namespace WebLinq
         {
             var forms =
                 from f in html.GetForms(formSelector)
-                select f.GetForm(fd => new
+                select new
                 {
                     Action = new Uri(html.TryBaseHref(f.Action), UriKind.Absolute),
                     f.Method,
                     f.EncType, // TODO validate
-                    Data = fd,
-                });
+                    Data = f.GetForm(),
+                };
 
             var form = forms.FirstOrDefault();
             if (form == null)
