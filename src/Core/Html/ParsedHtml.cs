@@ -98,9 +98,6 @@ namespace WebLinq.Html
             select f;
     }
 
-    public enum HtmlFormMethod { Get, Post }
-    public enum HtmlControlType { Input, Select, TextArea }
-
     public static class ParsedHtmlExtensions
     {
         public static IEnumerable<T> Links<T>(this ParsedHtml self, Func<string, HtmlObject, T> selector)

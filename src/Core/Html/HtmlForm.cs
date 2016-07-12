@@ -27,6 +27,8 @@ namespace WebLinq.Html
 
     #endregion
 
+    public enum HtmlFormMethod { Get, Post }
+
     public sealed class HtmlForm
     {
         ReadOnlyCollection<HtmlFormControl> _controls;
