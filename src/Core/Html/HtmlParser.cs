@@ -60,7 +60,9 @@ namespace WebLinq.Html
             }
 
             public override IEnumerable<HtmlObject> QuerySelectorAll(string selector, HtmlObject context) =>
-                (((HapHtmlObject)context)?.Node ?? _document.DocumentNode).QuerySelectorAll(selector).Select(GetPublicObject);
+                from node in (((HapHtmlObject)context)?.Node ?? _document.DocumentNode).QuerySelectorAll(selector)
+                orderby node.StreamPosition
+                select GetPublicObject(node);
 
             public override HtmlObject Root => GetPublicObject(_document.DocumentNode);
 
