@@ -18,21 +18,22 @@ namespace WebLinq.Html
 {
     public sealed class HtmlFormControl
     {
+        bool? _isDisabled;
+        bool? _isReadOnly;
+
         public HtmlObject Element { get; }
         public string Name { get; }
         public HtmlControlType ControlType { get; }
         public HtmlInputType InputType { get; }
-        public HtmlDisabledFlag Disabled { get; }
-        public HtmlReadOnlyFlag ReadOnly { get; }
+        public bool IsDisabled => (_isDisabled ?? (_isDisabled = Element.IsAttributeFlagged("disabled"))) == true;
+        public bool IsReadOnly => (_isReadOnly ?? (_isReadOnly = Element.IsAttributeFlagged("readonly"))) == true;
 
-        internal HtmlFormControl(HtmlObject element, string name, HtmlControlType controlType, HtmlInputType inputType, HtmlDisabledFlag disabled, HtmlReadOnlyFlag readOnly)
+        internal HtmlFormControl(HtmlObject element, string name, HtmlControlType controlType, HtmlInputType inputType)
         {
             Element     = element;
             Name        = name;
             ControlType = controlType;
             InputType   = inputType;
-            Disabled    = disabled;
-            ReadOnly    = readOnly;
         }
 
         public override string ToString() => Element.ToString();

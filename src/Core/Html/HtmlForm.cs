@@ -62,9 +62,6 @@ namespace WebLinq.Html
             // TODO: formmethod https://developer.mozilla.org/en-US/docs/Web/HTML/Element/button#attr-formmethod
             //
 
-            const string @readonly = "readonly";
-            const string disabled = "disabled";
-
             return
                 from e in formElement.QuerySelectorAll("input, select, textarea")
                 let name = e.GetAttributeValue("name")?.Trim() ?? string.Empty
@@ -74,25 +71,12 @@ namespace WebLinq.Html
                                 : "textarea".Equals(e.Name, StringComparison.OrdinalIgnoreCase)
                                 ? HtmlControlType.TextArea
                                 : HtmlControlType.Input
-                let attrs = new
-                {
-                    Disabled  = e.GetAttributeValue(disabled)?.Trim(),
-                    ReadOnly  = e.GetAttributeValue(@readonly)?.Trim(),
-                    InputType = controlType == HtmlControlType.Input
+                let inputType   = controlType == HtmlControlType.Input
                                 ? e.GetAttributeValue("type")?.Trim().Map(HtmlInputType.Parse)
                                 // Missing "type" attribute implies "text" since HTML 3.2
                                 ?? HtmlInputType.Default
-                                : null,
-                }
-                select new HtmlFormControl
-                (
-                    e,
-                    name,
-                    controlType,
-                    attrs.InputType,
-                    disabled.Equals(attrs.Disabled, StringComparison.OrdinalIgnoreCase) ? HtmlDisabledFlag.Disabled : HtmlDisabledFlag.Default,
-                    @readonly.Equals(attrs.ReadOnly, StringComparison.OrdinalIgnoreCase) ? HtmlReadOnlyFlag.ReadOnly : HtmlReadOnlyFlag.Default
-                );
+                                : null
+                select new HtmlFormControl(e, name, controlType, inputType);
         }
 
         public NameValueCollection GetSubmissionData() =>
@@ -135,10 +119,10 @@ namespace WebLinq.Html
                 {
                     c.Element,
                     c.Name,
-                    IsSelect   = c.ControlType == HtmlControlType.Select,
+                    IsSelect = c.ControlType == HtmlControlType.Select,
                     c.InputType,
-                    IsDisabled = c.Disabled != HtmlDisabledFlag.Default,
-                    IsReadOnly = c.ReadOnly != HtmlReadOnlyFlag.Default,
+                    c.IsDisabled,
+                    c.IsReadOnly,
                 })
             {
                 if (!field.IsSelect && field.InputType.KnownType == KnownHtmlInputType.Other)

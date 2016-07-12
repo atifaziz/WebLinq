@@ -29,6 +29,8 @@ namespace WebLinq.Html
         public abstract IEnumerable<string> AttributeNames { get; }
         public abstract bool HasAttribute(string name);
         public virtual string GetAttributeValue(string name) => GetAttributeSourceValue(name).Decoded;
+        public virtual bool AttributeValueEquals(string name, string value) => string.Equals(GetAttributeValue(name)?.Trim(), value, StringComparison.OrdinalIgnoreCase);
+        public virtual bool IsAttributeFlagged(string name) => AttributeValueEquals(name, name);
         public abstract HtmlString GetAttributeSourceValue(string name);
         public abstract string OuterHtml { get; }
         public abstract string InnerHtml { get; }

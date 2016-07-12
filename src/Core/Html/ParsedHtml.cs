@@ -98,10 +98,8 @@ namespace WebLinq.Html
             select f;
     }
 
-    public enum HtmlControlType { Input, Select, TextArea }
-    public enum HtmlDisabledFlag { Default, Disabled }
-    public enum HtmlReadOnlyFlag { Default, ReadOnly }
     public enum HtmlFormMethod { Get, Post }
+    public enum HtmlControlType { Input, Select, TextArea }
 
     public static class ParsedHtmlExtensions
     {
