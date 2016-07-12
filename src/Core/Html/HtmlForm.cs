@@ -148,7 +148,7 @@ namespace WebLinq.Html
                                  ? field.Element.QuerySelector("option[selected]")
                                  : field.Element;
 
-                var value = WebUtility.HtmlDecode(valueElement?.GetAttributeValue("value") ?? string.Empty);
+                var value = valueElement?.GetAttributeValue("value") ?? string.Empty;
 
                 all?.Add(field.Name, value);
 

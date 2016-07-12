@@ -84,12 +84,12 @@ namespace WebLinq.Html
                 public override bool HasAttribute(string name) =>
                     GetAttributeValue(name) == null;
 
-                public override string GetAttributeValue(string name) =>
-                    Node.GetAttributeValue(name, null);
+                public override HtmlString GetAttributeSourceValue(string name) =>
+                    HtmlString.FromEncoded(Node.GetAttributeValue(name, null));
 
                 public override string OuterHtml => Node.OuterHtml;
                 public override string InnerHtml => Node.InnerHtml;
-                public override string InnerText => Node.InnerText;
+                public override HtmlString InnerTextSource => HtmlString.FromEncoded(Node.InnerText);
 
                 public override HtmlObject ParentElement =>
                     Node.ParentNode.NodeType == HtmlNodeType.Element

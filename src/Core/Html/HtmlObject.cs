@@ -28,10 +28,12 @@ namespace WebLinq.Html
         public virtual bool HasAttributes => AttributeNames.Any();
         public abstract IEnumerable<string> AttributeNames { get; }
         public abstract bool HasAttribute(string name);
-        public abstract string GetAttributeValue(string name);
+        public virtual string GetAttributeValue(string name) => GetAttributeSourceValue(name).Decoded;
+        public abstract HtmlString GetAttributeSourceValue(string name);
         public abstract string OuterHtml { get; }
         public abstract string InnerHtml { get; }
-        public abstract string InnerText { get; }
+        public virtual string InnerText => InnerTextSource.Decoded;
+        public abstract HtmlString InnerTextSource { get; }
         public virtual bool HasChildElements => ChildElements.Any();
         public abstract HtmlObject ParentElement { get; }
         public abstract IEnumerable<HtmlObject> ChildElements { get; }
