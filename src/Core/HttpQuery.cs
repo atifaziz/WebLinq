@@ -75,7 +75,7 @@ namespace WebLinq
                     Action = new Uri(html.TryBaseHref(f.Action), UriKind.Absolute),
                     f.Method,
                     f.EncType, // TODO validate
-                    Data = f.GetForm(),
+                    Data = f.GetSubmissionData(),
                 };
 
             var form = forms.FirstOrDefault();

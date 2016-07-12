@@ -95,7 +95,7 @@ namespace WebLinq.Html
                 );
         }
 
-        public NameValueCollection GetForm() =>
+        public NameValueCollection GetSubmissionData() =>
             GetFormCore(data => data);
 
         public T GetForm<T>(Func<NameValueCollection, NameValueCollection, T> selector) =>
