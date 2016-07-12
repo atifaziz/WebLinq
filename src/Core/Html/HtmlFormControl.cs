@@ -22,6 +22,7 @@ namespace WebLinq.Html
     {
         bool? _isDisabled;
         bool? _isReadOnly;
+        bool? _isChecked;
 
         public HtmlForm Form { get; }
         public HtmlObject Element { get; }
@@ -30,6 +31,7 @@ namespace WebLinq.Html
         public HtmlInputType InputType { get; }
         public bool IsDisabled => (_isDisabled ?? (_isDisabled = Element.IsAttributeFlagged("disabled"))) == true;
         public bool IsReadOnly => (_isReadOnly ?? (_isReadOnly = Element.IsAttributeFlagged("readonly"))) == true;
+        public bool IsChecked  => (_isChecked  ?? (_isChecked  = Element.IsAttributeFlagged("checked" ))) == true;
 
         internal HtmlFormControl(HtmlForm form, HtmlObject element, string name, HtmlControlType controlType, HtmlInputType inputType)
         {
