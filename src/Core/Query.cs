@@ -31,10 +31,18 @@ namespace WebLinq
         public static SeqQuery<T> Spread<T>(this Query<IEnumerable<T>> query) =>
             SeqQuery.Create(query.GetResult);
 
+        [Obsolete("Use the overload taking a context factory instead.")]
         public static IEnumerable<T> ToEnumerable<T>(this Query<IEnumerable<T>> query, QueryContext context)
         {
             var result = query.GetResult(context);
             return result.DataOrDefault() ?? Enumerable.Empty<T>();
+        }
+
+        public static IEnumerable<T> ToEnumerable<T>(this Query<IEnumerable<T>> query, Func<QueryContext> contextFactory)
+        {
+            var result = query.GetResult(contextFactory());
+            foreach (var e in result.DataOrDefault() ?? Enumerable.Empty<T>())
+                yield return e;
         }
 
         public static IEnumerable<T> ToEnumerable<T>(this SeqQuery<T> query, Func<QueryContext> contextFactory)
