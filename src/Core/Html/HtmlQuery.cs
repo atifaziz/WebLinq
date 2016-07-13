@@ -116,8 +116,8 @@ namespace WebLinq.Html
             {
                 new DataColumn("FormName")                  { AllowDBNull = false },
                 new DataColumn("FormAction")                { AllowDBNull = false },
-                new DataColumn("FormMethod")                { AllowDBNull = false },
-                new DataColumn("FormEncoding")              { AllowDBNull = false },
+                new DataColumn("FormMethod")                { AllowDBNull = true  },
+                new DataColumn("FormEncoding")              { AllowDBNull = true  },
                 new DataColumn("Name")                      { AllowDBNull = false },
                 new DataColumn("Value")                     { AllowDBNull = false },
                 new DataColumn("Submittable", typeof(bool)) { AllowDBNull = false },
