@@ -61,5 +61,19 @@ namespace WebLinq
             if (evaluator == null) throw new ArgumentNullException(nameof(evaluator));
             return serviceProvider.Eval((T1 s1, T2 s2, T3 s3) => serviceProvider.Eval((T4 s4) => evaluator(s1, s2, s3, s4)));
         }
+
+        public static IServiceProvider LinkService<T>(this IServiceProvider serviceProvider, T service)
+            where T : class
+        {
+            if (serviceProvider == null) throw new ArgumentNullException(nameof(serviceProvider));
+            return LinkedServiceProvider.Create(service, serviceProvider);
+        }
+
+        public static IServiceProvider LinkService<T>(this IServiceProvider serviceProvider, Type serviceType, T service)
+            where T : class
+        {
+            if (serviceProvider == null) throw new ArgumentNullException(nameof(serviceProvider));
+            return LinkedServiceProvider.Create(serviceType, service, serviceProvider);
+        }
     }
 }

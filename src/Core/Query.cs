@@ -40,5 +40,15 @@ namespace WebLinq
 
         public static IEnumerable<T> ToEnumerable<T>(this Query<IEnumerable<T>> query, Func<QueryContext> contextFactory) =>
             query.Spread().ToEnumerable(contextFactory);
+
+        public static Query<T> FindService<T>() where T : class =>
+            Create(context => QueryResult.Create(context, (T) ((IServiceProvider) context).GetService(typeof(T))));
+
+        public static Query<T> GetService<T>() =>
+            Create(context => QueryResult.Create(context, context.RequireService<T>()));
+
+        public static Query<T> SetService<T>(T service) where T : class =>
+            FindService<T>().Bind(current => Create(context =>
+                QueryResult.Create(new QueryContext(context.LinkService(typeof(T), service)), current)));
     }
 }
