@@ -38,11 +38,7 @@ namespace WebLinq
             return result.DataOrDefault() ?? Enumerable.Empty<T>();
         }
 
-        public static IEnumerable<T> ToEnumerable<T>(this Query<IEnumerable<T>> query, Func<QueryContext> contextFactory)
-        {
-            var result = query.GetResult(contextFactory());
-            foreach (var e in result.DataOrDefault() ?? Enumerable.Empty<T>())
-                yield return e;
-        }
+        public static IEnumerable<T> ToEnumerable<T>(this Query<IEnumerable<T>> query, Func<QueryContext> contextFactory) =>
+            query.Spread().ToEnumerable(contextFactory);
     }
 }
