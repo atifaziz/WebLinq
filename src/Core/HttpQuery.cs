@@ -20,6 +20,7 @@ namespace WebLinq
 
     using System;
     using System.Collections.Specialized;
+    using System.Diagnostics;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
@@ -41,7 +42,9 @@ namespace WebLinq
             from e in query select e.Content;
 
         public static Query<HttpFetch<HttpContent>> Accept(this Query<HttpFetch<HttpContent>> query, params string[] mediaTypes) =>
-            query.Do(e =>
+            (mediaTypes?.Length ?? 0) == 0
+            ? query
+            : query.Do(e =>
             {
                 var headers = e.Content.Headers;
                 var actualMediaType = headers.ContentType?.MediaType;
@@ -57,6 +60,7 @@ namespace WebLinq
                     }
                 }
 
+                Debug.Assert(mediaTypes != null);
                 if (mediaTypes.Any(mediaType => mediaType.Equals(actualMediaType, StringComparison.OrdinalIgnoreCase)))
                     return;
 
