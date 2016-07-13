@@ -18,21 +18,16 @@ namespace WebLinq.Zip
 {
     using System.IO;
     using System.Net.Http;
-    using System.Net.Mime;
 
     public static class ZipQuery
     {
         public static Query<HttpFetch<Zip>> Unzip(this Query<HttpFetch<HttpContent>> query) =>
-            query.Accept(MediaTypeNames.Application.Zip)
-                 .Bind(fetch =>
+            query.Bind(fetch => Query.Create(context =>
                  {
-                     return Query.Create(context =>
-                     {
-                         var path = Path.GetTempFileName();
-                         using (var output = File.Create(path))
-                             fetch.Content.CopyToAsync(output).Wait();
-                         return QueryResult.Create(context, fetch.WithContent(new Zip(path)));
-                     });
-                 });
+                     var path = Path.GetTempFileName();
+                     using (var output = File.Create(path))
+                         fetch.Content.CopyToAsync(output).Wait();
+                     return QueryResult.Create(context, fetch.WithContent(new Zip(path)));
+                 }));
     }
 }
