@@ -61,7 +61,7 @@ namespace WebLinq
                 }
 
                 Debug.Assert(mediaTypes != null);
-                if (mediaTypes.Any(mediaType => mediaType.Equals(actualMediaType, StringComparison.OrdinalIgnoreCase)))
+                if (mediaTypes.Any(mediaType => string.Equals(mediaType, actualMediaType, StringComparison.OrdinalIgnoreCase)))
                     return;
 
                 throw new Exception($"Unexpected content of type \"{actualMediaType}\". Acceptable types are: {string.Join(", ", mediaTypes)}");
