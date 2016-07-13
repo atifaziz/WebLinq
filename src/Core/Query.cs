@@ -44,13 +44,5 @@ namespace WebLinq
             foreach (var e in result.DataOrDefault() ?? Enumerable.Empty<T>())
                 yield return e;
         }
-
-        public static IEnumerable<T> ToEnumerable<T>(this SeqQuery<T> query, Func<QueryContext> contextFactory)
-        {
-            var result = query.GetResult(contextFactory());
-            // ReSharper disable once LoopCanBeConvertedToQuery
-            foreach (var e in result.DataOrDefault() ?? Enumerable.Empty<T>())
-                yield return e;
-        }
     }
 }
