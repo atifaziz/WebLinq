@@ -84,6 +84,8 @@
     <Compile Include="ParsedValue.cs" />
     <Compile Include="Mime\MimeMap.cs" />
     <Compile Include="HttpQuery.cs" />
+    <Compile Include="SeqQuery.cs" />
+    <Compile Include="SeqQueryT.cs" />
     <Compile Include="ServiceProviderExtensions.cs" />
     <Compile Include="Sys\SpawnServiceExtensions.cs" />
     <Compile Include="Sys\SysQuery.cs" />
