@@ -31,15 +31,17 @@ namespace WebLinq
 
     #endregion
 
-    // ReSharper disable once ConvertToStaticClass
-    sealed class HttpUserAgentHeader { HttpUserAgentHeader() { } }
-
     public static class HttpQuery
     {
         public static HttpSpec Http => new HttpSpec();
 
+        // ReSharper disable once ConvertToStaticClass
+        // ReSharper disable once ClassNeverInstantiated.Local
+        internal sealed class UserAgentHeader { UserAgentHeader() { } }
+
         public static Query<string> DefaultUserAgent(string value) =>
-            Query.SetService<HttpUserAgentHeader, string>(value);
+            from current in Query.SetService(new TypedValue<UserAgentHeader, string>(value))
+            select current?.Value;
 
         public static Query<T> Content<T>(this Query<HttpFetch<T>> query) =>
             from e in query select e.Content;

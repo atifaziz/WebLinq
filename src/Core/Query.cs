@@ -41,22 +41,18 @@ namespace WebLinq
         public static IEnumerable<T> ToEnumerable<T>(this Query<IEnumerable<T>> query, Func<QueryContext> contextFactory) =>
             query.Spread().ToEnumerable(contextFactory);
 
-        public static Query<TService> FindService<T, TService>() where TService : class =>
+        public static Query<T> FindService<T>() where T : class =>
             Create(context =>
             {
                 IServiceProvider sp = context;
-                return QueryResult.Create(context, (TService) sp.GetService(typeof (T)));
+                return QueryResult.Create(context, (T) sp.GetService(typeof(T)));
             });
 
-        public static Query<TService> GetService<T, TService>() where TService : class =>
-            Create(context => QueryResult.Create(context, (TService)context.RequireService(typeof(T))));
+        public static Query<T> GetService<T>() where T : class =>
+            Create(context => QueryResult.Create(context, context.GetService<T>()));
 
-        public static Query<TService> SetService<T, TService>(TService service) where TService : class =>
-            FindService<T, TService>().Bind(current => Create(context =>
+        public static Query<T> SetService<T>(T service) where T : class =>
+            FindService<T>().Bind(current => Create(context =>
                 QueryResult.Create(new QueryContext(context.LinkService(typeof(T), service)), current)));
-
-        public static Query<T> FindService<T>()         where T : class => FindService<T, T>();
-        public static Query<T> GetService<T>()          where T : class => GetService<T, T>();
-        public static Query<T> SetService<T>(T service) where T : class => SetService<T, T>(service);
     }
 }
