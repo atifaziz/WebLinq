@@ -26,11 +26,16 @@ namespace WebLinq
             return (T) serviceProvider.GetService(typeof(T));
         }
 
-        public static T RequireService<T>(this IServiceProvider serviceProvider)
+        public static T RequireService<T>(this IServiceProvider serviceProvider) =>
+            (T) serviceProvider.RequireService(typeof(T));
+
+        public static object RequireService(this IServiceProvider serviceProvider, Type serviceType)
         {
-            var service = serviceProvider.GetService<T>();
+            if (serviceProvider == null) throw new ArgumentNullException(nameof(serviceProvider));
+            if (serviceType == null) throw new ArgumentNullException(nameof(serviceType));
+            var service = serviceProvider.GetService(serviceType);
             if (service == null)
-                throw new Exception($"Service {typeof(T).FullName} is unavailable.");
+                throw new Exception($"Service {serviceType.FullName} is unavailable.");
             return service;
         }
 
