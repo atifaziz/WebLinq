@@ -45,8 +45,9 @@ namespace WebLinq
         }
 
         public Query<HttpFetch<HttpContent>> Get(Uri url) =>
-            Query.Create(context => QueryResult.Create(context, context.Eval((HttpService http) =>
-                http.Get(url, Options()))));
+            Query.FindService<HttpUserAgentHeader, string>().Bind(ua =>
+                Query.Create(context => QueryResult.Create(context, context.Eval((HttpService http) =>
+                    http.Get(url, Options(ua))))));
 
         public Query<HttpFetch<HttpContent>> Post(Uri url, NameValueCollection data) =>
             Post(url, new FormUrlEncodedContent(from i in Enumerable.Range(0, data.Count)
@@ -54,16 +55,35 @@ namespace WebLinq
                                                 select data.GetKey(i).AsKeyTo(v)));
 
         public Query<HttpFetch<HttpContent>> Post(Uri url, HttpContent content) =>
-            Query.Create(context => QueryResult.Create(context, context.Eval((HttpService http) =>
-                http.Post(url, content, Options()))));
+            Query.FindService<HttpUserAgentHeader, string>().Bind(ua =>
+                Query.Create(context => QueryResult.Create(context, context.Eval((HttpService http) =>
+                    http.Post(url, content, Options(ua))))));
 
-        HttpOptions Options() => new HttpOptions
+        HttpOptions Options(string ua)
         {
-            ReturnErrorneousFetch = _returnErrorneousFetch,
-            Headers = HasHeaders
-                    ? new HttpHeaderCollection(Headers)
-                    : HttpHeaderCollection.Empty
-        };
+            NameValueCollection headers = null;
+            if (!string.IsNullOrEmpty(ua))
+            {
+                if (!HasHeaders || Headers.GetValues("User-Agent") == null)
+                {
+                    headers = HasHeaders
+                            ? new NameValueCollection(Headers)
+                            : new NameValueCollection();
+                    headers.Add("User-Agent", ua);
+                }
+            }
+
+            if (headers == null && HasHeaders)
+                headers = Headers;
+
+            return new HttpOptions
+            {
+                ReturnErrorneousFetch = _returnErrorneousFetch,
+                Headers = headers != null
+                        ? new HttpHeaderCollection(headers)
+                        : HttpHeaderCollection.Empty
+            };
+        }
     }
 
     static class SysNetHttpExtensions
