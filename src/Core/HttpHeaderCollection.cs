@@ -16,38 +16,54 @@
 
 namespace WebLinq
 {
+    #region Imports
+
     using System;
-    using System.Collections;
     using System.Collections.Generic;
-    using System.Collections.Specialized;
     using System.Diagnostics;
+    using System.Linq;
+    using System.Net.Http.Headers;
+    using Collections;
+
+    #endregion
 
     [DebuggerDisplay("Count = {Count}")]
-    public sealed class HttpHeaderCollection : NameValueCollection
+    public sealed class HttpHeaderCollection : MapBase<string, IReadOnlyCollection<string>>
     {
         public static readonly HttpHeaderCollection Empty = new HttpHeaderCollection();
 
+        readonly HttpHeaderCollection _link;
+
         public HttpHeaderCollection() :
-            base(0)
+            base(StringComparer.OrdinalIgnoreCase) {}
+
+        HttpHeaderCollection(HttpHeaderCollection link, string key, IReadOnlyCollection<string> values) :
+            base(key, values, link.Comparer)
         {
-            IsReadOnly = true;
+            if (key == null) throw new ArgumentNullException(nameof(key));
+            if (values == null) throw new ArgumentNullException(nameof(values));
+            _link = link;
         }
 
-        public HttpHeaderCollection(NameValueCollection headers) :
-            base(headers)
-        {
-            IsReadOnly = true;
-        }
+        public HttpHeaderCollection Set(string key, string value) =>
+            Set(key, ReadOnlyCollection.Singleton(value));
 
-        public HttpHeaderCollection(IEnumerable<KeyValuePair<string, IEnumerable<string>>> entries) :
-            base((entries as ICollection)?.Count ?? 8)
-        {
-            if (entries == null) throw new ArgumentNullException(nameof(entries));
+        public HttpHeaderCollection Set(string key, IEnumerable<string> values) =>
+            new HttpHeaderCollection(this, key, values as IReadOnlyCollection<string>
+                                                ?? Array.AsReadOnly(Value.ToArray()));
 
-            foreach (var entry in entries)
-                foreach (var value in entry.Value)
-                    Add(entry.Key, value);
-            IsReadOnly = true;
-        }
+        public HttpHeaderCollection Set(string key, IReadOnlyCollection<string> values) =>
+            new HttpHeaderCollection(this, key, values);
+
+        internal HttpHeaderCollection Set(HttpHeaders headers) =>
+            headers.Aggregate(this, (h, e) => h.Set(e.Key, e.Value));
+
+        public HttpHeaderCollection Remove(string key) =>
+            RemoveCore(Empty, key, (hs, k, vs) => hs.Set(k, vs));
+
+        public override bool IsEmpty => _link == null;
+
+        protected override IEnumerable<KeyValuePair<string, IReadOnlyCollection<string>>> Nodes =>
+            GetNodesCore(this, h => h._link);
     }
 }

@@ -67,6 +67,8 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>AssemblyInfo.g.tt</DependentUpon>
     </Compile>
+    <Compile Include="Collections\MapBase.cs" />
+    <Compile Include="Collections\Map.cs" />
     <Compile Include="DelegateExtensions.cs" />
     <Compile Include="ArrayList.cs" />
     <Compile Include="Html\HtmlForm.cs" />
@@ -88,6 +90,7 @@
     <Compile Include="SeqQuery.cs" />
     <Compile Include="SeqQueryT.cs" />
     <Compile Include="ServiceProviderExtensions.cs" />
+    <Compile Include="Collections\ReadOnlyCollection.cs" />
     <Compile Include="Sys\SpawnServiceExtensions.cs" />
     <Compile Include="Sys\SysQuery.cs" />
     <Compile Include="Text\TextQuery.cs" />

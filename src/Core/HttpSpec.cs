@@ -26,9 +26,9 @@ namespace WebLinq
     {
         bool _returnErrorneousFetch;
 
-        NameValueCollection _headers;
-        bool HasHeaders => _headers?.Count > 0;
-        NameValueCollection Headers => _headers ?? (_headers = new NameValueCollection());
+        HttpHeaderCollection Headers { get; set; }
+
+        public HttpSpec() { Headers = HttpHeaderCollection.Empty; }
 
         public HttpSpec ReturnErrorneousFetch()
         {
@@ -40,7 +40,7 @@ namespace WebLinq
 
         public HttpSpec Header(string name, string value)
         {
-            Headers.Add(name, value);
+            Headers = Headers.Set(name, value);
             return this;
         }
 
@@ -61,27 +61,14 @@ namespace WebLinq
 
         HttpOptions Options(string ua)
         {
-            NameValueCollection headers = null;
-            if (!string.IsNullOrEmpty(ua))
-            {
-                if (!HasHeaders || Headers.GetValues("User-Agent") == null)
-                {
-                    headers = HasHeaders
-                            ? new NameValueCollection(Headers)
-                            : new NameValueCollection();
-                    headers.Add("User-Agent", ua);
-                }
-            }
-
-            if (headers == null && HasHeaders)
-                headers = Headers;
+            var headers = HttpHeaderCollection.Empty;
+            if (!string.IsNullOrEmpty(ua) && (Headers.IsEmpty || Headers.TryGetValue("User-Agent") == null))
+                headers = headers.Set("User-Agent", ua);
 
             return new HttpOptions
             {
                 ReturnErrorneousFetch = _returnErrorneousFetch,
-                Headers = headers != null
-                        ? new HttpHeaderCollection(headers)
-                        : HttpHeaderCollection.Empty
+                Headers = headers,
             };
         }
     }
@@ -95,9 +82,9 @@ namespace WebLinq
             return HttpFetch.Create(id, response.Content,
                                     response.Version,
                                     response.StatusCode, response.ReasonPhrase,
-                                    new HttpHeaderCollection(response.Headers),
+                                    HttpHeaderCollection.Empty.Set(response.Headers),
                                     request.RequestUri,
-                                    new HttpHeaderCollection(request.Headers));
+                                    HttpHeaderCollection.Empty.Set(request.Headers));
         }
     }
 }
