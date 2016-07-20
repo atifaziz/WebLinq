@@ -19,9 +19,24 @@ namespace WebLinq
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using MoreLinq;
 
     public static class Query
     {
+        public static SeqQuery<int> Sequence(int first, int last) =>
+            Sequence(first, last, 1);
+
+        public static SeqQuery<int> Sequence(int first, int last, int step)
+        {
+            if (step <= 0)
+                throw new ArgumentException(null, nameof(step));
+            if (last < first)
+                step = -step;
+            return MoreEnumerable.Generate(first, i => i + step)
+                                 .TakeWhile(i => step < 0 ? i >= last : i <= last)
+                                 .ToQuery();
+        }
+
         public static Query<T> Create<T>(Func<QueryContext, QueryResult<T>> func) =>
             new Query<T>(func);
 
