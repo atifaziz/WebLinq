@@ -102,5 +102,10 @@ namespace WebLinq
 
         public SeqQuery<T> OrderBy<TKey>(Func<T, TKey> keySelector) =>
             Bind(xs => SeqQuery.Return(xs.OrderBy(keySelector)));
+
+        public SeqQuery<T> Distinct() => Distinct(null);
+
+        public SeqQuery<T> Distinct(IEqualityComparer<T> comparer) =>
+            Bind(xs => SeqQuery.Return(xs.Distinct(comparer)));
     }
 }
