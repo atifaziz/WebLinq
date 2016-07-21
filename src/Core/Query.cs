@@ -37,6 +37,12 @@ namespace WebLinq
                                  .ToQuery();
         }
 
+        public static Query<QueryContext> Context() =>
+            Create(context => QueryResult.Create(context, context));
+
+        public static Query<QueryContext> Context(QueryContext newContext) =>
+            Create(context => QueryResult.Create(newContext, context));
+
         public static Query<T> Create<T>(Func<QueryContext, QueryResult<T>> func) =>
             new Query<T>(func);
 
