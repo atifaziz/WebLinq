@@ -17,11 +17,8 @@
 namespace WebLinq
 {
     using System;
-    using System.Collections.Specialized;
-    using System.Linq;
     using System.Net.Http;
     using System.Net.Http.Headers;
-    using Mannex.Collections.Generic;
 
     public sealed class HttpOptions
     {
@@ -80,13 +77,12 @@ namespace WebLinq
             return response.ToHttpFetch(NextFetchId());
         }
 
-        static void MergeHeaders(NameValueCollection source, HttpHeaders target)
+        static void MergeHeaders(HttpHeaderCollection source, HttpHeaders target)
         {
             if (source == null)
                 return;
 
-            foreach (var e in from i in Enumerable.Range(0, source.Count)
-                              select source.GetKey(i).AsKeyTo(source.GetValues(i)))
+            foreach (var e in source)
             {
                 if (e.Value == null)
                     target.Remove(e.Key);
