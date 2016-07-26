@@ -45,9 +45,9 @@ namespace WebLinq
         }
 
         public Query<HttpFetch<HttpContent>> Get(Uri url) =>
-            Query.FindService<TypedValue<HttpQuery.UserAgentHeader, string>>().Bind(ua =>
+            Query.TryGetItem("Http.User-Agent", (bool found, string value) => found ? value : null).Bind(ua =>
                 Query.Create(context => QueryResult.Create(context, context.Eval((HttpService http) =>
-                    http.Get(url, Options(ua?.Value))))));
+                    http.Get(url, Options(ua))))));
 
         public Query<HttpFetch<HttpContent>> Post(Uri url, NameValueCollection data) =>
             Post(url, new FormUrlEncodedContent(from i in Enumerable.Range(0, data.Count)
@@ -55,9 +55,9 @@ namespace WebLinq
                                                 select data.GetKey(i).AsKeyTo(v)));
 
         public Query<HttpFetch<HttpContent>> Post(Uri url, HttpContent content) =>
-            Query.FindService<TypedValue<HttpQuery.UserAgentHeader, string>>().Bind(ua =>
+            Query.TryGetItem("Http.User-Agent", (bool found, string value) => found ? value : null).Bind(ua =>
                 Query.Create(context => QueryResult.Create(context, context.Eval((HttpService http) =>
-                    http.Post(url, content, Options(ua?.Value))))));
+                    http.Post(url, content, Options(ua))))));
 
         HttpOptions Options(string ua)
         {
