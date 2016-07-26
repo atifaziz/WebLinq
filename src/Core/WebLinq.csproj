@@ -73,10 +73,11 @@
     <Compile Include="ArrayList.cs" />
     <Compile Include="Html\HtmlForm.cs" />
     <Compile Include="Html\HtmlFormControl.cs" />
+    <Compile Include="Html\HtmlParser.cs" />
     <Compile Include="Html\HtmlString.cs" />
     <Compile Include="Html\ParsedHtml.cs" />
     <Compile Include="Html\HtmlObject.cs" />
-    <Compile Include="Html\HtmlParser.cs" />
+    <Compile Include="Html\HapHtmlParser.cs" />
     <Compile Include="Html\HtmlInputType.cs" />
     <Compile Include="Html\HtmlQuery.cs" />
     <Compile Include="HttpHeaderCollection.cs" />
