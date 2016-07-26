@@ -32,7 +32,7 @@ namespace WebLinq.Xsv
 
         public static Query<DataTable> XsvToDataTable(string text, string delimiter, bool quoted, params DataColumn[] columns) =>
             Query.Create(context =>
-                QueryResult.Create(context, text.Read().ParseXsvAsDataTable(delimiter, quoted, columns)));
+                QueryResult.Singleton(context, text.Read().ParseXsvAsDataTable(delimiter, quoted, columns)));
 
     }
 }

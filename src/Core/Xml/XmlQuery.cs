@@ -25,13 +25,14 @@ namespace WebLinq.Xml
             Xml(content, LoadOptions.None);
 
         public static Query<XDocument> Xml(HttpContent content, LoadOptions options) =>
-            Query.Create(context => QueryResult.Create(context, Xml(content.ReadAsStringAsync().Result, options)));
+            Query.Create(context => QueryResult.Singleton(context, Xml(content.ReadAsStringAsync().Result, options)));
 
         public static Query<HttpFetch<XDocument>> Xml(this Query<HttpFetch<HttpContent>> query) =>
             Xml(query, LoadOptions.None);
 
         public static Query<HttpFetch<XDocument>> Xml(this Query<HttpFetch<HttpContent>> query, LoadOptions options) =>
-            query.Bind(fetch => Query.Create(context => QueryResult.Create(context, fetch.WithContent(Xml(fetch.Content.ReadAsStringAsync().Result, options)))));
+            from fetch in query
+            select fetch.WithContent(Xml(fetch.Content.ReadAsStringAsync().Result, options));
 
         static XDocument Xml(string xml, LoadOptions options) =>
             XDocument.Parse(xml, options);

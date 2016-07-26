@@ -30,59 +30,64 @@ namespace WebLinq.Html
             Html(html, null);
 
         public static Query<ParsedHtml> Html(string html, Uri baseUrl) =>
-            Query.Create(context => Html(context, html, baseUrl, p => p));
+            Query.Create(context => QueryResult.Singleton(context, Html(context, html, baseUrl, p => p)));
 
         public static Query<HttpFetch<ParsedHtml>> Html(this Query<HttpFetch<HttpContent>> query) =>
-            query.Accept(MediaTypeNames.Text.Html)
-                 .Bind(fetch => Query.Create(context => Html(context, fetch.Content.ReadAsStringAsync().Result, fetch.RequestUrl, fetch.WithContent)));
+            from fetch in query.Accept(MediaTypeNames.Text.Html)
+            from context in Query.GetContext()
+            select Html(context, fetch.Content.ReadAsStringAsync().Result, fetch.RequestUrl, fetch.WithContent);
 
-        static QueryResult<T> Html<T>(QueryContext context, string html, Uri baseUrl, Func<ParsedHtml, T> selector) =>
-            QueryResult.Create(context, context.Eval((IHtmlParser hps) => selector(hps.Parse(html, baseUrl))));
+        static T Html<T>(IServiceProvider context, string html, Uri baseUrl, Func<ParsedHtml, T> selector) =>
+            context.Eval((IHtmlParser hps) => selector(hps.Parse(html, baseUrl)));
 
-        public static SeqQuery<string> Links(string html) =>
+        public static Query<string> Links(string html) =>
             Links(html, null, (href, _) => href);
 
-        public static SeqQuery<T> Links<T>(string html, Func<string, string, T> selector) =>
+        public static Query<T> Links<T>(string html, Func<string, string, T> selector) =>
             Links(html, null, selector);
 
-        public static SeqQuery<string> Links(string html, Uri baseUrl) =>
+        public static Query<string> Links(string html, Uri baseUrl) =>
             Links(html, baseUrl, (href, _) => href);
 
-        public static SeqQuery<T> Links<T>(string html, Uri baseUrl, Func<string, string, T> selector) =>
-            Html(html, baseUrl).Bind(ph => Links(ph, selector));
+        public static Query<T> Links<T>(string html, Uri baseUrl, Func<string, string, T> selector) =>
+            from ph in Html(html, baseUrl)
+            from link in Links(ph, selector)
+            select link;
 
-        public static SeqQuery<string> Links(ParsedHtml html) =>
+        public static Query<string> Links(ParsedHtml html) =>
             Links(html, (href, _) => href);
 
-        public static SeqQuery<T> Links<T>(ParsedHtml html, Func<string, string, T> selector) =>
-            SeqQuery.Create(context => Links(context, html, selector));
+        public static Query<T> Links<T>(ParsedHtml html, Func<string, string, T> selector) =>
+            html.Links((href, ho) => selector(href, ho.InnerHtml))
+                .Select(link => link)
+                .ToQuery();
 
-        public static SeqQuery<HttpFetch<string>> Links(this Query<HttpFetch<HttpContent>> query) =>
+        public static Query<HttpFetch<string>> Links(this Query<HttpFetch<HttpContent>> query) =>
             query.Links(null);
 
-        public static SeqQuery<HttpFetch<T>> Links<T>(this Query<HttpFetch<HttpContent>> query, Func<string, string, T> selector) =>
+        public static Query<HttpFetch<T>> Links<T>(this Query<HttpFetch<HttpContent>> query, Func<string, string, T> selector) =>
             Links(query, null, selector);
 
-        public static SeqQuery<HttpFetch<string>> Links(this Query<HttpFetch<HttpContent>> query, Uri baseUrl) =>
+        public static Query<HttpFetch<string>> Links(this Query<HttpFetch<HttpContent>> query, Uri baseUrl) =>
             Links(query, baseUrl, (href, _) => href);
 
-        public static SeqQuery<HttpFetch<T>> Links<T>(this Query<HttpFetch<HttpContent>> query, Uri baseUrl, Func<string, string, T> selector) =>
-            query.Html().Bind(html => SeqQuery.Create(context => Links(context, html.Content, (href, txt) => html.WithContent(selector(href, txt)))));
+        public static Query<HttpFetch<T>> Links<T>(this Query<HttpFetch<HttpContent>> query, Uri baseUrl, Func<string, string, T> selector) =>
+            from html in query.Html()
+            from link in Links(html.Content, (href, txt) => html.WithContent(selector(href, txt)))
+            select link;
 
-        static QueryResult<IEnumerable<T>> Links<T>(QueryContext context, ParsedHtml html, Func<string, string, T> selector) =>
-            QueryResult.Create(context, html.Links((href, ho) => selector(href, ho.InnerHtml)));
+        public static Query<HtmlObject> Tables(string html) =>
+            from ph in Html(html)
+            from t in Tables(html)
+            select t;
 
-        public static SeqQuery<HtmlObject> Tables(string html) =>
-            Html(html).Bind(Tables);
+        public static Query<HtmlObject> Tables(ParsedHtml html) =>
+            html.Tables(null).ToQuery();
 
-        public static SeqQuery<HtmlObject> Tables(ParsedHtml html) =>
-            SeqQuery.Create(context => Tables(context, html));
-
-        public static SeqQuery<HtmlObject> Tables(this Query<HttpFetch<HttpContent>> query) =>
-            query.Html().Bind(html => SeqQuery.Create(context => Tables(context, html.Content)));
-
-        static QueryResult<IEnumerable<HtmlObject>> Tables(QueryContext context, ParsedHtml html) =>
-            QueryResult.Create(context, html.Tables(null));
+        public static Query<HttpFetch<HtmlObject>> Tables(this Query<HttpFetch<HttpContent>> query) =>
+            from f in query.Html()
+            from t in Tables(f.Content)
+            select f.WithContent(t);
 
         public static Query<HttpFetch<DataTable>> FormsAsDataTable(this Query<HttpFetch<HttpContent>> query) =>
             query.Html().FormsAsDataTable();
@@ -149,23 +154,23 @@ namespace WebLinq.Html
                 dt.Rows.Add(form);
             }
 
-            return Query.Return(dt);
+            return Query.Singleton(dt);
         }
 
-        public static SeqQuery<HttpFetch<HtmlForm>> Forms(this Query<HttpFetch<HttpContent>> query) =>
+        public static Query<HttpFetch<HtmlForm>> Forms(this Query<HttpFetch<HttpContent>> query) =>
             query.Html().Forms();
 
-        public static SeqQuery<HtmlForm> Forms(this Query<ParsedHtml> query) =>
+        public static Query<HtmlForm> Forms(this Query<ParsedHtml> query) =>
             from html in query
             from forms in Forms(html)
             select forms;
 
-        public static SeqQuery<HttpFetch<HtmlForm>> Forms(this Query<HttpFetch<ParsedHtml>> query) =>
+        public static Query<HttpFetch<HtmlForm>> Forms(this Query<HttpFetch<ParsedHtml>> query) =>
             from html in query
             from forms in Forms(html.Content)
             select html.WithContent(forms);
 
-        public static SeqQuery<HtmlForm> Forms(ParsedHtml html) =>
-            SeqQuery.Return(html.Forms);
+        public static Query<HtmlForm> Forms(ParsedHtml html) =>
+            Query.Return(html.Forms);
     }
 }

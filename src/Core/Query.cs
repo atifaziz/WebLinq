@@ -19,14 +19,15 @@ namespace WebLinq
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using Mannex.Collections.Generic;
     using MoreLinq;
 
     public static class Query
     {
-        public static SeqQuery<int> Sequence(int first, int last) =>
+        public static Query<int> Sequence(int first, int last) =>
             Sequence(first, last, 1);
 
-        public static SeqQuery<int> Sequence(int first, int last, int step)
+        public static Query<int> Sequence(int first, int last, int step)
         {
             if (step <= 0)
                 throw new ArgumentException(null, nameof(step));
@@ -37,59 +38,68 @@ namespace WebLinq
                                  .ToQuery();
         }
 
+        public static Query<T> ToQuery<T>(this IEnumerable<T> items) =>
+            Create(context => QueryResult.Create(from item in items select QueryResultItem.Create(context, item)));
+
         public static Query<QueryContext> GetContext() =>
-            Create(context => QueryResult.Create(context, context));
+            Create(context => QueryResult.Singleton(context, context));
 
         public static Query<QueryContext> SetContext(QueryContext newContext) =>
-            Create(context => QueryResult.Create(newContext, context));
+            Create(context => QueryResult.Singleton(newContext, context));
 
         public static Query<T> Create<T>(Func<QueryContext, QueryResult<T>> func) =>
             new Query<T>(func);
 
-        public static Query<T> Return<T>(T value) =>
-            Create(context => QueryResult.Create(context, value));
+        public static Query<T> Create<T>(Func<QueryContext, IEnumerable<QueryResultItem<T>>> func) =>
+            new Query<T>(context => QueryResult.Create(func(context)));
 
-        public static SeqQuery<T> Spread<T>(this Query<IEnumerable<T>> query) =>
-            SeqQuery.Create(query.GetResult);
+        public static Query<T> Singleton<T>(T item) =>
+            Return(new[] { item });
 
-        public static IEnumerable<T> ToEnumerable<T>(this Query<IEnumerable<T>> query, Func<QueryContext> contextFactory) =>
-            query.Spread().ToEnumerable(contextFactory);
+        public static Query<T> Return<T>(IEnumerable<T> items) =>
+            items.ToQuery();
+
+        public static Query<T> Return<T>(IEnumerable<QueryResultItem<T>> items) =>
+            Create(context => QueryResult.Create(items));
+
+        //public static Query<T> Spread<T>(this Query<IEnumerable<T>> query) =>
+        //    Create(query.GetResult);
+        //
+        public static IEnumerable<T> ToEnumerable<T>(this Query<T> query, Func<QueryContext> contextFactory) =>
+            from e in query.GetResult(contextFactory())
+            select e.Data;
 
         public static Query<T> FindService<T>() where T : class =>
             Create(context =>
             {
                 IServiceProvider sp = context;
-                return QueryResult.Create(context, (T) sp.GetService(typeof(T)));
+                return QueryResult.Singleton(context, (T) sp.GetService(typeof(T)));
             });
 
         public static Query<T> GetItem<T>(string key) =>
-            Create(context =>
-            {
-                object value;
-                return context.Items.TryGetValue(key, out value)
-                     ? QueryResult.Empty<T>(context)
-                     : QueryResult.Create(context, (T)value);
-            });
+            from x in TryGetItem(key, (bool found, T value) => new { Found = found, Value = value })
+            where x.Found
+            select x.Value;
 
         public static Query<TResult> TryGetItem<T, TResult>(string key, Func<bool, T, TResult> resultSelector) =>
             Create(context =>
             {
                 object value;
                 return context.Items.TryGetValue(key, out value)
-                     ? QueryResult.Create(context, resultSelector(true, (T) value))
-                     : QueryResult.Create(context, resultSelector(false, default(T)));
+                     ? QueryResult.Singleton(context, resultSelector(true, (T) value))
+                     : QueryResult.Singleton(context, resultSelector(false, default(T)));
             });
 
         public static Query<TResult> SetItem<T, TResult>(string key, T value, Func<bool, T, TResult> resultSelector) =>
             TryGetItem(key, resultSelector)
                 .Bind(ov => Create(context =>
-                    QueryResult.Create(context.WithItems(context.Items.Set(key, value)), ov)));
+                    QueryResult.Singleton(context.WithItems(context.Items.Set(key, value)), ov.Single().Data)));
 
         public static Query<T> GetService<T>() where T : class =>
-            Create(context => QueryResult.Create(context, context.GetService<T>()));
+            Create(context => QueryResult.Singleton(context, context.GetService<T>()));
 
         public static Query<T> SetService<T>(T service) where T : class =>
             FindService<T>().Bind(current => Create(context =>
-                QueryResult.Create(context.WithServiceProvider(context.LinkService(typeof(T), service)), current)));
+                QueryResult.Singleton(context.WithServiceProvider(context.LinkService(typeof(T), service)), current.Single().Data)));
     }
 }
