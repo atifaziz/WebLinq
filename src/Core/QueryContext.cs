@@ -17,6 +17,7 @@
 namespace WebLinq
 {
     using System;
+    using Collections;
     using Html;
     using Sys;
 
@@ -34,10 +35,19 @@ namespace WebLinq
     {
         public IServiceProvider ServiceProvider { get; }
 
-        public QueryContext(IServiceProvider serviceProvider = null)
+        public QueryContext(IServiceProvider serviceProvider = null, Map<string, object> items = null)
         {
             ServiceProvider = serviceProvider;
+            Items = items ?? Map<string, object>.Empty;
         }
+
+        public Map<string, object> Items { get; }
+
+        public QueryContext WithItems(Map<string, object> items) =>
+            new QueryContext(ServiceProvider, items ?? Map<string, object>.Empty);
+
+        public QueryContext WithServiceProvider(IServiceProvider serviceProvider) =>
+            new QueryContext(serviceProvider, Items);
 
         object IServiceProvider.GetService(Type serviceType) =>
             FindService(serviceType);

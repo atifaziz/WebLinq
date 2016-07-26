@@ -62,11 +62,34 @@ namespace WebLinq
                 return QueryResult.Create(context, (T) sp.GetService(typeof(T)));
             });
 
+        public static Query<T> GetItem<T>(string key) =>
+            Create(context =>
+            {
+                object value;
+                return context.Items.TryGetValue(key, out value)
+                     ? QueryResult.Empty<T>(context)
+                     : QueryResult.Create(context, (T)value);
+            });
+
+        public static Query<TResult> TryGetItem<T, TResult>(string key, Func<bool, T, TResult> resultSelector) =>
+            Create(context =>
+            {
+                object value;
+                return context.Items.TryGetValue(key, out value)
+                     ? QueryResult.Create(context, resultSelector(true, (T) value))
+                     : QueryResult.Create(context, resultSelector(false, default(T)));
+            });
+
+        public static Query<TResult> SetItem<T, TResult>(string key, T value, Func<bool, T, TResult> resultSelector) =>
+            TryGetItem(key, resultSelector)
+                .Bind(ov => Create(context =>
+                    QueryResult.Create(context.WithItems(context.Items.Set(key, value)), ov)));
+
         public static Query<T> GetService<T>() where T : class =>
             Create(context => QueryResult.Create(context, context.GetService<T>()));
 
         public static Query<T> SetService<T>(T service) where T : class =>
             FindService<T>().Bind(current => Create(context =>
-                QueryResult.Create(new QueryContext(context.LinkService(typeof(T), service)), current)));
+                QueryResult.Create(context.WithServiceProvider(context.LinkService(typeof(T), service)), current)));
     }
 }
