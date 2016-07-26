@@ -55,6 +55,15 @@ namespace WebLinq
             });
         }
 
+        public SeqQuery2<TResult> Bind<TResult>(Func<T, SeqQuery2<TResult>> func) =>
+            SeqQuery2.Create(context =>
+            {
+                var result = GetResult(context);
+                return result.HasData
+                    ? func(result.Data).GetResult(result.Context)
+                    : Enumerable.Empty<QueryResult<TResult>>();
+            });
+
         public Query<T> Do(Action<T> action) =>
             Select(e => { action(e); return e; });
 
@@ -72,5 +81,10 @@ namespace WebLinq
 
         public SeqQuery<TResult> SelectMany<T2, TResult>(Func<T, SeqQuery<T2>> then, Func<T, T2, TResult> resultSelector) =>
             Bind(x => then(x).Bind(ys => SeqQuery.Create(context => QueryResult.Create(context, from y in ys select resultSelector(x, y)))));
+
+        public SeqQuery2<TResult> SelectMany<T2, TResult>(Func<T, SeqQuery2<T2>> then, Func<T, T2, TResult> resultSelector) =>
+            Bind(x => from y in then(x) select resultSelector(x, y)/*.Bind(ys => SeqQuery2.Return(from y in ys
+                                                          where y.HasData
+                                                          select QueryResult.Create(y.Context, resultSelector(x, y))))*/);
     }
 }
