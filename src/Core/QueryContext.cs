@@ -17,6 +17,7 @@
 namespace WebLinq
 {
     using System;
+    using System.Threading;
     using Collections;
     using Html;
     using Sys;
@@ -33,10 +34,19 @@ namespace WebLinq
 
     public class QueryContext : IServiceProvider
     {
+        #if DEBUG
+        static int _globalId;
+        public int Id { get; }
+        #endif
+
         public IServiceProvider ServiceProvider { get; }
 
         public QueryContext(IServiceProvider serviceProvider = null, Map<string, object> items = null)
         {
+            #if DEBUG
+            Id = Interlocked.Increment(ref _globalId);
+            #endif
+
             ServiceProvider = serviceProvider;
             Items = items ?? Map<string, object>.Empty;
         }
