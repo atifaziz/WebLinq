@@ -54,7 +54,9 @@ namespace WebLinq.Html
             {
                 HtmlObject obj;
                 if (!_map.TryGetValue(node, out obj))
-                    _map.Add(node, obj = new HapHtmlObject(node, this));
+                    _map.Add(node, obj = "option".Equals(node.Name, StringComparison.Ordinal)
+                                         ? new HapOptionElement(node, this)
+                                         : new HapHtmlObject(node, this));
                 return obj;
             }
 
@@ -65,7 +67,7 @@ namespace WebLinq.Html
 
             public override HtmlObject Root => GetPublicObject(_document.DocumentNode);
 
-            sealed class HapHtmlObject : HtmlObject
+            class HapHtmlObject : HtmlObject
             {
                 readonly HapParsedHtml _owner;
 
@@ -90,7 +92,8 @@ namespace WebLinq.Html
 
                 public override string OuterHtml => Node.OuterHtml;
                 public override string InnerHtml => Node.InnerHtml;
-                public override HtmlString InnerTextSource => HtmlString.FromEncoded(Node.InnerText);
+                public override HtmlString InnerTextSource =>
+                    HtmlString.FromEncoded(Node.InnerText);
 
                 public override HtmlObject ParentElement =>
                     Node.ParentNode.NodeType == HtmlNodeType.Element
@@ -102,6 +105,54 @@ namespace WebLinq.Html
                     where e.NodeType == HtmlNodeType.Element
                     select _owner.GetPublicObject(e);
             }
+
+            sealed class HapOptionElement : HapHtmlObject
+            {
+                HtmlString? _innerTextSource;
+
+                public HapOptionElement(HtmlNode node, HapParsedHtml owner) :
+                    base(node, owner) {}
+
+                public override HtmlString InnerTextSource =>
+                    (_innerTextSource ?? (_innerTextSource = GetInnerTextSourceCore())).Value;
+
+                HtmlString GetInnerTextSourceCore()
+                {
+                    // Workaround for HTML Agility Pack where OPTION elements
+                    // do not correctly return their inner text, especially
+                    // in the presence of a closing tag.
+                    // https://www.w3.org/TR/html-markup/option.html#option-tags
+                    // An option element's end tag may be omitted if the option
+                    // element is immediately followed by another OPTION
+                    // element, or if it is immediately followed by an
+                    // OPTGROUP element, or if there is no more content in the
+                    // parent element.
+
+                    var siblingElement = Node.Siblings().FirstOrDefault(s => s.NodeType == HtmlNodeType.Element);
+                    if (Node.InnerText.Length == 0
+                        && (siblingElement == null || "option".Equals(siblingElement.Name, StringComparison.OrdinalIgnoreCase)
+                                                   || "optgroup".Equals(siblingElement.Name, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        var tns =
+                            from n in Node.Siblings().TakeWhile(n => n != siblingElement)
+                            where n.NodeType == HtmlNodeType.Text
+                            select n.InnerText;
+                        return HtmlString.FromEncoded(string.Join(null, tns));
+                    }
+
+                    return base.InnerTextSource;
+                }
+            }
+        }
+    }
+
+    static class HapExtensions
+    {
+        public static IEnumerable<HtmlNode> Siblings(this HtmlNode node)
+        {
+            if (node == null) throw new ArgumentNullException(nameof(node));
+            for (var sibling = node.NextSibling; sibling != null; sibling = sibling.NextSibling)
+                yield return sibling;
         }
     }
 }
