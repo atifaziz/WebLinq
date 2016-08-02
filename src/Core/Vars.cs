@@ -73,19 +73,21 @@ namespace WebLinq
     public static class VarQuery
     {
         public static Query<Vars> Vars() =>
-            Query.Create(context => context.Eval((IVarService s) => QueryResult.Create(context, s.Vars)));
+            Query.Create(context => context.Eval((IVarService s) => QueryResult.Singleton(context, s.Vars)));
 
         public static Query<object> Var(string name) =>
             Var<object>(name);
 
         public static Query<T> Var<T>(string name) =>
-            Vars().Bind(vars =>
+            from e in Vars().Select(vars =>
             {
                 object value;
                 return vars.TryGetValue(name, out value)
-                     ? Query.Return((T) value)
-                     : Query<T>.Empty;
-            });
+                     ? new { Found = true, Value = (T)value }
+                     : new { Found = false, Value = default(T) };
+            })
+            where e.Found
+            select e.Value;
 
         public static Query<TResult> Var<T, TResult>(string name, Func<T, TResult> selector) =>
             from a in Var<T>(name)
@@ -121,22 +123,14 @@ namespace WebLinq
                 select selector(a, b, c));
 
         public static Query<T> Var<T>(string name, T value) =>
-            Vars().Bind(vars =>
-            {
-                vars[name] = value;
-                return Query.Return(value);
-            });
+            from vars in Vars()
+            select (T) vars[name];
 
         public static Query<T> Swap<T>(string name, T value) =>
-            Vars().Bind(vars =>
+            Vars().SelectMany(vars => Var<T>(name), (vars, old) =>
             {
-                object old;
-                var result =
-                     vars.TryGetValue(name, out old)
-                     ? Query.Return((T)old)
-                     : Query<T>.Empty;
                 vars[name] = value;
-                return result;
+                return old;
             });
     }
 

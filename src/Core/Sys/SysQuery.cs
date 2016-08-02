@@ -18,18 +18,20 @@ namespace WebLinq.Sys
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using Mannex.Collections.Generic;
 
     public static class SysQuery
     {
-        public static SeqQuery<string> Spawn(string path, string args) =>
+        public static Query<string> Spawn(string path, string args) =>
             Spawn(path, args, output => output, null);
 
-        public static SeqQuery<KeyValuePair<T, string>> Spawn<T>(string path, string args, T stdoutKey, T stderrKey) =>
+        public static Query<KeyValuePair<T, string>> Spawn<T>(string path, string args, T stdoutKey, T stderrKey) =>
             Spawn(path, args, stdout => stdoutKey.AsKeyTo(stdout),
                               stderr => stderrKey.AsKeyTo(stderr));
 
-        public static SeqQuery<T> Spawn<T>(string path, string args, Func<string, T> stdoutSelector, Func<string, T> stderrSelector) =>
-            SeqQuery.Create(context => QueryResult.Create(context, context.Eval((ISpawnService s) => s.Spawn(path, args, stdoutSelector, stderrSelector))));
+        public static Query<T> Spawn<T>(string path, string args, Func<string, T> stdoutSelector, Func<string, T> stderrSelector) =>
+            Query.Create(context => QueryResult.Create(from e in context.Eval((ISpawnService s) => s.Spawn(path, args, stdoutSelector, stderrSelector))
+                                                       select QueryResultItem.Create(context, e)));
     }
 }

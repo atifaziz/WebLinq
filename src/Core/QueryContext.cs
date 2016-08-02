@@ -32,6 +32,9 @@ namespace WebLinq
                     new SysSpawnService().RegistrationHelper()));
     }
 
+    #if DEBUG
+    [System.Diagnostics.DebuggerDisplay("Id = {Id}")]
+    #endif
     public class QueryContext : IServiceProvider
     {
         #if DEBUG

@@ -42,9 +42,6 @@ namespace WebLinq
         public static Query<T> Content<T>(this Query<HttpFetch<T>> query) =>
             from e in query select e.Content;
 
-        public static SeqQuery<T> Content<T>(this SeqQuery<HttpFetch<T>> query) =>
-            from e in query select e.Content;
-
         public static Query<HttpFetch<HttpContent>> Accept(this Query<HttpFetch<HttpContent>> query, params string[] mediaTypes) =>
             (mediaTypes?.Length ?? 0) == 0
             ? query
@@ -72,7 +69,9 @@ namespace WebLinq
             });
 
         public static Query<HttpFetch<HttpContent>> Submit(this Query<HttpFetch<HttpContent>> query, string formSelector, NameValueCollection data) =>
-            query.Html().Bind(html => Submit(html.Content, formSelector, data));
+            from html in query.Html()
+            from fetch in Submit(html.Content, formSelector, data)
+            select fetch;
 
         public static Query<HttpFetch<HttpContent>> Submit(ParsedHtml html, string formSelector, NameValueCollection data)
         {

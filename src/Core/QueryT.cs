@@ -33,36 +33,15 @@ namespace WebLinq
 
         public QueryResult<T> GetResult(QueryContext context) => _func(context);
 
-        public Query<TResult> Bind<TResult>(Func<T, Query<TResult>> func)
+        public Query<TResult> Bind<TResult>(Func<QueryResult<T>, Query<TResult>> func)
         {
             return Query.Create(context =>
             {
                 var result = GetResult(context);
-                return result.HasData
-                     ? func(result.Data).GetResult(result.Context)
-                     : QueryResult.Empty<TResult>(context);
+                var q = func(result);
+                return q.GetResult(context);
             });
         }
-
-        public SeqQuery<TResult> Bind<TResult>(Func<T, SeqQuery<TResult>> func)
-        {
-            return SeqQuery.Create(context =>
-            {
-                var result = GetResult(context);
-                return result.HasData
-                     ? func(result.Data).GetResult(result.Context)
-                     : QueryResult.Empty<IEnumerable<TResult>>(context);
-            });
-        }
-
-        public SeqQuery2<TResult> Bind<TResult>(Func<T, SeqQuery2<TResult>> func) =>
-            SeqQuery2.Create(context =>
-            {
-                var result = GetResult(context);
-                return result.HasData
-                    ? func(result.Data).GetResult(result.Context)
-                    : Enumerable.Empty<QueryResult<TResult>>();
-            });
 
         public Query<T> Do(Action<T> action) =>
             Select(e => { action(e); return e; });
@@ -70,21 +49,34 @@ namespace WebLinq
         // LINQ support
 
         public Query<TResult> Select<TResult>(Func<T, TResult> selector) =>
-            Bind(x => Query.Return(selector(x)));
+            Bind(xs => Query.Return(from x in xs
+                                    select x.WithData(selector(x.Data))));
 
         public Query<T> Where(Func<T, bool> predicate) =>
-            Bind(x => predicate(x) ? Query.Return(x) : Empty);
+            Bind(xs => Query.Return(from x in xs
+                                    where predicate(x.Data)
+                                    select x));
 
-        public Query<TResult> SelectMany<T2, TResult>(Func<T, Query<T2>> then,
-                                                      Func<T, T2, TResult> resultSelector) =>
-            Bind(x => then(x).Bind(y => Query.Return(resultSelector(x, y))));
+        public Query<TResult> SelectMany<T2, TResult>(Func<T, Query<T2>> f, Func<T, T2, TResult> g) =>
+            Bind(xs => Query.Create(context => QueryResult.Create(SelectManyIterator(context, xs, f, g))));
 
-        public SeqQuery<TResult> SelectMany<T2, TResult>(Func<T, SeqQuery<T2>> then, Func<T, T2, TResult> resultSelector) =>
-            Bind(x => then(x).Bind(ys => SeqQuery.Create(context => QueryResult.Create(context, from y in ys select resultSelector(x, y)))));
+        static IEnumerable<QueryResultItem<TResult>> SelectManyIterator<T2, TResult>(QueryContext context, QueryResult<T> xs, Func<T, Query<T2>> f, Func<T, T2, TResult> g) =>
+            from x in xs
+            from result in f(x.Data).GetResult(x.Context)
+            select QueryResultItem.Create(result.Context, g(x, result.Data));
 
-        public SeqQuery2<TResult> SelectMany<T2, TResult>(Func<T, SeqQuery2<T2>> then, Func<T, T2, TResult> resultSelector) =>
-            Bind(x => from y in then(x) select resultSelector(x, y)/*.Bind(ys => SeqQuery2.Return(from y in ys
-                                                          where y.HasData
-                                                          select QueryResult.Create(y.Context, resultSelector(x, y))))*/);
+        public Query<TResult> Aggregate<TState, TResult>(TState seed,
+            Func<TState, T, TState> accumulator,
+            Func<TState, TResult> resultSelector)
+        {
+            if (accumulator == null) throw new ArgumentNullException(nameof(accumulator));
+            if (resultSelector == null) throw new ArgumentNullException(nameof(resultSelector));
+
+            return
+                Query.Create(context =>
+                    QueryResult.Singleton(context,
+                                          GetResult(context).Select(e => e.Data)
+                                                            .Aggregate(seed, accumulator, resultSelector)));
+        }
     }
 }

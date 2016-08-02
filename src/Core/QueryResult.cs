@@ -16,55 +16,63 @@
 
 namespace WebLinq
 {
-    using System;
+    using System.Collections;
+    using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
 
     public static class QueryResult
     {
-        public static QueryResult<T> Create<T>(QueryContext context, T data) =>
-            new QueryResult<T>(context, data);
+        public static QueryResult<T> Singleton<T>(QueryContext context, T data) =>
+            Singleton(QueryResultItem.Create(context, data));
+        public static QueryResult<T> Singleton<T>(QueryResultItem<T> item) =>
+            new QueryResult<T>(new [] { item });
+        public static QueryResult<T> Create<T>(IEnumerable<QueryResultItem<T>> items) =>
+            new QueryResult<T>(items);
         public static QueryResult<T> Empty<T>(QueryContext context) =>
-            new QueryResult<T>(context);
+            new QueryResult<T>(Enumerable.Empty<QueryResultItem<T>>());
     }
 
-    [DebuggerDisplay("{Data}")]
-    public sealed class QueryResult<T>
+    public sealed class QueryResult<T> : IEnumerable<QueryResultItem<T>>
     {
-        readonly T _data;
+        readonly IEnumerable<QueryResultItem<T>> _data;
 
-        public QueryContext Context { get; }
-        public bool IsEmpty => !HasData;
-        public bool HasData { get; }
-
-        public T Data
+        public QueryResult(IEnumerable<QueryResultItem<T>> data)
         {
-            get
-            {
-                if (IsEmpty) throw new InvalidOperationException();
-                return _data;
-            }
-        }
-
-        public QueryResult(QueryContext context) :
-            this(context, false, default(T)) {}
-
-        public QueryResult(QueryContext context, T data) :
-            this(context, true, data) {}
-
-        QueryResult(QueryContext context, bool hasData, T data)
-        {
-            if (context == null) throw new ArgumentNullException(nameof(context));
-
-            Context = context;
-            HasData = hasData;
             _data = data;
         }
 
-        public T DataOrDefault() => DataOrDefault(default(T));
-        public T DataOrDefault(T defaultValue) => HasData ? Data : defaultValue;
+        public IEnumerator<QueryResultItem<T>> GetEnumerator() => _data.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        public static implicit operator T(QueryResult<T> result) => result.Data;
+        public static explicit operator T(QueryResult<T> result) => result.Single().Data;
+    }
 
-        public override string ToString() => HasData ? Data.ToString() : string.Empty;
+    public static class QueryResultItem
+    {
+        public static QueryResultItem<T> Create<T>(QueryContext context, T data) =>
+            new QueryResultItem<T>(context, data);
+    }
+
+    [DebuggerDisplay("{Data}")]
+    public sealed class QueryResultItem<T>
+    {
+        public T Data { get; }
+        public QueryContext Context { get; }
+
+        public QueryResultItem(QueryContext context, T data)
+        {
+            Context = context;
+            Data = data;
+        }
+
+        public QueryResultItem<TResult> WithData<TResult>(TResult data) =>
+            QueryResultItem.Create(Context, data);
+
+        public QueryResultItem<T> WithContext(QueryContext context) =>
+            QueryResultItem.Create(context, Data);
+
+        public static implicit operator T(QueryResultItem<T> result) => result.Data;
+        public override string ToString() => $"{Data}";
     }
 }
