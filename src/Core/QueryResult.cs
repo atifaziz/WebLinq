@@ -1,4 +1,5 @@
 #region Copyright (c) 2016 Atif Aziz. All rights reserved.
+
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 #endregion
 
 namespace WebLinq
@@ -23,56 +25,59 @@ namespace WebLinq
 
     public static class QueryResult
     {
-        public static QueryResult<T> Singleton<T>(QueryContext context, T data) =>
-            Singleton(QueryResultItem.Create(context, data));
+        public static QueryResult<T> Singleton<T>(QueryContext context, T value) =>
+            Singleton(QueryResultItem.Create(context, value));
+
         public static QueryResult<T> Singleton<T>(QueryResultItem<T> item) =>
-            new QueryResult<T>(new [] { item });
+            new QueryResult<T>(new[] {item});
+
         public static QueryResult<T> Create<T>(IEnumerable<QueryResultItem<T>> items) =>
             new QueryResult<T>(items);
+
         public static QueryResult<T> Empty<T>(QueryContext context) =>
             new QueryResult<T>(Enumerable.Empty<QueryResultItem<T>>());
     }
 
     public sealed class QueryResult<T> : IEnumerable<QueryResultItem<T>>
     {
-        readonly IEnumerable<QueryResultItem<T>> _data;
+        readonly IEnumerable<QueryResultItem<T>> _items;
 
-        public QueryResult(IEnumerable<QueryResultItem<T>> data)
+        public QueryResult(IEnumerable<QueryResultItem<T>> items)
         {
-            _data = data;
+            _items = items;
         }
 
-        public IEnumerator<QueryResultItem<T>> GetEnumerator() => _data.GetEnumerator();
+        public IEnumerator<QueryResultItem<T>> GetEnumerator() => _items.GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        public static explicit operator T(QueryResult<T> result) => result.Single().Data;
+        public static explicit operator T(QueryResult<T> result) => result.Single().Value;
     }
 
     public static class QueryResultItem
     {
-        public static QueryResultItem<T> Create<T>(QueryContext context, T data) =>
-            new QueryResultItem<T>(context, data);
+        public static QueryResultItem<T> Create<T>(QueryContext context, T items) =>
+            new QueryResultItem<T>(context, items);
     }
 
-    [DebuggerDisplay("{Data}")]
+    [DebuggerDisplay("{Value}")]
     public sealed class QueryResultItem<T>
     {
-        public T Data { get; }
+        public T Value { get; }
         public QueryContext Context { get; }
 
-        public QueryResultItem(QueryContext context, T data)
+        public QueryResultItem(QueryContext context, T value)
         {
             Context = context;
-            Data = data;
+            Value = value;
         }
 
-        public QueryResultItem<TResult> WithData<TResult>(TResult data) =>
-            QueryResultItem.Create(Context, data);
+        public QueryResultItem<TResult> WithValue<TResult>(TResult value) =>
+            QueryResultItem.Create(Context, value);
 
         public QueryResultItem<T> WithContext(QueryContext context) =>
-            QueryResultItem.Create(context, Data);
+            QueryResultItem.Create(context, Value);
 
-        public static implicit operator T(QueryResultItem<T> result) => result.Data;
-        public override string ToString() => $"{Data}";
+        public static implicit operator T(QueryResultItem<T> result) => result.Value;
+        public override string ToString() => $"{Value}";
     }
 }

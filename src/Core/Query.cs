@@ -19,7 +19,6 @@ namespace WebLinq
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using Mannex.Collections.Generic;
     using MoreLinq;
 
     public static class Query
@@ -67,7 +66,7 @@ namespace WebLinq
         //
         public static IEnumerable<T> ToEnumerable<T>(this Query<T> query, Func<QueryContext> contextFactory) =>
             from e in query.GetResult(contextFactory())
-            select e.Data;
+            select e.Value;
 
         public static Query<T> FindService<T>() where T : class =>
             Create(context =>
@@ -93,13 +92,13 @@ namespace WebLinq
         public static Query<TResult> SetItem<T, TResult>(string key, T value, Func<bool, T, TResult> resultSelector) =>
             TryGetItem(key, resultSelector)
                 .Bind(ov => Create(context =>
-                    QueryResult.Singleton(context.WithItems(context.Items.Set(key, value)), ov.Single().Data)));
+                    QueryResult.Singleton(context.WithItems(context.Items.Set(key, value)), ov.Single().Value)));
 
         public static Query<T> GetService<T>() where T : class =>
             Create(context => QueryResult.Singleton(context, context.GetService<T>()));
 
         public static Query<T> SetService<T>(T service) where T : class =>
             FindService<T>().Bind(current => Create(context =>
-                QueryResult.Singleton(context.WithServiceProvider(context.LinkService(typeof(T), service)), current.Single().Data)));
+                QueryResult.Singleton(context.WithServiceProvider(context.LinkService(typeof(T), service)), current.Single().Value)));
     }
 }

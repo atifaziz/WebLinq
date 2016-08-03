@@ -50,11 +50,11 @@ namespace WebLinq
 
         public Query<TResult> Select<TResult>(Func<T, TResult> selector) =>
             Bind(xs => Query.Return(from x in xs
-                                    select x.WithData(selector(x.Data))));
+                                    select x.WithValue(selector(x.Value))));
 
         public Query<T> Where(Func<T, bool> predicate) =>
             Bind(xs => Query.Return(from x in xs
-                                    where predicate(x.Data)
+                                    where predicate(x.Value)
                                     select x));
 
         public Query<TResult> SelectMany<T2, TResult>(Func<T, Query<T2>> f, Func<T, T2, TResult> g) =>
@@ -62,8 +62,8 @@ namespace WebLinq
 
         static IEnumerable<QueryResultItem<TResult>> SelectManyIterator<T2, TResult>(QueryContext context, QueryResult<T> xs, Func<T, Query<T2>> f, Func<T, T2, TResult> g) =>
             from x in xs
-            from result in f(x.Data).GetResult(x.Context)
-            select QueryResultItem.Create(result.Context, g(x, result.Data));
+            from result in f(x.Value).GetResult(x.Context)
+            select QueryResultItem.Create(result.Context, g(x, result.Value));
 
         public Query<TResult> Aggregate<TState, TResult>(TState seed,
             Func<TState, T, TState> accumulator,
@@ -75,7 +75,7 @@ namespace WebLinq
             return
                 Query.Create(context =>
                     QueryResult.Singleton(context,
-                                          GetResult(context).Select(e => e.Data)
+                                          GetResult(context).Select(e => e.Value)
                                                             .Aggregate(seed, accumulator, resultSelector)));
         }
     }
