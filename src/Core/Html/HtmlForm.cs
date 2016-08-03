@@ -124,7 +124,7 @@ namespace WebLinq.Html
                 })
             {
                 if (!field.IsSelect && field.InputType.KnownType == KnownHtmlInputType.Other)
-                    throw new Exception($"Unexpected type of form field (\"{field.Name}\").");
+                    throw new Exception($"Unexpected type of form field (\"{field.InputType}\").");
 
                 // TODO checkboxes handling in form data set
                 // TODO radio buttons handling in form data set
