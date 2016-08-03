@@ -69,11 +69,9 @@ namespace WebLinq
             select e.Value;
 
         public static Query<T> FindService<T>() where T : class =>
-            Create(context =>
-            {
-                IServiceProvider sp = context;
-                return QueryResult.Singleton(context, (T) sp.GetService(typeof(T)));
-            });
+            from context in GetContext()
+            select (IServiceProvider) context into sp
+            select (T)sp.GetService(typeof(T));
 
         public static Query<T> GetItem<T>(string key) =>
             from x in TryGetItem(key, (bool found, T value) => new { Found = found, Value = value })
@@ -81,24 +79,24 @@ namespace WebLinq
             select x.Value;
 
         public static Query<TResult> TryGetItem<T, TResult>(string key, Func<bool, T, TResult> resultSelector) =>
-            Create(context =>
-            {
-                object value;
-                return context.Items.TryGetValue(key, out value)
-                     ? QueryResult.Singleton(context, resultSelector(true, (T) value))
-                     : QueryResult.Singleton(context, resultSelector(false, default(T)));
-            });
+            from context in GetContext()
+            select context.Items.TryGetValue(key, (some, value) => some ? resultSelector(true, (T) value)
+                                                                        : resultSelector(false, default(T)));
 
         public static Query<TResult> SetItem<T, TResult>(string key, T value, Func<bool, T, TResult> resultSelector) =>
-            TryGetItem(key, resultSelector)
-                .Bind(ov => Create(context =>
-                    QueryResult.Singleton(context.WithItems(context.Items.Set(key, value)), ov.Single().Value)));
+            from ov in TryGetItem(key, resultSelector)
+            from context in GetContext()
+            from _ in SetContext(context.WithItems(context.Items.Set(key, value)))
+            select ov;
 
         public static Query<T> GetService<T>() where T : class =>
-            Create(context => QueryResult.Singleton(context, context.GetService<T>()));
+            from context in GetContext()
+            select context.GetService<T>();
 
         public static Query<T> SetService<T>(T service) where T : class =>
-            FindService<T>().Bind(current => Create(context =>
-                QueryResult.Singleton(context.WithServiceProvider(context.LinkService(typeof(T), service)), current.Single().Value)));
+            from current in FindService<T>()
+            from context in GetContext()
+            from _ in SetContext(context.WithServiceProvider(context.LinkService(typeof(T), service)))
+            select current;
     }
 }
