@@ -40,7 +40,7 @@ namespace WebLinq.Html
         Password, // Password           Text with no line breaks (sensitive information)
         Date    , // Date               A date (year, month, day) with no time zone
         // TODO Time    , // Time               A time (hour, minute, seconds, fractional seconds) with no time zone
-        // TODO Number  , // Number             A numerical value
+        Number  , // Number             A numerical value
         // TODO Range   , // Range              A numerical value, with the extra semantic that the exact value is not important
         // TODO Color   , // Color              An sRGB color with 8-bit red, green, and blue components
         Checkbox, // Checkbox           A set of zero or more values from a predefined list
@@ -60,6 +60,7 @@ namespace WebLinq.Html
 
         public static readonly HtmlInputType Text     = new HtmlInputType(KnownHtmlInputType.Text    , "text");
         public static readonly HtmlInputType Email    = new HtmlInputType(KnownHtmlInputType.Email   , "email");
+        public static readonly HtmlInputType Number   = new HtmlInputType(KnownHtmlInputType.Number  , "number");
         public static readonly HtmlInputType Date     = new HtmlInputType(KnownHtmlInputType.Date    , "date");
         public static readonly HtmlInputType Password = new HtmlInputType(KnownHtmlInputType.Password, "password");
         public static readonly HtmlInputType Checkbox = new HtmlInputType(KnownHtmlInputType.Checkbox, "checkbox");
