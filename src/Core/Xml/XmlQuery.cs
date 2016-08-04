@@ -25,7 +25,7 @@ namespace WebLinq.Xml
             Xml(content, LoadOptions.None);
 
         public static Query<XDocument> Xml(HttpContent content, LoadOptions options) =>
-            Query.Create(context => QueryResult.Singleton(context, Xml(content.ReadAsStringAsync().Result, options)));
+            Query.Singleton(Xml(content.ReadAsStringAsync().Result, options));
 
         public static Query<HttpFetch<XDocument>> Xml(this Query<HttpFetch<HttpContent>> query) =>
             Xml(query, LoadOptions.None);

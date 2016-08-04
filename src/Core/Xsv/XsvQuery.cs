@@ -25,14 +25,14 @@ namespace WebLinq.Xsv
     public static class XsvQuery
     {
         public static Query<HttpFetch<DataTable>> XsvToDataTable(this Query<HttpFetch<HttpContent>> query, string delimiter, bool quoted, params DataColumn[] columns) =>
-            query.Text().Select(fetch => fetch.WithContent(fetch.Content.Read().ParseXsvAsDataTable(delimiter, quoted, columns)));
+            from fetch in query.Text()
+            select fetch.WithContent(fetch.Content.Read().ParseXsvAsDataTable(delimiter, quoted, columns));
 
         public static Query<DataTable> XsvToDataTable(this Query<string> query, string delimiter, bool quoted, params DataColumn[] columns) =>
-            query.Select(xsv => xsv.Read().ParseXsvAsDataTable(delimiter, quoted, columns));
+            from xsv in query
+            select xsv.Read().ParseXsvAsDataTable(delimiter, quoted, columns);
 
         public static Query<DataTable> XsvToDataTable(string text, string delimiter, bool quoted, params DataColumn[] columns) =>
-            Query.Create(context =>
-                QueryResult.Singleton(context, text.Read().ParseXsvAsDataTable(delimiter, quoted, columns)));
-
+            Query.Singleton(text.Read().ParseXsvAsDataTable(delimiter, quoted, columns));
     }
 }
