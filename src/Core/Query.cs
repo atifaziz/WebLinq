@@ -64,9 +64,6 @@ namespace WebLinq
         public static Query<T> Return<T>(IEnumerable<QueryResultItem<T>> items) =>
             Create(context => QueryResult.Create(items));
 
-        //public static Query<T> Spread<T>(this Query<IEnumerable<T>> query) =>
-        //    Create(query.GetResult);
-        //
         public static IEnumerable<T> ToEnumerable<T>(this Query<T> query, Func<QueryContext> contextFactory) =>
             from e in query.GetResult(contextFactory())
             select e.Value;
