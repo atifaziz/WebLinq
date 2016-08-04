@@ -86,7 +86,7 @@ namespace WebLinq
         public static Query<TResult> SetItem<T, TResult>(string key, T value, Func<bool, T, TResult> resultSelector) =>
             from ov in TryGetItem(key, resultSelector)
             from context in GetContext()
-            from _ in SetContext(context.WithItems(context.Items.Set(key, value)))
+            from _ in SetContext(context.WithItems(context.Items.Set(key, value))).Ignore()
             select ov;
 
         public static Query<T> GetService<T>() where T : class =>
@@ -96,7 +96,10 @@ namespace WebLinq
         public static Query<T> SetService<T>(T service) where T : class =>
             from current in FindService<T>()
             from context in GetContext()
-            from _ in SetContext(context.WithServiceProvider(context.LinkService(typeof(T), service)))
+            from _ in SetContext(context.WithServiceProvider(context.LinkService(typeof(T), service))).Ignore()
             select current;
+
+        public static Query<Unit> Ignore<T>(this Query<T> query) =>
+            from _ in query select new Unit();
     }
 }
