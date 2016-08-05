@@ -22,6 +22,7 @@ namespace WebLinq.Sys
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
     using Mannex;
@@ -52,7 +53,6 @@ namespace WebLinq.Sys
                 RedirectStandardError  = true,
             }))
             {
-
                 Debug.Assert(process != null);
 
                 var bc = new BlockingCollection<Tuple<T, Exception>>();
@@ -63,10 +63,8 @@ namespace WebLinq.Sys
                 {
                     try
                     {
-                        var name = process.ProcessName;
                         var pid = process.Id;
-
-                        await process.AsTask(p => new Exception($"Process \"{name}\" (launched as the ID {pid}) ended with the non-zero exit code {p.ExitCode}."));
+                        await process.AsTask(p => new Exception($"Process \"{Path.GetFileName(path)}\" (launched as the ID {pid}) ended with the non-zero exit code {p.ExitCode}."));
                         await drainer(null);
 
                         bc.CompleteAdding();
