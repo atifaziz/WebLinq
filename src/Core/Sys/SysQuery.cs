@@ -18,7 +18,6 @@ namespace WebLinq.Sys
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using Mannex.Collections.Generic;
 
     public static class SysQuery
@@ -31,7 +30,8 @@ namespace WebLinq.Sys
                               stderr => stderrKey.AsKeyTo(stderr));
 
         public static Query<T> Spawn<T>(string path, string args, Func<string, T> stdoutSelector, Func<string, T> stderrSelector) =>
-            Query.Create(context => QueryResult.Create(from e in context.Eval((ISpawnService s) => s.Spawn(path, args, stdoutSelector, stderrSelector))
-                                                       select QueryResultItem.Create(context, e)));
+            from s in Query.GetService<ISpawnService>()
+            from e in s.Spawn(path, args, stdoutSelector, stderrSelector).ToQuery()
+            select e;
     }
 }
