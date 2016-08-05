@@ -32,7 +32,7 @@ namespace WebLinq.Sys
 
     public interface ISpawnService
     {
-        IEnumerable<T> Spawn<T>(string path, string args, Func<string, T> stdoutSelector, Func<string, T> stderrSelector);
+        IEnumerable<T> Spawn<T>(string path, string args, string workingDirectory, Func<string, T> stdoutSelector, Func<string, T> stderrSelector);
     }
 
     public static class SpawnServiceExtensions
@@ -43,7 +43,7 @@ namespace WebLinq.Sys
 
     public sealed class SysSpawnService : ISpawnService
     {
-        public IEnumerable<T> Spawn<T>(string path, string args, Func<string, T> stdoutSelector, Func<string, T> stderrSelector)
+        public IEnumerable<T> Spawn<T>(string path, string args, string workingDirectory, Func<string, T> stdoutSelector, Func<string, T> stderrSelector)
         {
             using (var process = Process.Start(new ProcessStartInfo(path, args)
             {
@@ -51,6 +51,7 @@ namespace WebLinq.Sys
                 UseShellExecute        = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError  = true,
+                WorkingDirectory       = workingDirectory,
             }))
             {
                 Debug.Assert(process != null);

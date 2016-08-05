@@ -23,15 +23,25 @@ namespace WebLinq.Sys
     public static class SysQuery
     {
         public static Query<string> Spawn(string path, string args) =>
-            Spawn(path, args, output => output, null);
+            Spawn(path, args, null);
+
+        public static Query<string> Spawn(string path, string args, string workingDirectory) =>
+            Spawn(path, args, workingDirectory, output => output, null);
 
         public static Query<KeyValuePair<T, string>> Spawn<T>(string path, string args, T stdoutKey, T stderrKey) =>
-            Spawn(path, args, stdout => stdoutKey.AsKeyTo(stdout),
-                              stderr => stderrKey.AsKeyTo(stderr));
+            Spawn(path, args, null, stdoutKey, stderrKey);
+
+        public static Query<KeyValuePair<T, string>> Spawn<T>(string path, string args, string workingDirectory, T stdoutKey, T stderrKey) =>
+            Spawn(path, args, workingDirectory,
+                  stdout => stdoutKey.AsKeyTo(stdout),
+                  stderr => stderrKey.AsKeyTo(stderr));
 
         public static Query<T> Spawn<T>(string path, string args, Func<string, T> stdoutSelector, Func<string, T> stderrSelector) =>
+            Spawn(path, args, null, stdoutSelector, stderrSelector);
+
+        public static Query<T> Spawn<T>(string path, string args, string workingDirectory, Func<string, T> stdoutSelector, Func<string, T> stderrSelector) =>
             from s in Query.GetService<ISpawnService>()
-            from e in s.Spawn(path, args, stdoutSelector, stderrSelector).ToQuery()
+            from e in s.Spawn(path, args, workingDirectory, stdoutSelector, stderrSelector).ToQuery()
             select e;
     }
 }
