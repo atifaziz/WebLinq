@@ -63,9 +63,12 @@ namespace WebLinq
         public static Query<T> Return<T>(IEnumerable<QueryResultItem<T>> items) =>
             Create(context => QueryResult.Create(items));
 
-        public static IEnumerable<T> ToEnumerable<T>(this Query<T> query, Func<QueryContext> contextFactory) =>
-            from e in query.GetResult(contextFactory())
-            select e.Value;
+        public static IEnumerable<T> ToEnumerable<T>(this Query<T> query, Func<QueryContext> contextFactory)
+        {
+            // ReSharper disable once LoopCanBeConvertedToQuery
+            foreach (var e in query.GetResult(contextFactory()))
+                yield return e.Value;
+        }
 
         public static Query<T> FindService<T>() where T : class =>
             from context in GetContext()
