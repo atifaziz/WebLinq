@@ -55,12 +55,11 @@ namespace WebLinq
         public static Query<T> Create<T>(Func<QueryContext, IEnumerable<QueryResultItem<T>>> func) =>
             new Query<T>(context => QueryResult.Create(func(context)));
 
-        public static Query<T> Singleton<T>(T item) =>
-            Return(new[] { item });
+        public static Query<T> Singleton<T>(T item) => Array(item);
 
-        public static Query<T> Return<T>(IEnumerable<T> items) =>
-            items.ToQuery();
+        public static Query<T> Array<T>(params T[] items) => items.ToQuery();
 
+        public static Query<T> Return<T>(IEnumerable<T> items) => items.ToQuery();
         public static Query<T> Return<T>(IEnumerable<QueryResultItem<T>> items) =>
             Create(context => QueryResult.Create(items));
 
