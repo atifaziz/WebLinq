@@ -73,7 +73,8 @@ namespace WebLinq
     public static class VarQuery
     {
         public static Query<Vars> Vars() =>
-            Query.Create(context => context.Eval((IVarService s) => QueryResult.Singleton(context, s.Vars)));
+            from s in Query.GetService<IVarService>()
+            select s.Vars;
 
         public static Query<object> Var(string name) =>
             Var<object>(name);

@@ -39,34 +39,6 @@ namespace WebLinq
             return service;
         }
 
-        public static TResult Eval<T, TResult>(this IServiceProvider serviceProvider,
-            Func<T, TResult> evaluator)
-        {
-            if (evaluator == null) throw new ArgumentNullException(nameof(evaluator));
-            return evaluator(serviceProvider.RequireService<T>());
-        }
-
-        public static TResult Eval<T1, T2, TResult>(this IServiceProvider serviceProvider,
-            Func<T1, T2, TResult> evaluator)
-        {
-            if (evaluator == null) throw new ArgumentNullException(nameof(evaluator));
-            return serviceProvider.Eval((T1 s1) => serviceProvider.Eval((T2 s2) => evaluator(s1, s2)));
-        }
-
-        public static TResult Eval<T1, T2, T3, TResult>(this IServiceProvider serviceProvider,
-            Func<T1, T2, T3, TResult> evaluator)
-        {
-            if (evaluator == null) throw new ArgumentNullException(nameof(evaluator));
-            return serviceProvider.Eval((T1 s1, T2 s2) => serviceProvider.Eval((T3 s3) => evaluator(s1, s2, s3)));
-        }
-
-        public static TResult Eval<T1, T2, T3, T4, TResult>(this IServiceProvider serviceProvider,
-            Func<T1, T2, T3, T4, TResult> evaluator)
-        {
-            if (evaluator == null) throw new ArgumentNullException(nameof(evaluator));
-            return serviceProvider.Eval((T1 s1, T2 s2, T3 s3) => serviceProvider.Eval((T4 s4) => evaluator(s1, s2, s3, s4)));
-        }
-
         public static IServiceProvider LinkService<T>(this IServiceProvider serviceProvider, T service)
             where T : class
         {

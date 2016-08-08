@@ -29,15 +29,13 @@ namespace WebLinq.Html
             Html(html, null);
 
         public static Query<ParsedHtml> Html(string html, Uri baseUrl) =>
-            Query.Create(context => QueryResult.Singleton(context, Html(context, html, baseUrl, p => p)));
+            from hps in Query.GetService<IHtmlParser>()
+            select hps.Parse(html, baseUrl);
 
         public static Query<HttpFetch<ParsedHtml>> Html(this Query<HttpFetch<HttpContent>> query) =>
             from fetch in query.Accept(MediaTypeNames.Text.Html)
-            from context in Query.GetContext()
-            select Html(context, fetch.Content.ReadAsStringAsync().Result, fetch.RequestUrl, fetch.WithContent);
-
-        static T Html<T>(IServiceProvider context, string html, Uri baseUrl, Func<ParsedHtml, T> selector) =>
-            context.Eval((IHtmlParser hps) => selector(hps.Parse(html, baseUrl)));
+            from hps in Query.GetService<IHtmlParser>()
+            select fetch.WithContent(hps.Parse(fetch.Content.ReadAsStringAsync().Result, fetch.RequestUrl));
 
         public static Query<string> Links(string html) =>
             Links(html, null, (href, _) => href);
