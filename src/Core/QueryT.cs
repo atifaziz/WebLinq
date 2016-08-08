@@ -72,11 +72,9 @@ namespace WebLinq
             if (accumulator == null) throw new ArgumentNullException(nameof(accumulator));
             if (resultSelector == null) throw new ArgumentNullException(nameof(resultSelector));
 
-            return
-                Query.Create(context =>
-                    QueryResult.Singleton(context,
-                                          GetResult(context).Select(e => e.Value)
-                                                            .Aggregate(seed, accumulator, resultSelector)));
+            return from context in Query.GetContext()
+                   select GetResult(context).Select(e => e.Value)
+                                            .Aggregate(seed, accumulator, resultSelector);
         }
     }
 }
