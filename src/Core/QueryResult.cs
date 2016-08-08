@@ -20,7 +20,6 @@ namespace WebLinq
 {
     using System.Collections;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Linq;
 
     public static class QueryResult
@@ -51,33 +50,5 @@ namespace WebLinq
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         public static explicit operator T(QueryResult<T> result) => result.Single().Value;
-    }
-
-    public static class QueryResultItem
-    {
-        public static QueryResultItem<T> Create<T>(QueryContext context, T items) =>
-            new QueryResultItem<T>(context, items);
-    }
-
-    [DebuggerDisplay("{Value}")]
-    public sealed class QueryResultItem<T>
-    {
-        public T Value { get; }
-        public QueryContext Context { get; }
-
-        public QueryResultItem(QueryContext context, T value)
-        {
-            Context = context;
-            Value = value;
-        }
-
-        public QueryResultItem<TResult> WithValue<TResult>(TResult value) =>
-            QueryResultItem.Create(Context, value);
-
-        public QueryResultItem<T> WithContext(QueryContext context) =>
-            QueryResultItem.Create(context, Value);
-
-        public static implicit operator T(QueryResultItem<T> result) => result.Value;
-        public override string ToString() => $"{Value}";
     }
 }
