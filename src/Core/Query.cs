@@ -19,6 +19,7 @@ namespace WebLinq
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using Kons;
     using MoreLinq;
 
     public static class Query
@@ -60,6 +61,8 @@ namespace WebLinq
         public static Query<T> Array<T>(params T[] items) => items.ToQuery();
 
         public static Query<T> Return<T>(IEnumerable<T> items) => items.ToQuery();
+        internal static Query<T> Return<T>(ConsList<Type> services, IEnumerable<QueryResultItem<T>> items) =>
+            new Query<T>(services, context => QueryResult.Create(items));
         public static Query<T> Return<T>(IEnumerable<QueryResultItem<T>> items) =>
             Create(context => QueryResult.Create(items));
 
@@ -70,10 +73,17 @@ namespace WebLinq
                 yield return e.Value;
         }
 
-        public static Query<T> FindService<T>() where T : class =>
-            from context in GetContext()
-            select (IServiceProvider) context into sp
-            select (T)sp.GetService(typeof(T));
+        public static Query<T> FindService<T>() where T : class //=>
+            //from context in GetContext()
+            //select (IServiceProvider) context into sp
+            //select (T)sp.GetService(typeof(T));
+        {
+            return new Query<T>(ConsList.Cons(typeof(T), ConsList<Type>.Empty), context =>
+            {
+                IServiceProvider sp = context;
+                return QueryResult.Singleton(context, sp.GetService<T>());
+            });
+        }
 
         public static Query<T> GetItem<T>(string key) =>
             from x in TryGetItem(key, (bool found, T value) => new { Found = found, Value = value })
@@ -91,8 +101,9 @@ namespace WebLinq
             select ov;
 
         public static Query<T> GetService<T>() where T : class =>
-            from context in GetContext()
-            select context.GetService<T>();
+            from s in FindService<T>()
+            where s != null
+            select s;
 
         public static Query<T> SetService<T>(T service) where T : class =>
             from current in FindService<T>()

@@ -19,6 +19,7 @@ namespace WebLinq
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using Kons;
 
     public class Query<T>
     {
@@ -26,16 +27,27 @@ namespace WebLinq
 
         readonly Func<QueryContext, QueryResult<T>> _func;
 
-        internal Query(Func<QueryContext, QueryResult<T>> func)
+        internal Query(Func<QueryContext, QueryResult<T>> func) :
+            this(ConsList<Type>.Empty, func) {}
+
+        internal Query(ConsList<Type> services, Func<QueryContext, QueryResult<T>> func)
         {
             _func = func;
+            ServiceList = services;
         }
+
+        internal ConsList<Type> ServiceList { get; }
+
+        public ICollection<Type> Services =>
+            _services ?? (_services = Array.AsReadOnly(ServiceList.Reverse().ToArray()));
+
+        ICollection<Type> _services;
 
         public QueryResult<T> GetResult(QueryContext context) => _func(context);
 
         public Query<TResult> Bind<TResult>(Func<QueryResult<T>, Query<TResult>> func)
         {
-            return Query.Create(context =>
+            return new Query<TResult>(ServiceList, context =>
             {
                 var result = GetResult(context);
                 var q = func(result);
@@ -58,7 +70,7 @@ namespace WebLinq
                                     select x));
 
         public Query<TResult> SelectMany<T2, TResult>(Func<T, Query<T2>> f, Func<T, T2, TResult> g) =>
-            Bind(xs => Query.Create(context => QueryResult.Create(SelectManyIterator(context, xs, f, g))));
+            Bind(xs => new Query<TResult>(ServiceList, context => QueryResult.Create(SelectManyIterator(context, xs, f, g))));
 
         static IEnumerable<QueryResultItem<TResult>> SelectManyIterator<T2, TResult>(QueryContext context, QueryResult<T> xs, Func<T, Query<T2>> f, Func<T, T2, TResult> g) =>
             from x in xs

@@ -67,6 +67,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>AssemblyInfo.g.tt</DependentUpon>
     </Compile>
+    <Compile Include="Collections\ConsList.cs" />
     <Compile Include="Collections\MapBase.cs" />
     <Compile Include="Collections\Map.cs" />
     <Compile Include="DelegateExtensions.cs" />
