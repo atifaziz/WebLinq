@@ -69,14 +69,32 @@ namespace WebLinq
             });
 
         public static Query<HttpFetch<HttpContent>> Submit(this Query<HttpFetch<HttpContent>> query, string formSelector, NameValueCollection data) =>
+            Submit(query, formSelector, null, data);
+
+        public static Query<HttpFetch<HttpContent>> Submit(this Query<HttpFetch<HttpContent>> query, int formIndex, NameValueCollection data) =>
+            Submit(query, null, formIndex, data);
+
+        static Query<HttpFetch<HttpContent>> Submit(this Query<HttpFetch<HttpContent>> query, string formSelector, int? formIndex, NameValueCollection data) =>
             from html in query.Html()
-            from fetch in Submit(html.Content, formSelector, data)
+            from fetch in Submit(html.Content, formSelector, formIndex, data)
             select fetch;
 
-        public static Query<HttpFetch<HttpContent>> Submit(ParsedHtml html, string formSelector, NameValueCollection data)
+        public static Query<HttpFetch<HttpContent>> Submit(ParsedHtml html, string formSelector, NameValueCollection data) =>
+            Submit(html, formSelector, null, data);
+
+        public static Query<HttpFetch<HttpContent>> Submit(ParsedHtml html, int formIndex, NameValueCollection data) =>
+            Submit(html, null, formIndex, data);
+
+        static Query<HttpFetch<HttpContent>> Submit(ParsedHtml html,
+                                                    string formSelector, int? formIndex,
+                                                    NameValueCollection data)
         {
             var forms =
-                from f in html.QueryFormSelectorAll(formSelector)
+                from f in formIndex == null
+                          ? html.QueryFormSelectorAll(formSelector)
+                          : formIndex < html.Forms.Count
+                          ? Enumerable.Repeat(html.Forms[(int) formIndex], 1)
+                          : Enumerable.Empty<HtmlForm>()
                 select new
                 {
                     Action = new Uri(html.TryBaseHref(f.Action), UriKind.Absolute),
