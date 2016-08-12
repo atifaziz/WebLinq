@@ -36,6 +36,23 @@ namespace WebLinq
                                  .TakeWhile(i => step < 0 ? i >= last : i <= last)
                                  .ToQuery();
         }
+        
+        public static SeqQuery<T[]> Unpivot<T>(IEnumerable<IEnumerable<T>> source, Func<IEnumerable<T>, int, bool> pHeader, int fromColumn, int toColumn)
+        {
+            return UnpivotImpl(source, pHeader, fromColumn, toColumn).ToQuery();
+        }
+
+        private static IEnumerable<T[]> UnpivotImpl<T>(IEnumerable<IEnumerable<T>> source, Func<IEnumerable<T>, int, bool> pHeader, int fromColumn, int toColumn)
+        {
+            IEnumerable<T> header = null;
+            foreach (var row in source.Zip(Enumerable.Range(0, int.MaxValue), (e, i) => new { Index = i, Columns = e }))
+                if (pHeader(row.Columns, row.Index))
+                    header = row.Columns;
+                else
+                    if (header != null)                
+                        foreach (var v in header.Zip(row.Columns, (hc, rc) => new[] { hc, rc }).Skip(fromColumn).Take(toColumn - fromColumn))
+                            yield return row.Columns.Take(fromColumn).Concat(v).Concat(row.Columns.Skip(toColumn)).ToArray();
+        }        
 
         public static Query<T> ToQuery<T>(this IEnumerable<T> items) =>
             Create(context => QueryResult.Create(from item in items select QueryResultItem.Create(context, item)));
