@@ -85,6 +85,9 @@ namespace WebLinq
             select context.Items.TryGetValue(key, (some, value) => some ? resultSelector(true, (T) value)
                                                                         : resultSelector(false, default(T)));
 
+        public static Query<Unit> SetItem<T>(string key, T value) =>
+            SetItem(key, value, delegate { return new Unit(); });
+
         public static Query<TResult> SetItem<T, TResult>(string key, T value, Func<bool, T, TResult> resultSelector) =>
             from ov in TryGetItem(key, resultSelector)
             from _ in SetContext(context => context.WithItems(context.Items.Set(key, value))).Ignore()
