@@ -79,5 +79,8 @@ namespace WebLinq
 
         public Query<T> TakeWhile(Func<T, bool> predicate) =>
             Bind(xs => Query.Return(xs.TakeWhile(x => predicate(x.Value))));
+
+        public Query<T> Concat(Query<T> query) =>
+            Bind(xs => query.Bind(ys => Query.Return(xs.Concat(ys))));
     }
 }
