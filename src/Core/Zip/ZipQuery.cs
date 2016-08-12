@@ -21,11 +21,11 @@ namespace WebLinq.Zip
 
     public static class ZipQuery
     {
-        public static Query<HttpFetch<Zip>> Save(this Query<HttpFetch<HttpContent>> query) =>
+        public static Query<HttpFetch<Zip>> DownloadZip(this Query<HttpFetch<HttpContent>> query) =>
             from fetch in query
-            select fetch.WithContent(new Zip(Save(fetch.Content)));
+            select fetch.WithContent(new Zip(DownloadZip(fetch.Content)));
 
-        static string Save(HttpContent content)
+        static string DownloadZip(HttpContent content)
         {
             var path = Path.GetTempFileName();
             using (var output = File.Create(path))
