@@ -35,9 +35,16 @@ namespace WebLinq
     {
         public static HttpSpec Http => new HttpSpec();
 
-        public static Query<string> DefaultUserAgent(string value) =>
-            from oldValue in Query.SetItem("Http.User-Agent", value, (found, v) => found ? v : null)
-            select oldValue;
+        public static Query<HttpClient> HttpClient(string defaultUserAgent)
+        {
+            var client = new HttpClient();
+            if (!string.IsNullOrEmpty(defaultUserAgent))
+                client.DefaultRequestHeaders.UserAgent.ParseAdd(defaultUserAgent);
+            return UseHttpClient(client);
+        }
+
+        public static Query<HttpClient> UseHttpClient(HttpClient client) =>
+            Query.SetService(client);
 
         public static Query<T> Content<T>(this Query<HttpFetch<T>> query) =>
             from e in query select e.Content;

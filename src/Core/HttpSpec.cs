@@ -24,30 +24,43 @@ namespace WebLinq
 
     public sealed class HttpSpec
     {
-        bool _returnErrorneousFetch;
+        HttpOptions _options = new HttpOptions();
+        HttpRequestMessage _request = new HttpRequestMessage();
 
-        HttpHeaderCollection Headers { get; set; }
-
-        public HttpSpec() { Headers = HttpHeaderCollection.Empty; }
+        public HttpOptions Options => _options ?? (_options = new HttpOptions());
+        public HttpRequestMessage Request => _request ?? (_request = new HttpRequestMessage());
 
         public HttpSpec ReturnErrorneousFetch()
         {
-            _returnErrorneousFetch = true;
+            Options.ReturnErrorneousFetch = true;
             return this;
         }
 
-        public HttpSpec UserAgent(string value) { return Header("User-Agent", value); }
+        public HttpSpec UserAgent(string value)
+        {
+            Request.Headers.UserAgent.ParseAdd(value);
+            return this;
+        }
 
         public HttpSpec Header(string name, string value)
         {
-            Headers = Headers.Set(name, value);
+            Request.Headers.Add(name, value);
             return this;
         }
 
+        HttpFetch<HttpContent> Send(HttpService http, HttpClient client, HttpMethod method, Uri url, HttpContent content = null)
+        {
+            var request = Request; _request = null;
+            var options = _options; _options = null;
+            request.Method = method;
+            request.RequestUri = url;
+            request.Content = content;
+            return http.Send(client, request, options).ToHttpFetch(0);
+        }
+
         public Query<HttpFetch<HttpContent>> Get(Uri url) =>
-            from ua in Query.TryGetItem("Http.User-Agent", (bool found, string value) => found ? value : null)
-            from http in Query.GetService<HttpService>()
-            select http.Get(url, Options(ua));
+            from e in GetServices((s, c) => new { Service = s, Client = c })
+            select Send(e.Service, e.Client, HttpMethod.Get, url);
 
         public Query<HttpFetch<HttpContent>> Post(Uri url, NameValueCollection data) =>
             Post(url, new FormUrlEncodedContent(from i in Enumerable.Range(0, data.Count)
@@ -55,22 +68,18 @@ namespace WebLinq
                                                 select data.GetKey(i).AsKeyTo(v)));
 
         public Query<HttpFetch<HttpContent>> Post(Uri url, HttpContent content) =>
-            from ua in Query.TryGetItem("Http.User-Agent", (bool found, string value) => found ? value : null)
-            from http in Query.GetService<HttpService>()
-            select http.Post(url, content, Options(ua));
+            from e in GetServices((s, c) => new { Service = s, Client = c })
+            select Send(e.Service, e.Client, HttpMethod.Post, url, content);
 
-        HttpOptions Options(string ua)
-        {
-            var headers = Headers;
-            if (!string.IsNullOrEmpty(ua) && (Headers.IsEmpty || Headers.TryGetValue("User-Agent") == null))
-                headers = headers.Set("User-Agent", ua);
-
-            return new HttpOptions
-            {
-                ReturnErrorneousFetch = _returnErrorneousFetch,
-                Headers = headers,
-            };
-        }
+        static Query<T> GetServices<T>(Func<HttpService, HttpClient, T> selector) =>
+            from currentClient in Query.FindService<HttpClient>()
+            from client in currentClient != null
+                           ? Query.Singleton(currentClient)
+                           : from defaultClient in Query.Singleton(new HttpClient())
+                             from _ in Query.SetService(defaultClient).Ignore()
+                             select defaultClient
+            from service in Query.GetService<HttpService>()
+            select selector(service, client);
     }
 
     static class SysNetHttpExtensions

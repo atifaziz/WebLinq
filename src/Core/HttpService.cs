@@ -18,77 +18,28 @@ namespace WebLinq
 {
     using System;
     using System.Net.Http;
-    using System.Net.Http.Headers;
 
     public sealed class HttpOptions
     {
         public bool ReturnErrorneousFetch { get; set; }
-        public HttpHeaderCollection Headers { get; set; }
     }
 
     public abstract class HttpService
     {
-        protected HttpService() : this(0) {}
-        protected HttpService(int fetchId) { FetchId = fetchId; }
-
-        public int FetchId { get; private set; }
-        protected int NextFetchId() => ++FetchId;
-
-        public abstract HttpFetch<HttpContent> Get(Uri url, HttpOptions options);
-        public abstract HttpFetch<HttpContent> Post(Uri url, HttpContent content, HttpOptions options);
+        public abstract HttpResponseMessage Send(HttpClient client, HttpRequestMessage request, HttpOptions options);
     }
 
     public class SysNetHttpService : HttpService
     {
-        public HttpClient HttpClient { get; }
-
-        public SysNetHttpService() : this(null) {}
-
-        public SysNetHttpService(HttpClient client)
-        {
-            HttpClient = client ?? new HttpClient();
-        }
-
         public void Register(Action<Type, object> registrationHandler) =>
             registrationHandler(typeof(HttpService), this);
 
-        public override HttpFetch<HttpContent> Get(Uri url, HttpOptions options)
+        public override HttpResponseMessage Send(HttpClient client, HttpRequestMessage request, HttpOptions options)
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, url);
-            MergeHeaders(options?.Headers, request.Headers);
-            return Send(request, options?.ReturnErrorneousFetch ?? false);
-        }
-
-        public override HttpFetch<HttpContent> Post(Uri url, HttpContent content, HttpOptions options)
-        {
-            var request = new HttpRequestMessage(HttpMethod.Post, url)
-            {
-                Content = content
-            };
-            MergeHeaders(options?.Headers, request.Headers);
-            return Send(request, options?.ReturnErrorneousFetch ?? false);
-        }
-
-        HttpFetch<HttpContent> Send(HttpRequestMessage request, bool ignoreErroneousStatusCodes)
-        {
-            var response = HttpClient.SendAsync(request).Result;
-            if (!ignoreErroneousStatusCodes)
+            var response = client.SendAsync(request).Result;
+            if (options?.ReturnErrorneousFetch == true)
                 response.EnsureSuccessStatusCode();
-            return response.ToHttpFetch(NextFetchId());
-        }
-
-        static void MergeHeaders(HttpHeaderCollection source, HttpHeaders target)
-        {
-            if (source == null)
-                return;
-
-            foreach (var e in source)
-            {
-                if (e.Value == null)
-                    target.Remove(e.Key);
-                else
-                    target.Add(e.Key, e.Value);
-            }
+            return response;
         }
     }
 }
