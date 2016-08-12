@@ -76,5 +76,8 @@ namespace WebLinq
                    select GetResult(context).Select(e => e.Value)
                                             .Aggregate(seed, accumulator, resultSelector);
         }
+
+        public Query<T> TakeWhile(Func<T, bool> predicate) =>
+            Bind(xs => Query.Return(xs.TakeWhile(x => predicate(x.Value))));
     }
 }
