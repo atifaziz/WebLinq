@@ -104,5 +104,23 @@ namespace WebLinq
 
         public static Query<Unit> Ignore<T>(this Query<T> query) =>
             from _ in query select new Unit();
+
+        public static Query<T> Generate<T>(T seed, Func<T, Query<T>> generator) =>
+            Create(context => QueryResult.Create(GenerateCore(context, seed, generator)));
+
+        static IEnumerable<QueryResultItem<T>> GenerateCore<T>(QueryContext context, T seed, Func<T, Query<T>> generator)
+        {
+            yield return QueryResultItem.Create(context, seed);
+            var current = seed;
+            while (true)
+            {
+                foreach (var next in generator(current).GetResult(context))
+                {
+                    yield return next;
+                    current = next.Value;
+                    context = next.Context;
+                }
+            }
+        }
     }
 }
