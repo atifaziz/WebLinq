@@ -37,7 +37,7 @@ namespace WebLinq
                                  .ToQuery();
         }
         
-        public static SeqQuery<T[]> Unpivot<T>(IEnumerable<IEnumerable<T>> source, Func<IEnumerable<T>, int, bool> pHeader, int fromColumn, int toColumn)
+        public static Query<T[]> Unpivot<T>(IEnumerable<IEnumerable<T>> source, Func<IEnumerable<T>, int, bool> pHeader, int fromColumn, int toColumn)
         {
             return UnpivotImpl(source, pHeader, fromColumn, toColumn).ToQuery();
         }
