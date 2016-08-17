@@ -19,15 +19,13 @@ namespace WebLinq
     #region Imports
 
     using System;
-    using System.Collections.Specialized;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
     using Collections;
     using Html;
-    using Mannex.Collections.Specialized;
-    using Mannex.Web;
     using Mime;
 
     #endregion
@@ -76,13 +74,13 @@ namespace WebLinq
                     });
 
         public static Query<HttpFetch<HttpContent>> Submit(this Query<HttpFetch<HttpContent>> query, string formSelector,
-            StringsDictionary data) =>
+            IEnumerable<KeyValuePair<string, Strings>> data) =>
                 from html in query.Html()
                 from fetch in Submit(html.Content, formSelector, data)
                 select fetch;
 
         public static Query<HttpFetch<HttpContent>> Submit(ParsedHtml html, string formSelector,
-            StringsDictionary data)
+            IEnumerable<KeyValuePair<string, Strings>> data)
         {
             var forms =
                 from f in html.QueryFormSelectorAll(formSelector)

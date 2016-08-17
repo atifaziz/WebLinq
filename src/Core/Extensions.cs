@@ -17,12 +17,15 @@
 namespace WebLinq
 {
     using System;
+    using System.Collections.Generic;
     using System.Text;
     using Collections;
 
+    enum OperationStatus { Initial, Running, Completed }
+
     static class Extensions
     {
-        public static string ToQueryString(this StringsDictionary collection) =>
+        public static string ToQueryString(this WebCollection collection) =>
             W3FormEncode(collection, "?");
 
         /// <summary>
@@ -36,48 +39,59 @@ namespace WebLinq
         /// large values.
         /// </remarks>
 
-        public static string ToW3FormEncoded(this StringsDictionary collection) =>
+        public static string ToW3FormEncoded(this WebCollection collection) =>
             W3FormEncode(collection);
 
-        static string W3FormEncode(StringsDictionary collection, string prefix = null)
+        static string W3FormEncode(WebCollection collection, string prefix = null)
         {
             if (collection == null) throw new ArgumentNullException(nameof(collection));
 
             if (collection.Count == 0)
-                return string.Empty;
+                return String.Empty;
 
             var sb = new StringBuilder();
 
             foreach (var e in collection)
             {
                 var name = e.Key;
-                var values = e.Value;
+                var value = e.Value;
 
-                if (values.Count > 0)
-                {
-                    foreach (var value in values)
-                    {
-                        if (sb.Length > 0)
-                            sb.Append('&');
+                if (sb.Length > 0)
+                    sb.Append('&');
 
-                        sb.Append(Uri.EscapeDataString(name)).Append('=');
+                sb.Append(Uri.EscapeDataString(name));
 
-                        if (!string.IsNullOrEmpty(value))
-                            sb.Append(Uri.EscapeDataString(value));
-                    }
-                }
-                else
-                {
-                    if (sb.Length > 0)
-                        sb.Append('&');
-                    sb.Append(name);
-                }
+                if (value != null)
+                    sb.Append('=');
+
+                if (value != null)
+                    sb.Append(Uri.EscapeDataString(value));
             }
 
             if (!string.IsNullOrEmpty(prefix) & sb.Length > 0)
                 sb.Insert(0, prefix);
 
             return sb.ToString();
+        }
+
+        public static bool FindLastIndex<T>(this List<T> list, Predicate<T> predicate, ref OperationStatus state, ref int index)
+        {
+            if (state == OperationStatus.Initial)
+            {
+                index = list.Count - 1;
+                state = OperationStatus.Running;
+            }
+
+            if (state == OperationStatus.Running)
+            {
+                if (index >= 0)
+                    index = list.FindLastIndex(index, predicate);
+
+                if (index < 0)
+                    state = OperationStatus.Completed;
+            }
+
+            return state == OperationStatus.Running;
         }
     }
 }

@@ -76,25 +76,25 @@ namespace WebLinq.Html
                             : null
             select new HtmlFormControl(this, e, name, controlType, inputType);
 
-        public StringsDictionary GetSubmissionData() =>
+        public WebCollection GetSubmissionData() =>
             GetFormCore(data => data);
 
-        public T GetForm<T>(Func<StringsDictionary, StringsDictionary, T> selector) =>
+        public T GetForm<T>(Func<WebCollection, WebCollection, T> selector) =>
             GetFormCore(selector2: selector);
 
-        public T GetForm<T>(Func<StringsDictionary, StringsDictionary, StringsDictionary, T> selector) =>
+        public T GetForm<T>(Func<WebCollection, WebCollection, WebCollection, T> selector) =>
             GetFormCore(selector3: selector);
 
-        T GetFormCore<T>(Func<StringsDictionary, T> selector1 = null,
-                         Func<StringsDictionary, StringsDictionary, T> selector2 = null,
-                         Func<StringsDictionary, StringsDictionary, StringsDictionary, T> selector3 = null)
+        T GetFormCore<T>(Func<WebCollection, T> selector1 = null,
+                         Func<WebCollection, WebCollection, T> selector2 = null,
+                         Func<WebCollection, WebCollection, WebCollection, T> selector3 = null)
         {
             // TODO Validate formElement is FORM
             // TODO formmethod, formaction, formenctype
 
-            var all          = selector3 != null ? new StringsDictionary() : null;
-            var form         = new StringsDictionary();
-            var submittables = selector1 == null ? new StringsDictionary() : null;
+            var all          = selector3 != null ? new WebCollection() : null;
+            var form         = new WebCollection();
+            var submittables = selector1 == null ? new WebCollection() : null;
 
             //
             // Controls are collected into one or more of following buckets:

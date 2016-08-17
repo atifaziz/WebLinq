@@ -17,10 +17,8 @@
 namespace WebLinq
 {
     using System;
-    using System.Linq;
     using System.Net.Http;
     using Collections;
-    using Mannex.Collections.Generic;
 
     public sealed class HttpSpec
     {
@@ -49,10 +47,8 @@ namespace WebLinq
             from context in Query.GetContext()
             select context.Eval((HttpService http) => http.Get(url, Options(ua)));
 
-        public Query<HttpFetch<HttpContent>> Post(Uri url, StringsDictionary data) =>
-            Post(url, new FormUrlEncodedContent(from e in data
-                                                from v in e.Value
-                                                select e.Key.AsKeyTo(v)));
+        public Query<HttpFetch<HttpContent>> Post(Uri url, WebCollection data) =>
+            Post(url, new FormUrlEncodedContent(data));
 
         public Query<HttpFetch<HttpContent>> Post(Uri url, HttpContent content) =>
             from ua in Query.TryGetItem("Http.User-Agent", (bool found, string value) => found ? value : null)

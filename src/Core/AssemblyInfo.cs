@@ -22,7 +22,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyDescription("LINQ to Web")]
 [assembly: AssemblyCompany("N/A")]
 [assembly: AssemblyProduct("WebLINQ")]
-[assembly: AssemblyCopyright("Copyright \u00a9 2016 Atif Aziz. Portions \u00a9 .NET Foundation. All rights reserved.")]
+[assembly: AssemblyCopyright("Copyright \u00a9 2016 Atif Aziz. All rights reserved.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
