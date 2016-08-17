@@ -24,6 +24,7 @@ namespace WebLinq
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using Collections;
     using Html;
     using Mannex.Collections.Specialized;
     using Mannex.Web;
@@ -42,38 +43,46 @@ namespace WebLinq
         public static Query<T> Content<T>(this Query<HttpFetch<T>> query) =>
             from e in query select e.Content;
 
-        public static Query<HttpFetch<HttpContent>> Accept(this Query<HttpFetch<HttpContent>> query, params string[] mediaTypes) =>
-            (mediaTypes?.Length ?? 0) == 0
-            ? query
-            : query.Do(e =>
-            {
-                var headers = e.Content.Headers;
-                var actualMediaType = headers.ContentType?.MediaType;
-                if (actualMediaType == null)
-                {
-                    var contentDisposition = headers.ContentDisposition;
-                    var filename = contentDisposition?.FileName ?? contentDisposition?.FileNameStar;
-                    if (!string.IsNullOrEmpty(filename))
-                        actualMediaType = MimeMapping.FindMimeTypeFromFileName(filename);
-                    if (actualMediaType == null)
+        public static Query<HttpFetch<HttpContent>> Accept(this Query<HttpFetch<HttpContent>> query,
+            params string[] mediaTypes) =>
+                (mediaTypes?.Length ?? 0) == 0
+                    ? query
+                    : query.Do(e =>
                     {
-                        throw new Exception($"Content has unspecified type when acceptable types are: {string.Join(", ", mediaTypes)}");
-                    }
-                }
+                        var headers = e.Content.Headers;
+                        var actualMediaType = headers.ContentType?.MediaType;
+                        if (actualMediaType == null)
+                        {
+                            var contentDisposition = headers.ContentDisposition;
+                            var filename = contentDisposition?.FileName ?? contentDisposition?.FileNameStar;
+                            if (!string.IsNullOrEmpty(filename))
+                                actualMediaType = MimeMapping.FindMimeTypeFromFileName(filename);
+                            if (actualMediaType == null)
+                            {
+                                throw new Exception(
+                                    $"Content has unspecified type when acceptable types are: {string.Join(", ", mediaTypes)}");
+                            }
+                        }
 
-                Debug.Assert(mediaTypes != null);
-                if (mediaTypes.Any(mediaType => string.Equals(mediaType, actualMediaType, StringComparison.OrdinalIgnoreCase)))
-                    return;
+                        Debug.Assert(mediaTypes != null);
+                        if (
+                            mediaTypes.Any(
+                                mediaType =>
+                                    string.Equals(mediaType, actualMediaType, StringComparison.OrdinalIgnoreCase)))
+                            return;
 
-                throw new Exception($"Unexpected content of type \"{actualMediaType}\". Acceptable types are: {string.Join(", ", mediaTypes)}");
-            });
+                        throw new Exception(
+                            $"Unexpected content of type \"{actualMediaType}\". Acceptable types are: {string.Join(", ", mediaTypes)}");
+                    });
 
-        public static Query<HttpFetch<HttpContent>> Submit(this Query<HttpFetch<HttpContent>> query, string formSelector, NameValueCollection data) =>
-            from html in query.Html()
-            from fetch in Submit(html.Content, formSelector, data)
-            select fetch;
+        public static Query<HttpFetch<HttpContent>> Submit(this Query<HttpFetch<HttpContent>> query, string formSelector,
+            StringsDictionary data) =>
+                from html in query.Html()
+                from fetch in Submit(html.Content, formSelector, data)
+                select fetch;
 
-        public static Query<HttpFetch<HttpContent>> Submit(ParsedHtml html, string formSelector, NameValueCollection data)
+        public static Query<HttpFetch<HttpContent>> Submit(ParsedHtml html, string formSelector,
+            StringsDictionary data)
         {
             var forms =
                 from f in html.QueryFormSelectorAll(formSelector)
@@ -91,10 +100,10 @@ namespace WebLinq
 
             if (data != null)
             {
-                foreach (var e in data.AsEnumerable())
+                foreach (var e in data)
                 {
                     form.Data.Remove(e.Key);
-                    if (e.Value.Length == 1 && e.Value[0] == null)
+                    if (e.Value.Count == 1 && e.Value[0] == null)
                         continue;
                     foreach (var value in e.Value)
                         form.Data.Add(e.Key, value);
@@ -102,17 +111,22 @@ namespace WebLinq
             }
 
             return form.Method == HtmlFormMethod.Post
-                 ? Http.Post(form.Action, form.Data)
-                 : Http.Get(new UriBuilder(form.Action) { Query = form.Data.ToW3FormEncoded() }.Uri);
+                ? Http.Post(form.Action, form.Data)
+                : Http.Get(new UriBuilder(form.Action) {Query = form.Data.ToW3FormEncoded()}.Uri);
         }
 
-        public static Query<HttpFetch<T>> ExceptStatusCode<T>(this Query<HttpFetch<T>> query, params HttpStatusCode[] statusCodes) =>
-            query.Do(e =>
-            {
-                if (e.IsSuccessStatusCode || statusCodes.Any(sc => e.StatusCode == sc))
-                    return;
-                (e.Content as IDisposable)?.Dispose();
-                throw new HttpRequestException($"Response status code does not indicate success: {e.StatusCode}.");
-            });
+        public static Query<HttpFetch<T>> ExceptStatusCode<T>(this Query<HttpFetch<T>> query,
+            params HttpStatusCode[] statusCodes) =>
+                query.Do(e =>
+                {
+                    if (e.IsSuccessStatusCode || statusCodes.Any(sc => e.StatusCode == sc))
+                        return;
+                    (e.Content as IDisposable)?.Dispose();
+                    throw new HttpRequestException($"Response status code does not indicate success: {e.StatusCode}.");
+                });
     }
+}
+
+namespace WebLinq
+{
 }

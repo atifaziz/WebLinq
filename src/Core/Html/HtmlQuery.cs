@@ -21,7 +21,6 @@ namespace WebLinq.Html
     using System.Linq;
     using System.Net.Http;
     using System.Net.Mime;
-    using Mannex.Collections.Specialized;
 
     public static class HtmlQuery
     {
@@ -170,6 +169,6 @@ namespace WebLinq.Html
             select html.WithContent(forms);
 
         public static Query<HtmlForm> Forms(ParsedHtml html) =>
-            Query.Return(html.Forms);
+            Query.Return(html.Forms.AsEnumerable());
     }
 }

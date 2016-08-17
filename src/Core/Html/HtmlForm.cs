@@ -20,10 +20,9 @@ namespace WebLinq.Html
 
     using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Collections.Specialized;
     using System.Linq;
     using System.Net.Mime;
+    using Collections;
 
     #endregion
 
@@ -31,7 +30,7 @@ namespace WebLinq.Html
 
     public sealed class HtmlForm
     {
-        ReadOnlyCollection<HtmlFormControl> _controls;
+        System.Collections.ObjectModel.ReadOnlyCollection<HtmlFormControl> _controls;
 
         public HtmlObject Element { get; }
         public string Name { get; }
@@ -77,25 +76,25 @@ namespace WebLinq.Html
                             : null
             select new HtmlFormControl(this, e, name, controlType, inputType);
 
-        public NameValueCollection GetSubmissionData() =>
+        public StringsDictionary GetSubmissionData() =>
             GetFormCore(data => data);
 
-        public T GetForm<T>(Func<NameValueCollection, NameValueCollection, T> selector) =>
+        public T GetForm<T>(Func<StringsDictionary, StringsDictionary, T> selector) =>
             GetFormCore(selector2: selector);
 
-        public T GetForm<T>(Func<NameValueCollection, NameValueCollection, NameValueCollection, T> selector) =>
+        public T GetForm<T>(Func<StringsDictionary, StringsDictionary, StringsDictionary, T> selector) =>
             GetFormCore(selector3: selector);
 
-        T GetFormCore<T>(Func<NameValueCollection, T> selector1 = null,
-                         Func<NameValueCollection, NameValueCollection, T> selector2 = null,
-                         Func<NameValueCollection, NameValueCollection, NameValueCollection, T> selector3 = null)
+        T GetFormCore<T>(Func<StringsDictionary, T> selector1 = null,
+                         Func<StringsDictionary, StringsDictionary, T> selector2 = null,
+                         Func<StringsDictionary, StringsDictionary, StringsDictionary, T> selector3 = null)
         {
             // TODO Validate formElement is FORM
             // TODO formmethod, formaction, formenctype
 
-            var all          = selector3 != null ? new NameValueCollection() : null;
-            var form         = new NameValueCollection();
-            var submittables = selector1 == null ? new NameValueCollection() : null;
+            var all          = selector3 != null ? new StringsDictionary() : null;
+            var form         = new StringsDictionary();
+            var submittables = selector1 == null ? new StringsDictionary() : null;
 
             //
             // Controls are collected into one or more of following buckets:

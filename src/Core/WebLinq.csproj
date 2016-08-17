@@ -72,6 +72,7 @@
     <Compile Include="Collections\Strings.cs" />
     <Compile Include="DelegateExtensions.cs" />
     <Compile Include="ArrayList.cs" />
+    <Compile Include="Extensions.cs" />
     <Compile Include="HashCodeCombiner.cs" />
     <Compile Include="Collections\StringsDictionary.cs" />
     <Compile Include="Html\HtmlForm.cs" />
