@@ -49,19 +49,19 @@ namespace WebLinq
             return this;
         }
 
-        HttpFetch<HttpContent> Send(HttpService http, HttpMethod method, Uri url, HttpContent content = null, CookieContainer cookies = null)
+        HttpFetch<HttpContent> Send(HttpService http, HttpQueryState state, HttpMethod method, Uri url, HttpContent content = null)
         {
             var request = Request; _request = null;
             var options = _options; _options = null;
             request.Method = method;
             request.RequestUri = url;
             request.Content = content;
-            return http.Send(request, cookies, options).ToHttpFetch(0);
+            return http.Send(request, state, options).ToHttpFetch(0);
         }
 
         public Query<HttpFetch<HttpContent>> Get(Uri url) =>
-            from e in GetServices((s, c) => new { Service = s, Cookies = c })
-            select Send(e.Service, HttpMethod.Get, url, cookies: e.Cookies);
+            from e in GetServices((svc, st) => new { Service = svc, State = st })
+            select Send(e.Service, e.State, HttpMethod.Get, url);
 
         public Query<HttpFetch<HttpContent>> Post(Uri url, NameValueCollection data) =>
             Post(url, new FormUrlEncodedContent(from i in Enumerable.Range(0, data.Count)
@@ -69,18 +69,18 @@ namespace WebLinq
                                                 select data.GetKey(i).AsKeyTo(v)));
 
         public Query<HttpFetch<HttpContent>> Post(Uri url, HttpContent content) =>
-            from e in GetServices((s, c) => new { Service = s, Cookies = c })
-            select Send(e.Service, HttpMethod.Post, url, content, e.Cookies);
+            from e in GetServices((svc, st) => new { Service = svc, State = st })
+            select Send(e.Service, e.State, HttpMethod.Post, url, content);
 
-        static Query<T> GetServices<T>(Func<HttpService, CookieContainer, T> selector) =>
-            from currentCookies in Query.FindService<CookieContainer>()
-            from cookies in currentCookies != null
-                            ? Query.Singleton(currentCookies)
-                            : from defaultClient in Query.Singleton(new CookieContainer())
-                              from _ in Query.SetService(defaultClient).Ignore()
-                              select defaultClient
+        static Query<T> GetServices<T>(Func<HttpService, HttpQueryState, T> selector) =>
+            from currentState in Query.FindService<HttpQueryState>()
+            from state in currentState != null
+                          ? Query.Singleton(currentState)
+                          : from defaultState in Query.Singleton(HttpQueryState.Default.WithCookies(new CookieContainer()))
+                            from _ in Query.SetService(defaultState).Ignore()
+                            select defaultState
             from service in Query.GetService<HttpService>()
-            select selector(service, cookies);
+            select selector(service, state);
     }
 
     static class SysNetHttpExtensions

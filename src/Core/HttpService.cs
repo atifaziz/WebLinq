@@ -36,7 +36,7 @@ namespace WebLinq
 
     public abstract class HttpService
     {
-        public abstract HttpResponseMessage Send(HttpRequestMessage request, CookieContainer cookies, HttpOptions options);
+        public abstract HttpResponseMessage Send(HttpRequestMessage request, HttpQueryState state, HttpOptions options);
     }
 
     public class SysNetHttpService : HttpService
@@ -44,14 +44,19 @@ namespace WebLinq
         public void Register(Action<Type, object> registrationHandler) =>
             registrationHandler(typeof(HttpService), this);
 
-        public override HttpResponseMessage Send(HttpRequestMessage request, CookieContainer cookies, HttpOptions options) =>
-            SendAsync(request, cookies, options).Result;
+        public override HttpResponseMessage Send(HttpRequestMessage request, HttpQueryState state, HttpOptions options) =>
+            SendAsync(request, state, options).Result;
 
-        static async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CookieContainer cookies, HttpOptions options)
+        static async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpQueryState state, HttpOptions options)
         {
             var hwreq = WebRequest.CreateHttp(request.RequestUri);
-            hwreq.Method = request.Method.Method;
-            hwreq.CookieContainer = cookies;
+
+            hwreq.Method                = request.Method.Method;
+            hwreq.Timeout               = (int)state.Timeout.TotalMilliseconds;
+            hwreq.CookieContainer       = state.Cookies;
+            hwreq.Credentials           = state.Credentials;
+            hwreq.UseDefaultCredentials = state.UseDefaultCredentials;
+            hwreq.UserAgent             = state.UserAgent;
 
             var content = request.Content;
             foreach (var e in from e in request.Headers.Concat(content?.Headers ?? Enumerable.Empty<KeyValuePair<string, IEnumerable<string>>>())
