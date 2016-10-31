@@ -3,11 +3,14 @@ namespace WebLinq.Samples
     #region Imports
 
     using System;
+    using System.Collections.Specialized;
     using System.IO;
     using System.Linq;
     using System.Net.Http;
+    using System.Web;
     using System.Xml.Linq;
     using Text;
+    using TryParsers;
     using Xml;
     using static HttpQuery;
     using static Sys.SysQuery;
@@ -20,6 +23,7 @@ namespace WebLinq.Samples
         public static void Main()
         {
             HttpGetWithLinksAndHtmlParsing();
+            GoogleSearch();
             ScheduledTasksViaSpawn();
         }
 
@@ -46,6 +50,37 @@ namespace WebLinq.Samples
                 }
                 into e
                 where e.Com.Html?.Length == e.Net.Html?.Length
+                select e;
+
+            q.Dump();
+        }
+
+        static void GoogleSearch()
+        {
+            var q =
+                from sp in Http.Get(new Uri("https://google.com/"))
+                               .Submit(0, new NameValueCollection { ["q"] = "foobar" })
+                               .Html().Content()
+                from sr in
+                    Query.Generate(sp, curr =>
+                    {
+                        var next = curr.TryBaseHref(curr.QuerySelectorAll("a.fl")
+                                                        .Single(a => "Next".Equals(a.InnerText.Trim(), StringComparison.InvariantCultureIgnoreCase))
+                                                        .GetAttributeValue("href"));
+                        return Http.Get(new Uri(next)).Html().Content();
+                    })
+                    .TakeWhile(h => (TryParse.Int32(HttpUtility.ParseQueryString(h.BaseUrl.Query)["start"]) ?? 1) < 30)
+                from r in sr.QuerySelectorAll(".g").ToQuery()
+                select new
+                {
+                    Title   = r.QuerySelector(".r")?.InnerText,
+                    Summary = r.QuerySelector(".st")?.InnerText,
+                    Href    = sr.TryBaseHref(r.QuerySelector(".r a")?.GetAttributeValue("href")),
+                }
+                into e
+                where !string.IsNullOrWhiteSpace(e.Title)
+                   && e.Href != null
+                   && !string.IsNullOrWhiteSpace(e.Summary)
                 select e;
 
             q.Dump();
