@@ -19,6 +19,7 @@ namespace WebLinq
     using System;
     using System.Collections.Specialized;
     using System.Linq;
+    using System.Net;
     using System.Net.Http;
     using Mannex.Collections.Generic;
 
@@ -48,19 +49,19 @@ namespace WebLinq
             return this;
         }
 
-        HttpFetch<HttpContent> Send(HttpService http, HttpClient client, HttpMethod method, Uri url, HttpContent content = null)
+        HttpFetch<HttpContent> Send(HttpService http, HttpMethod method, Uri url, HttpContent content = null, CookieContainer cookies = null)
         {
             var request = Request; _request = null;
             var options = _options; _options = null;
             request.Method = method;
             request.RequestUri = url;
             request.Content = content;
-            return http.Send(client, request, options).ToHttpFetch(0);
+            return http.Send(request, cookies, options).ToHttpFetch(0);
         }
 
         public Query<HttpFetch<HttpContent>> Get(Uri url) =>
-            from e in GetServices((s, c) => new { Service = s, Client = c })
-            select Send(e.Service, e.Client, HttpMethod.Get, url);
+            from e in GetServices((s, c) => new { Service = s, Cookies = c })
+            select Send(e.Service, HttpMethod.Get, url, cookies: e.Cookies);
 
         public Query<HttpFetch<HttpContent>> Post(Uri url, NameValueCollection data) =>
             Post(url, new FormUrlEncodedContent(from i in Enumerable.Range(0, data.Count)
@@ -68,18 +69,18 @@ namespace WebLinq
                                                 select data.GetKey(i).AsKeyTo(v)));
 
         public Query<HttpFetch<HttpContent>> Post(Uri url, HttpContent content) =>
-            from e in GetServices((s, c) => new { Service = s, Client = c })
-            select Send(e.Service, e.Client, HttpMethod.Post, url, content);
+            from e in GetServices((s, c) => new { Service = s, Cookies = c })
+            select Send(e.Service, HttpMethod.Post, url, content, e.Cookies);
 
-        static Query<T> GetServices<T>(Func<HttpService, HttpClient, T> selector) =>
-            from currentClient in Query.FindService<HttpClient>()
-            from client in currentClient != null
-                           ? Query.Singleton(currentClient)
-                           : from defaultClient in Query.Singleton(new HttpClient())
-                             from _ in Query.SetService(defaultClient).Ignore()
-                             select defaultClient
+        static Query<T> GetServices<T>(Func<HttpService, CookieContainer, T> selector) =>
+            from currentCookies in Query.FindService<CookieContainer>()
+            from cookies in currentCookies != null
+                            ? Query.Singleton(currentCookies)
+                            : from defaultClient in Query.Singleton(new CookieContainer())
+                              from _ in Query.SetService(defaultClient).Ignore()
+                              select defaultClient
             from service in Query.GetService<HttpService>()
-            select selector(service, client);
+            select selector(service, cookies);
     }
 
     static class SysNetHttpExtensions
