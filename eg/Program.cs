@@ -19,11 +19,11 @@ namespace WebLinq.Samples
     {
         public static void Main()
         {
-            Sample1();
-            Sample2();
+            HttpGetWithLinksAndHtmlParsing();
+            ScheduledTasksViaSpawn();
         }
 
-        static void Sample1()
+        static void HttpGetWithLinksAndHtmlParsing()
         {
             var q =
                 from com in Http.UserAgent(@"Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko")
@@ -51,7 +51,7 @@ namespace WebLinq.Samples
             q.Dump();
         }
 
-        static void Sample2()
+        static void ScheduledTasksViaSpawn()
         {
             var ns = XNamespace.Get("http://schemas.microsoft.com/windows/2004/02/mit/task");
 
