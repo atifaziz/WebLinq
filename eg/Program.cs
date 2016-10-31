@@ -4,7 +4,13 @@ namespace WebLinq.Samples
 
     using System;
     using System.IO;
+    using System.Linq;
+    using System.Net.Http;
+    using System.Xml.Linq;
+    using Text;
+    using Xml;
     using static HttpQuery;
+    using static Sys.SysQuery;
     using static Html.HtmlQuery;
 
     #endregion
@@ -14,6 +20,7 @@ namespace WebLinq.Samples
         public static void Main()
         {
             Sample1();
+            Sample2();
         }
 
         static void Sample1()
@@ -39,6 +46,28 @@ namespace WebLinq.Samples
                 }
                 into e
                 where e.Com.Html?.Length == e.Net.Html?.Length
+                select e;
+
+            q.Dump();
+        }
+
+        static void Sample2()
+        {
+            var ns = XNamespace.Get("http://schemas.microsoft.com/windows/2004/02/mit/task");
+
+            var q =
+                from xml in Spawn("schtasks", @"/query /xml ONE").Delimited(Environment.NewLine)
+                from doc in XmlQuery.Xml(new StringContent(xml))
+                let execs =
+                    from t in doc.Elements("Tasks").Elements(ns + "Task")
+                    from e in t.Elements(ns + "Actions").Elements(ns + "Exec")
+                    select new
+                    {
+                        Name      = ((XComment)t.PreviousNode).Value.Trim(),
+                        Command   = (string)e.Element(ns + "Command"),
+                        Arguments = (string)e.Element(ns + "Arguments"),
+                    }
+                from e in execs.ToQuery()
                 select e;
 
             q.Dump();
