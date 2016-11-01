@@ -117,15 +117,19 @@ namespace WebLinq.Html
                 {
                     c.Element,
                     c.Name,
+                    c.ControlType,
                     IsSelect = c.ControlType == HtmlControlType.Select,
                     c.InputType,
                     c.IsDisabled,
                     c.IsReadOnly,
                 })
             {
-                if (!field.IsSelect && field.InputType.KnownType == KnownHtmlInputType.Other)
+                if (!field.IsSelect
+                    && field.ControlType != HtmlControlType.TextArea
+                    && field.InputType.KnownType == KnownHtmlInputType.Other)
+                {
                     throw new Exception($"Unexpected type of form field (\"{field.InputType}\").");
-
+                }
                 // TODO checkboxes handling in form data set
                 // TODO radio buttons handling in form data set
                 // TODO multiple values handling in form data set
