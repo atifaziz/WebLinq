@@ -77,8 +77,17 @@ namespace WebLinq
                                             .Aggregate(seed, accumulator, resultSelector);
         }
 
+        public Query<T> SkipWhile(Func<T, bool> predicate) =>
+            Bind(xs => Query.Return(xs.SkipWhile(x => predicate(x.Value))));
+
         public Query<T> TakeWhile(Func<T, bool> predicate) =>
             Bind(xs => Query.Return(xs.TakeWhile(x => predicate(x.Value))));
+
+        public Query<T> Skip(int count) =>
+            Bind(xs => Query.Return(xs.Skip(count)));
+
+        public Query<T> Take(int count) =>
+            Bind(xs => Query.Return(xs.Take(count)));
 
         public Query<T> Concat(Query<T> query) =>
             Bind(xs => query.Bind(ys => Query.Return(xs.Concat(ys))));
