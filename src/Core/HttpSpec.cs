@@ -61,7 +61,7 @@ namespace WebLinq
 
         HttpOptions Options(string ua)
         {
-            var headers = HttpHeaderCollection.Empty;
+            var headers = Headers;
             if (!string.IsNullOrEmpty(ua) && (Headers.IsEmpty || Headers.TryGetValue("User-Agent") == null))
                 headers = headers.Set("User-Agent", ua);
 
