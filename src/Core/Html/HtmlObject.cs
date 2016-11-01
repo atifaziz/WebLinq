@@ -14,6 +14,8 @@
 //
 #endregion
 
+//[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("LINQPadQeury")]
+
 namespace WebLinq.Html
 {
     using System;
@@ -46,5 +48,24 @@ namespace WebLinq.Html
 
         public virtual HtmlObject QuerySelector(string selector) =>
             Owner.QuerySelector(selector, this);
+
+        // http://www.linqpad.net/CustomizingDump.aspx
+
+        internal object ToDump() => new
+        {
+            Name,
+
+            Attributes =
+                from an in AttributeNames
+                select new { Name = an, Value = GetAttributeValue(an) },
+
+            ChildElementCount =
+                HasChildElements ? ChildElements.Count() : 0,
+
+            OuterHtml =
+                OuterHtml.Length <= 300
+                ? (object) OuterHtml
+                : new Lazy<string>(() => OuterHtml)
+        };
     }
 }
