@@ -21,6 +21,7 @@ namespace WebLinq.Html
     using System.Linq;
     using System.Net.Http;
     using System.Net.Mime;
+    using Mannex.Collections.Generic;
     using Mannex.Collections.Specialized;
 
     public static class HtmlQuery
@@ -116,7 +117,8 @@ namespace WebLinq.Html
             var dt = new DataTable();
             dt.Columns.AddRange(new []
             {
-                new DataColumn("FormName")                  { AllowDBNull = false },
+                new DataColumn("#")                         { AllowDBNull = false },
+                new DataColumn("FormName")                  { AllowDBNull = true  },
                 new DataColumn("FormAction")                { AllowDBNull = false },
                 new DataColumn("FormMethod")                { AllowDBNull = true  },
                 new DataColumn("FormEncoding")              { AllowDBNull = true  },
@@ -126,7 +128,8 @@ namespace WebLinq.Html
             });
 
             foreach (var form in
-                from form in forms
+                from fi in forms.Select((f, i) => (i + 1).AsKeyTo(f))
+                let form = fi.Value
                 from controls in new[]
                 {
                     from e in form.Data.AsEnumerable()
@@ -139,6 +142,7 @@ namespace WebLinq.Html
                 from control in controls
                 select new object[]
                 {
+                    fi.Key,
                     form.Name,
                     form.Action.OriginalString,
                     form.Method,
