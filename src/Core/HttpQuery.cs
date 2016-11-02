@@ -19,15 +19,18 @@ namespace WebLinq
     #region Imports
 
     using System;
+    using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.Diagnostics;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
     using Html;
+    using Mannex.Collections.Generic;
     using Mannex.Collections.Specialized;
     using Mannex.Web;
     using Mime;
+    using TryParsers;
 
     #endregion
 
@@ -132,5 +135,66 @@ namespace WebLinq
                 (e.Content as IDisposable)?.Dispose();
                 throw new HttpRequestException($"Response status code does not indicate success: {e.StatusCode}.");
             });
+
+        public static Query<HttpFetch<HttpContent>> Crawl(Uri url, int depth) =>
+            Crawl(url, depth, null);
+
+        public static Query<HttpFetch<HttpContent>> Crawl(Uri url, Func<Uri, bool> followPredicate) =>
+            Crawl(url, int.MaxValue, followPredicate);
+
+        public static Query<HttpFetch<HttpContent>> Crawl(Uri url, int depth, Func<Uri, bool> followPredicate) =>
+            Query.Create(context => CrawlImpl(context, url, depth, _ => true));
+
+        static IEnumerable<QueryResultItem<HttpFetch<HttpContent>>> CrawlImpl(QueryContext context, Uri rootUrl, int depth, Func<Uri, bool> followPredicate)
+        {
+            var linkSet = new HashSet<Uri> { rootUrl };
+            var queue = new Queue<KeyValuePair<int, Uri>>();
+            queue.Enqueue(0.AsKeyTo(rootUrl));
+
+            while (queue.Count > 0)
+            {
+                var dequeued = queue.Dequeue();
+                var url = dequeued.Value;
+                var level = dequeued.Key;
+                // TODO retry intermittent errors?
+                var fetchResult = Http.ReturnErrorneousFetch().Get(url).GetResult(context).Single();
+                var fetch = fetchResult.Value;
+
+                if (!fetch.IsSuccessStatusCode)
+                    continue;
+
+                yield return fetchResult;
+                context = fetchResult.Context;
+
+                if (level >= depth)
+                    continue;
+
+                // If content is HTML then sniff links and add them to the
+                // queue assuming they are from the same domain and pass the
+                // user-supplied condition to follow.
+
+                var contentMediaType = fetch.Content.Headers.ContentType?.MediaType;
+                if (!"text/html".Equals(contentMediaType, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                var lq =
+                    from e in Query.Singleton(fetch).Links().Content()
+                    select TryParse.Uri(e, UriKind.Absolute) into e
+                    where e != null
+                       && (e.Scheme == Uri.UriSchemeHttp || e.Scheme == Uri.UriSchemeHttps)
+                       && !linkSet.Contains(e)
+                       && rootUrl.Host.Equals(e.Host, StringComparison.OrdinalIgnoreCase)
+                       && followPredicate(e)
+                    select e;
+
+                var links = lq.GetResult(context);
+                foreach (var e in links)
+                {
+                    if (linkSet.Add(e))
+                        queue.Enqueue((level + 1).AsKeyTo(e.Value));
+                    context = e.Context;
+                }
+            }
+        }
     }
 }
