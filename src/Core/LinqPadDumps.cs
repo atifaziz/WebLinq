@@ -19,10 +19,35 @@
 
 namespace WebLinq
 {
+    using System.Linq;
+
     partial class Query<T>
     {
         internal object ToDump() =>
             this.ToEnumerable(DefaultQueryContext.Create);
+    }
+
+    partial class HttpFetch<T>
+    {
+        internal object ToDump() => new
+        {
+            Id,
+            HttpVersion = HttpVersion.ToString(),
+            StatusCode,
+            RequestUrl,
+
+            Headers =
+                from e in Headers
+                select new
+                {
+                    e.Key,
+                    Value = e.Value.Count == 1
+                          ? (object) e.Value.Single()
+                          : e.Value
+                },
+
+            Content,
+        };
     }
 }
 
