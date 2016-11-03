@@ -43,6 +43,9 @@ namespace WebLinq
             });
         }
 
+        internal object ToDump() =>
+            this.ToEnumerable(DefaultQueryContext.Create);
+
         public Query<T> Do(Action<T> action) =>
             Select(e => { action(e); return e; });
 
