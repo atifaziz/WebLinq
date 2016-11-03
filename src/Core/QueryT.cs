@@ -20,7 +20,7 @@ namespace WebLinq
     using System.Collections.Generic;
     using System.Linq;
 
-    public class Query<T>
+    public partial class Query<T>
     {
         public static Query<T> Empty = Query.Create(QueryResult.Empty<T>);
 
@@ -42,9 +42,6 @@ namespace WebLinq
                 return q.GetResult(context);
             });
         }
-
-        internal object ToDump() =>
-            this.ToEnumerable(DefaultQueryContext.Create);
 
         public Query<T> Do(Action<T> action) =>
             Select(e => { action(e); return e; });
