@@ -46,6 +46,9 @@ namespace WebLinq
         public Query<T> Do(Action<T> action) =>
             Select(e => { action(e); return e; });
 
+        public Query<T> Wait() =>
+            Bind(xs => Query.Return(xs.ToArray()));
+
         // LINQ support
 
         public Query<TResult> Select<TResult>(Func<T, TResult> selector) =>
