@@ -75,4 +75,33 @@ namespace WebLinq.Html
                 : new Lazy<string>(() => OuterHtml)
         };
     }
+
+    partial class HtmlForm
+    {
+        internal object ToDump() => new
+        {
+            Name,
+            Action,
+            Method,
+            EncType,
+            Controls,
+            Element = new Lazy<HtmlObject>(() => Element),
+        };
+    }
+
+    partial class HtmlFormControl
+    {
+        internal object ToDump() => new
+        {
+            Name,
+            ControlType,
+            InputType = InputType?.KnownType,
+            IsDisabled,
+            IsReadOnly,
+            IsChecked,
+            IsMultiple,
+            Element = new Lazy<HtmlObject>(() => Element),
+            Form = new Lazy<HtmlForm>(() => Form),
+        };
+    }
 }
