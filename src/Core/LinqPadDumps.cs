@@ -19,12 +19,49 @@
 
 namespace WebLinq
 {
+    using System;
     using System.Linq;
 
     partial class Query<T>
     {
         internal object ToDump() =>
-            this.ToEnumerable(DefaultQueryContext.Create);
+            new ObservableQuery(this);
+
+        sealed class ObservableQuery : IObservable<T>
+        {
+            readonly Query<T> _query;
+
+            public ObservableQuery(Query<T> query)
+            {
+                _query = query;
+            }
+
+            public IDisposable Subscribe(IObserver<T> observer)
+            {
+                Exception error = null;
+                try
+                {
+                    foreach (var e in _query.ToEnumerable(DefaultQueryContext.Create))
+                        observer.OnNext(e);
+                }
+                catch (Exception e)
+                {
+                    error = e;
+                }
+
+                if (error != null) observer.OnError(error);
+                else observer.OnCompleted();
+
+                return NopDisposable.Instance;
+            }
+
+            sealed class NopDisposable : IDisposable
+            {
+                public static readonly NopDisposable Instance = new NopDisposable();
+                NopDisposable() {}
+                public void Dispose() {}
+            }
+        }
     }
 
     partial class HttpFetch<T>
