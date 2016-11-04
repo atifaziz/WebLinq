@@ -136,6 +136,9 @@ namespace WebLinq
                 throw new HttpRequestException($"Response status code does not indicate success: {e.StatusCode}.");
             });
 
+        public static Query<HttpFetch<HttpContent>> Crawl(Uri url) =>
+            Crawl(url, int.MaxValue);
+
         public static Query<HttpFetch<HttpContent>> Crawl(Uri url, int depth) =>
             Crawl(url, depth, null);
 
