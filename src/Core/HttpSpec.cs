@@ -49,7 +49,7 @@ namespace WebLinq
             return this;
         }
 
-        HttpFetch<HttpContent> Send(HttpService http, HttpQueryState state, HttpMethod method, Uri url, HttpContent content = null)
+        HttpFetch<HttpContent> Send(IHttpService http, HttpQueryState state, HttpMethod method, Uri url, HttpContent content = null)
         {
             var request = Request; _request = null;
             var options = _options; _options = null;
@@ -72,14 +72,14 @@ namespace WebLinq
             from e in GetServices((svc, st) => new { Service = svc, State = st })
             select Send(e.Service, e.State, HttpMethod.Post, url, content);
 
-        static Query<T> GetServices<T>(Func<HttpService, HttpQueryState, T> selector) =>
+        static Query<T> GetServices<T>(Func<IHttpService, HttpQueryState, T> selector) =>
             from currentState in Query.FindService<HttpQueryState>()
             from state in currentState != null
                           ? Query.Singleton(currentState)
                           : from defaultState in Query.Singleton(HttpQueryState.Default.WithCookies(new CookieContainer()))
                             from _ in Query.SetService(defaultState).Ignore()
                             select defaultState
-            from service in Query.GetService<HttpService>()
+            from service in Query.GetService<IHttpService>()
             select selector(service, state);
     }
 

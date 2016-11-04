@@ -34,17 +34,17 @@ namespace WebLinq
         public bool ReturnErrorneousFetch { get; set; }
     }
 
-    public abstract class HttpService
+    public interface IHttpService
     {
-        public abstract HttpResponseMessage Send(HttpRequestMessage request, HttpQueryState state, HttpOptions options);
+        HttpResponseMessage Send(HttpRequestMessage request, HttpQueryState state, HttpOptions options);
     }
 
-    public class SysNetHttpService : HttpService
+    public class HttpService : IHttpService
     {
         public void Register(Action<Type, object> registrationHandler) =>
-            registrationHandler(typeof(HttpService), this);
+            registrationHandler(typeof(IHttpService), this);
 
-        public override HttpResponseMessage Send(HttpRequestMessage request, HttpQueryState state, HttpOptions options) =>
+        public virtual HttpResponseMessage Send(HttpRequestMessage request, HttpQueryState state, HttpOptions options) =>
             SendAsync(request, state, options).Result;
 
         static async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpQueryState state, HttpOptions options)
