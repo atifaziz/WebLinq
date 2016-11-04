@@ -140,13 +140,13 @@ namespace WebLinq
             Crawl(url, int.MaxValue);
 
         public static Query<HttpFetch<HttpContent>> Crawl(Uri url, int depth) =>
-            Crawl(url, depth, null);
+            Crawl(url, depth, _ => true);
 
         public static Query<HttpFetch<HttpContent>> Crawl(Uri url, Func<Uri, bool> followPredicate) =>
             Crawl(url, int.MaxValue, followPredicate);
 
         public static Query<HttpFetch<HttpContent>> Crawl(Uri url, int depth, Func<Uri, bool> followPredicate) =>
-            Query.Create(context => CrawlImpl(context, url, depth, _ => true));
+            Query.Create(context => CrawlImpl(context, url, depth, followPredicate));
 
         static IEnumerable<QueryResultItem<HttpFetch<HttpContent>>> CrawlImpl(QueryContext context, Uri rootUrl, int depth, Func<Uri, bool> followPredicate)
         {
