@@ -49,19 +49,19 @@ namespace WebLinq
             return this;
         }
 
-        HttpFetch<HttpContent> Send(IHttpService http, HttpQueryState state, HttpMethod method, Uri url, HttpContent content = null)
+        HttpFetch<HttpContent> Send(IHttpService http, HttpQueryState state, TypedValue<HttpFetchId, int> id, HttpMethod method, Uri url, HttpContent content = null)
         {
             var request = Request; _request = null;
             var options = _options; _options = null;
             request.Method = method;
             request.RequestUri = url;
             request.Content = content;
-            return http.Send(request, state, options).ToHttpFetch(0);
+            return http.Send(request, state, options).ToHttpFetch(id.Value);
         }
 
         public Query<HttpFetch<HttpContent>> Get(Uri url) =>
-            from e in GetServices((svc, st) => new { Service = svc, State = st })
-            select Send(e.Service, e.State, HttpMethod.Get, url);
+            from e in GetServices((svc, st, fid) => new { Service = svc, State = st, FetchId = fid })
+            select Send(e.Service, e.State, e.FetchId, HttpMethod.Get, url);
 
         public Query<HttpFetch<HttpContent>> Post(Uri url, NameValueCollection data) =>
             Post(url, new FormUrlEncodedContent(from i in Enumerable.Range(0, data.Count)
@@ -69,18 +69,46 @@ namespace WebLinq
                                                 select data.GetKey(i).AsKeyTo(v)));
 
         public Query<HttpFetch<HttpContent>> Post(Uri url, HttpContent content) =>
-            from e in GetServices((svc, st) => new { Service = svc, State = st })
-            select Send(e.Service, e.State, HttpMethod.Post, url, content);
+            from e in GetServices((svc, st, fid) => new { Service = svc, State = st, FetchId = fid })
+            select Send(e.Service, e.State, e.FetchId, HttpMethod.Post, url, content);
 
-        static Query<T> GetServices<T>(Func<IHttpService, HttpQueryState, T> selector) =>
-            from currentState in Query.FindService<HttpQueryState>()
-            from state in currentState != null
-                          ? Query.Singleton(currentState)
-                          : from defaultState in Query.Singleton(HttpQueryState.Default.WithCookies(new CookieContainer()))
-                            from _ in Query.SetService(defaultState).Ignore()
-                            select defaultState
-            from service in Query.GetService<IHttpService>()
-            select selector(service, state);
+        static Query<T> GetServices<T>(Func<IHttpService, HttpQueryState, TypedValue<HttpFetchId, int>, T> selector) =>
+            from context in Query.GetContext()
+            from http in Query.FindService<IHttpService>()
+            from state in Query.FindService<HttpQueryState>()
+            from id in Query.FindService<Ref<TypedValue<HttpFetchId, int>>>()
+            let hsp = new HttpServicesProvider
+            (
+                http ?? new HttpService(),
+                state ?? HttpQueryState.Default.WithCookies(new CookieContainer()),
+                (id ?? Ref.Create(HttpFetchId.New(0))).Updating(x => HttpFetchId.New(x + 1)),
+                context
+            )
+            from _ in Query.SetContext(context.WithServiceProvider(hsp))
+            select selector(hsp.Http, hsp.State, hsp.Id);
+
+        sealed class HttpServicesProvider : IServiceProvider
+        {
+            readonly IServiceProvider _provider;
+
+            public IHttpService Http { get; }
+            public HttpQueryState State { get; }
+            public Ref<TypedValue<HttpFetchId, int>> Id { get; }
+
+            public HttpServicesProvider(IHttpService http, HttpQueryState state, Ref<TypedValue<HttpFetchId, int>> id, IServiceProvider provider)
+            {
+                Id = id;
+                Http = http;
+                State = state;
+                _provider = provider;
+            }
+
+            public object GetService(Type serviceType) =>
+                  serviceType == typeof(IHttpService) ? Http
+                : serviceType == typeof(HttpQueryState) ? State
+                : serviceType == typeof(Ref<TypedValue<HttpFetchId, int>>) ? Id
+                : _provider?.GetService(serviceType);
+        }
     }
 
     static class SysNetHttpExtensions

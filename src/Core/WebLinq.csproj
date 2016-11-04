@@ -67,6 +67,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>AssemblyInfo.g.tt</DependentUpon>
     </Compile>
+    <Compile Include="TypedValue.cs" />
     <Compile Include="Collections\MapBase.cs" />
     <Compile Include="Collections\Map.cs" />
     <Compile Include="DelegateExtensions.cs" />
@@ -91,6 +92,7 @@
     <Compile Include="Mime\MimeMap.cs" />
     <Compile Include="HttpQuery.cs" />
     <Compile Include="QueryResultItem.cs" />
+    <Compile Include="Ref.cs" />
     <Compile Include="ServiceProviderExtensions.cs" />
     <Compile Include="Collections\ReadOnlyCollection.cs" />
     <Compile Include="Sys\SpawnServiceExtensions.cs" />
