@@ -15,6 +15,7 @@ namespace WebLinq.Samples
     using static HttpQuery;
     using static Sys.SysQuery;
     using static Html.HtmlQuery;
+    using Html;
 
     #endregion
 
@@ -23,8 +24,9 @@ namespace WebLinq.Samples
         public static void Main()
         {
             HttpGetWithLinksAndHtmlParsing();
-            GoogleSearch();
+            GoogleSearch();            
             ScheduledTasksViaSpawn();
+            QueenSongs();
         }
 
         static void HttpGetWithLinksAndHtmlParsing()
@@ -104,6 +106,55 @@ namespace WebLinq.Samples
                     }
                 from e in execs.ToQuery()
                 select e;
+
+            q.Dump();
+        }
+
+        static void QueenSongs()
+        {
+            var q =
+                from html in Http.Get(new Uri("https://en.wikipedia.org/wiki/Queen_discography")).Html().Content()
+                let albums =
+                    from tr in html.Tables("table[border='1']").First().QuerySelectorAll("tr")
+                    from th in tr.QuerySelectorAll("th[scope=row]")
+                    let a = th.QuerySelector("a[href]")
+                    where a != null
+                    select new
+                    {
+                        title = a.GetAttributeValue("title")?.Trim(),
+                        link = html.TryBaseHref(a.GetAttributeValue("href")?.Trim()),
+                    }
+                    into e
+                    select new
+                    {
+                        e.title,
+                        url = TryParse.Uri(e.link, UriKind.Absolute),
+                    }
+                    into e
+                    where !string.IsNullOrEmpty(e.title) && e.url != null
+                    select e
+
+                from album in albums.ToQuery()
+                select album
+
+                into album
+
+                from html in Http.Get(album.url).Html()
+                from tb in html.Content.Tables(".tracklist").Take(2).ToQuery()
+                from tr in tb.QuerySelectorAll("tr").ToQuery()
+                where tr.QuerySelectorAll("td").Count() == (album.title == "Queen II" || album.title == "Innuendo (album)" ? 3 : 4)
+                let titleTd = tr.QuerySelectorAll("td[style='text-align: left; vertical-align: top;']").Single()
+                let authr = tr.QuerySelectorAll("td[style='vertical-align: top;']").SingleOrDefault()?.InnerText
+                let durat = tr.QuerySelectorAll("td[style='padding-right: 10px; text-align: right; vertical-align: top;']").Last().InnerText
+                let title = titleTd.HasChildElements ? titleTd.ChildElements.First().GetAttributeValue("title") : titleTd.InnerText
+                where !string.IsNullOrEmpty(title)
+                select new
+                {
+                    Album = album.title,
+                    Title = title,
+                    Author = authr,
+                    Duration = durat
+                };
 
             q.Dump();
         }
