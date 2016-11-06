@@ -113,48 +113,69 @@ namespace WebLinq.Samples
         static void QueenSongs()
         {
             var q =
+
                 from html in Http.Get(new Uri("https://en.wikipedia.org/wiki/Queen_discography")).Html().Content()
+
                 let albums =
-                    from tr in html.Tables("table[border='1']").First().QuerySelectorAll("tr")
+                    from tr in html.Tables("table.wikitable").First().QuerySelectorAll("tr")
                     from th in tr.QuerySelectorAll("th[scope=row]")
                     let a = th.QuerySelector("a[href]")
                     where a != null
                     select new
                     {
-                        title = a.GetAttributeValue("title")?.Trim(),
-                        link = html.TryBaseHref(a.GetAttributeValue("href")?.Trim()),
+                        Title = a.GetAttributeValue("title")?.Trim(),
+                        Href = html.TryBaseHref(a.GetAttributeValue("href")?.Trim()),
                     }
                     into e
                     select new
                     {
-                        e.title,
-                        url = TryParse.Uri(e.link, UriKind.Absolute),
+                        e.Title,
+                        Url = TryParse.Uri(e.Href, UriKind.Absolute),
                     }
                     into e
-                    where !string.IsNullOrEmpty(e.title) && e.url != null
+                    where !string.IsNullOrEmpty(e.Title) && e.Url != null
                     select e
 
                 from album in albums.ToQuery()
-                select album
+                select album into album
 
-                into album
+                from html in Http.Get(album.Url).Html().Content()
 
-                from html in Http.Get(album.url).Html()
-                from tb in html.Content.Tables(".tracklist").Take(2).ToQuery()
-                from tr in tb.QuerySelectorAll("tr").ToQuery()
-                where tr.QuerySelectorAll("td").Count() == (album.title == "Queen II" || album.title == "Innuendo (album)" ? 3 : 4)
-                let titleTd = tr.QuerySelectorAll("td[style='text-align: left; vertical-align: top;']").Single()
-                let authr = tr.QuerySelectorAll("td[style='vertical-align: top;']").SingleOrDefault()?.InnerText
-                let durat = tr.QuerySelectorAll("td[style='padding-right: 10px; text-align: right; vertical-align: top;']").Last().InnerText
-                let title = titleTd.HasChildElements ? titleTd.ChildElements.First().GetAttributeValue("title") : titleTd.InnerText
-                where !string.IsNullOrEmpty(title)
-                select new
-                {
-                    Album = album.title,
-                    Title = title,
-                    Author = authr,
-                    Duration = durat
-                };
+                let tracks =
+                    from tb in html.Tables(".tracklist").Take(2)
+                    let trs = tb.QuerySelectorAll("tr")
+                    let hdrs =
+                        trs.FirstOrDefault(tr => tr.QuerySelectorAll("th").Take(4).Count() >= 3)
+                          ?.QuerySelectorAll("th")
+                           .Select(th => th.InnerTextSource.Decoded.Trim())
+                           .ToArray()
+                    where hdrs != null
+                    let idxs =
+                        new[] { "Title", "Writer(s)", "Length" }
+                            .Select(h => Array.FindIndex(hdrs, he => he == h))
+                            .ToArray()
+                    let his = new
+                    {
+                        Title   = idxs[0],
+                        Writers = idxs[1],
+                        Length  = idxs[2],
+                    }
+                    from tr in trs
+                    let tds =
+                        tr.QuerySelectorAll("td")
+                          .Select(td => td.InnerTextSource.Decoded)
+                          .ToArray()
+                    where tds.Length >= 3
+                    select new
+                    {
+                        Album    = album.Title,
+                        Title    = tds[his.Title],
+                        Author   = his.Writers >= 0 ? tds[his.Writers] : null,
+                        Duration = tds[his.Length],
+                    }
+
+                from e in tracks.ToQuery()
+                select e;
 
             q.Dump();
         }
