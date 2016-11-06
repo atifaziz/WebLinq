@@ -118,7 +118,7 @@ namespace WebLinq.Samples
                               .Where(t => t.HasClass("wikitable"))
                               .Take(1)
                 from tr in t.TableRows((_, trs) => trs).ToQuery()
-                select tr.FirstOrDefault(e => e?.GetAttributeSourceValue("scope").Decoded == "row") into th
+                select tr.FirstOrDefault(e => e?.AttributeValueEquals("scope", "row") == true) into th
                 where th != null
                 let a = th.QuerySelector("a[href]")
                 select new
