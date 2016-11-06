@@ -48,5 +48,12 @@ namespace WebLinq.Html
 
         public virtual HtmlObject QuerySelector(string selector) =>
             Owner.QuerySelector(selector, this);
+
+        string _class;
+        HashSet<string> _classes;
+        HashSet<string> Classes => _classes ?? (_classes = new HashSet<string>(Class.Split(' ')));
+
+        public string Class => _class ?? (_class = GetAttributeSourceValue("class").Decoded ?? string.Empty);
+        public bool HasClass(string className) => Classes.Contains(className);
     }
 }
