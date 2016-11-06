@@ -114,30 +114,28 @@ namespace WebLinq.Samples
         {
             var q =
 
-                from html in Http.Get(new Uri("https://en.wikipedia.org/wiki/Queen_discography")).Html().Content()
-
-                let albums =
-                    from tr in html.Tables("table.wikitable").First().QuerySelectorAll("tr")
-                    from th in tr.QuerySelectorAll("th[scope=row]")
-                    let a = th.QuerySelector("a[href]")
-                    where a != null
-                    select new
-                    {
-                        Title = a.GetAttributeValue("title")?.Trim(),
-                        Href = html.TryBaseHref(a.GetAttributeValue("href")?.Trim()),
-                    }
-                    into e
-                    select new
-                    {
-                        e.Title,
-                        Url = TryParse.Uri(e.Href, UriKind.Absolute),
-                    }
-                    into e
-                    where !string.IsNullOrEmpty(e.Title) && e.Url != null
-                    select e
-
-                from album in albums.ToQuery()
-                select album into album
+                from t in Http.Get(new Uri("https://en.wikipedia.org/wiki/Queen_discography")).Tables().Content()
+                              .Where(t => t.HasClass("wikitable"))
+                              .Take(1)
+                from tr in t.TableRows((_, trs) => trs).ToQuery()
+                select tr.FirstOrDefault(e => e?.GetAttributeSourceValue("scope").Decoded == "row") into th
+                where th != null
+                let a = th.QuerySelector("a[href]")
+                select new
+                {
+                    Title = a.GetAttributeValue("title")?.Trim(),
+                    Href = a.Owner.TryBaseHref(a.GetAttributeValue("href")?.Trim()),
+                }
+                into e
+                select new
+                {
+                    e.Title,
+                    Url = TryParse.Uri(e.Href, UriKind.Absolute),
+                }
+                into e
+                where !string.IsNullOrEmpty(e.Title) && e.Url != null
+                select e
+                into album
 
                 from html in Http.Get(album.Url).Html().Content()
 
