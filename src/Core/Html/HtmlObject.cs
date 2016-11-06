@@ -53,7 +53,7 @@ namespace WebLinq.Html
         HashSet<string> _classes;
         HashSet<string> Classes => _classes ?? (_classes = new HashSet<string>(Class.Split(' ')));
 
-        public string Class => _class ?? (_class = GetAttributeSourceValue("class").Decoded ?? string.Empty);
+        public string Class => _class ?? (_class = GetAttributeValue("class") ?? string.Empty);
         public bool HasClass(string className) => Classes.Contains(className);
     }
 }
