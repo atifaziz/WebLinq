@@ -24,7 +24,7 @@ namespace WebLinq.Samples
         public static void Main()
         {
             HttpGetWithLinksAndHtmlParsing();
-            GoogleSearch();            
+            GoogleSearch();
             ScheduledTasksViaSpawn();
             QueenSongs();
         }
@@ -66,8 +66,8 @@ namespace WebLinq.Samples
                 from sr in
                     Query.Generate(sp, curr =>
                     {
-                        var next = curr.TryBaseHref(curr.QuerySelectorAll("a.fl")
-                                                        .Single(a => "Next".Equals(a.InnerText.Trim(), StringComparison.InvariantCultureIgnoreCase))
+                        var next = curr.TryBaseHref(curr.QuerySelectorAll("#foot a.fl")
+                                                        .Last() // Next
                                                         .GetAttributeValue("href"));
                         return Http.Get(new Uri(next)).Html().Content();
                     })
