@@ -20,7 +20,7 @@ namespace WebLinq
     using System.Collections.Generic;
     using System.Linq;
 
-    public class Query<T>
+    public partial class Query<T>
     {
         public static Query<T> Empty = Query.Create(QueryResult.Empty<T>);
 

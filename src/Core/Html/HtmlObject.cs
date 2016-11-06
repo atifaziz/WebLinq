@@ -14,13 +14,15 @@
 //
 #endregion
 
+//[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("LINQPadQeury")]
+
 namespace WebLinq.Html
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
 
-    public abstract class HtmlObject
+    public abstract partial class HtmlObject
     {
         public abstract ParsedHtml Owner { get; }
         public abstract string Name { get; }

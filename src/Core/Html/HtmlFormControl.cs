@@ -18,7 +18,7 @@ namespace WebLinq.Html
 {
     public enum HtmlControlType { Input, Select, TextArea }
 
-    public sealed class HtmlFormControl
+    public sealed partial class HtmlFormControl
     {
         bool? _isDisabled;
         bool? _isReadOnly;

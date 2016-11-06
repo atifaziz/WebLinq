@@ -29,7 +29,7 @@ namespace WebLinq.Html
 
     public enum HtmlFormMethod { Get, Post }
 
-    public sealed class HtmlForm
+    public sealed partial class HtmlForm
     {
         ReadOnlyCollection<HtmlFormControl> _controls;
 

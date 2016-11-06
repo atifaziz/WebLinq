@@ -36,7 +36,7 @@ namespace WebLinq
     }
 
     [DebuggerDisplay("Id = {Id}, StatusCode = {StatusCode} ({ReasonPhrase}), Content = {Content}")]
-    public class HttpFetch<T> : IDisposable
+    public partial class HttpFetch<T> : IDisposable
     {
         bool _disposed;
 
