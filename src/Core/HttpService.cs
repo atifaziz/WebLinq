@@ -56,11 +56,14 @@ namespace WebLinq
             hwreq.CookieContainer       = state.Cookies;
             hwreq.Credentials           = state.Credentials;
             hwreq.UseDefaultCredentials = state.UseDefaultCredentials;
-            hwreq.UserAgent             = state.UserAgent;
+
+            var userAgent = request.Headers.UserAgent.ToString();
+            hwreq.UserAgent = userAgent.Length > 0 ? userAgent : state.UserAgent;
 
             var content = request.Content;
             foreach (var e in from e in request.Headers.Concat(content?.Headers ?? Enumerable.Empty<KeyValuePair<string, IEnumerable<string>>>())
                               where !e.Key.Equals("Content-Type", StringComparison.OrdinalIgnoreCase)
+                                 && !e.Key.Equals("User-Agent", StringComparison.OrdinalIgnoreCase)
                               from v in e.Value
                               select e.Key.AsKeyTo(v))
             {
