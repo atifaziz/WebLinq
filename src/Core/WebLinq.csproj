@@ -80,6 +80,7 @@
     <Compile Include="Html\HapHtmlParser.cs" />
     <Compile Include="Html\HtmlInputType.cs" />
     <Compile Include="Html\HtmlQuery.cs" />
+    <Compile Include="HttpQueryState.cs" />
     <Compile Include="HttpHeaderCollection.cs" />
     <Compile Include="HttpFetch.cs" />
     <Compile Include="HttpService.cs" />

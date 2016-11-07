@@ -1,4 +1,5 @@
 #region Copyright (c) 2016 Atif Aziz. All rights reserved.
+
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,83 +13,140 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 #endregion
 
 namespace WebLinq
 {
     using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Net;
     using System.Net.Http;
     using System.Net.Http.Headers;
+    using System.Threading.Tasks;
+    using Mannex.Collections.Generic;
+    using Mannex.Collections.Specialized;
 
     public sealed class HttpOptions
     {
         public bool ReturnErrorneousFetch { get; set; }
-        public HttpHeaderCollection Headers { get; set; }
     }
 
-    public abstract class HttpService
+    public interface IHttpService
     {
-        protected HttpService() : this(0) {}
-        protected HttpService(int fetchId) { FetchId = fetchId; }
-
-        public int FetchId { get; private set; }
-        protected int NextFetchId() => ++FetchId;
-
-        public abstract HttpFetch<HttpContent> Get(Uri url, HttpOptions options);
-        public abstract HttpFetch<HttpContent> Post(Uri url, HttpContent content, HttpOptions options);
+        HttpResponseMessage Send(HttpRequestMessage request, HttpQueryState state, HttpOptions options);
     }
 
-    public class SysNetHttpService : HttpService
+    public class HttpService : IHttpService
     {
-        public HttpClient HttpClient { get; }
-
-        public SysNetHttpService() : this(null) {}
-
-        public SysNetHttpService(HttpClient client)
-        {
-            HttpClient = client ?? new HttpClient();
-        }
-
         public void Register(Action<Type, object> registrationHandler) =>
-            registrationHandler(typeof(HttpService), this);
+            registrationHandler(typeof(IHttpService), this);
 
-        public override HttpFetch<HttpContent> Get(Uri url, HttpOptions options)
-        {
-            var request = new HttpRequestMessage(HttpMethod.Get, url);
-            MergeHeaders(options?.Headers, request.Headers);
-            return Send(request, options?.ReturnErrorneousFetch ?? false);
-        }
+        public virtual HttpResponseMessage Send(HttpRequestMessage request, HttpQueryState state, HttpOptions options) =>
+            SendAsync(request, state, options).Result;
 
-        public override HttpFetch<HttpContent> Post(Uri url, HttpContent content, HttpOptions options)
+        static async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpQueryState state, HttpOptions options)
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, url)
+            var hwreq = WebRequest.CreateHttp(request.RequestUri);
+
+            hwreq.Method                = request.Method.Method;
+            hwreq.Timeout               = (int)state.Timeout.TotalMilliseconds;
+            hwreq.CookieContainer       = state.Cookies;
+            hwreq.Credentials           = state.Credentials;
+            hwreq.UseDefaultCredentials = state.UseDefaultCredentials;
+            hwreq.UserAgent             = state.UserAgent;
+
+            var content = request.Content;
+            foreach (var e in from e in request.Headers.Concat(content?.Headers ?? Enumerable.Empty<KeyValuePair<string, IEnumerable<string>>>())
+                              where !e.Key.Equals("Content-Type", StringComparison.OrdinalIgnoreCase)
+                              from v in e.Value
+                              select e.Key.AsKeyTo(v))
             {
-                Content = content
-            };
-            MergeHeaders(options?.Headers, request.Headers);
-            return Send(request, options?.ReturnErrorneousFetch ?? false);
-        }
+                hwreq.Headers.Add(e.Key, e.Value);
+            }
 
-        HttpFetch<HttpContent> Send(HttpRequestMessage request, bool ignoreErroneousStatusCodes)
-        {
-            var response = HttpClient.SendAsync(request).Result;
-            if (!ignoreErroneousStatusCodes)
-                response.EnsureSuccessStatusCode();
-            return response.ToHttpFetch(NextFetchId());
-        }
-
-        static void MergeHeaders(HttpHeaderCollection source, HttpHeaders target)
-        {
-            if (source == null)
-                return;
-
-            foreach (var e in source)
+            HttpWebResponse hwrsp = null;
+            try
             {
-                if (e.Value == null)
-                    target.Remove(e.Key);
-                else
-                    target.Add(e.Key, e.Value);
+                if (content != null)
+                {
+                    // ReSharper disable once PossibleNullReferenceException
+                    hwreq.ContentType = content.Headers.ContentType.ToString();
+                    using (var s = hwreq.GetRequestStream())
+                        await content.CopyToAsync(s);
+                }
+                return await CreateResponse(hwreq, hwrsp = (HttpWebResponse)hwreq.GetResponse());
+            }
+            catch (WebException e) when (e.Status == WebExceptionStatus.ProtocolError)
+            {
+                if (!options.ReturnErrorneousFetch)
+                    throw;
+                return await CreateResponse(hwreq, hwrsp = (HttpWebResponse)e.Response);
+            }
+            finally
+            {
+                hwrsp?.Dispose();
             }
         }
+
+        static async Task<HttpResponseMessage> CreateResponse(HttpWebRequest req, HttpWebResponse rsp)
+        {
+            var ms = new MemoryStream();
+            using (var s = rsp.GetResponseStream())
+            {
+                if (s != null)
+                    await s.CopyToAsync(ms);
+
+            }
+            ms.Position = 0;
+            var response = new HttpResponseMessage(rsp.StatusCode)
+            {
+                Version        = rsp.ProtocolVersion,
+                ReasonPhrase   = rsp.StatusDescription,
+                Content        = new StreamContent(ms),
+                RequestMessage = new HttpRequestMessage(ParseHttpMethod(req.Method), rsp.ResponseUri),
+            };
+
+            var headers =
+                from e in rsp.Headers.AsEnumerable()
+                group e by e.Key.StartsWith("Content-", StringComparison.OrdinalIgnoreCase)
+                        || e.Key.Equals("Expires", StringComparison.OrdinalIgnoreCase)
+                        || e.Key.Equals("Last-Modified", StringComparison.OrdinalIgnoreCase)
+                        || e.Key.Equals("Allow", StringComparison.OrdinalIgnoreCase) into g
+                from e in g
+                select new
+                {
+                    Headers = g.Key
+                            ? (HttpHeaders) response.Content.Headers
+                            : response.Headers,
+                    e.Key,
+                    e.Value,
+                };
+
+            foreach (var e in headers)
+            {
+                if (!e.Headers.TryAddWithoutValidation(e.Key, e.Value))
+                    throw new Exception($"Invalid HTTP header: {e.Key}: {e.Value}");
+            }
+
+            return response;
+        }
+
+        static HttpMethod ParseHttpMethod(string method) =>
+            HttpMethods.GetValue(method, m => new FormatException($"'{m}' is not a valid HTTP method."));
+
+        static readonly Dictionary<string, HttpMethod> HttpMethods = new[]
+            {
+                HttpMethod.Get    ,
+                HttpMethod.Post   ,
+                HttpMethod.Put    ,
+                HttpMethod.Delete ,
+                HttpMethod.Options,
+                HttpMethod.Head   ,
+                HttpMethod.Trace  ,
+            }
+            .ToDictionary(e => e.Method, e => e, StringComparer.OrdinalIgnoreCase);
     }
 }

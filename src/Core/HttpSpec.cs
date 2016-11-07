@@ -19,35 +19,49 @@ namespace WebLinq
     using System;
     using System.Collections.Specialized;
     using System.Linq;
+    using System.Net;
     using System.Net.Http;
     using Mannex.Collections.Generic;
 
     public sealed class HttpSpec
     {
-        bool _returnErrorneousFetch;
+        HttpOptions _options = new HttpOptions();
+        HttpRequestMessage _request = new HttpRequestMessage();
 
-        HttpHeaderCollection Headers { get; set; }
-
-        public HttpSpec() { Headers = HttpHeaderCollection.Empty; }
+        public HttpOptions Options => _options ?? (_options = new HttpOptions());
+        public HttpRequestMessage Request => _request ?? (_request = new HttpRequestMessage());
 
         public HttpSpec ReturnErrorneousFetch()
         {
-            _returnErrorneousFetch = true;
+            Options.ReturnErrorneousFetch = true;
             return this;
         }
 
-        public HttpSpec UserAgent(string value) { return Header("User-Agent", value); }
+        public HttpSpec UserAgent(string value)
+        {
+            Request.Headers.UserAgent.ParseAdd(value);
+            return this;
+        }
 
         public HttpSpec Header(string name, string value)
         {
-            Headers = Headers.Set(name, value);
+            Request.Headers.Add(name, value);
             return this;
         }
 
+        HttpFetch<HttpContent> Send(IHttpService http, HttpQueryState state, HttpMethod method, Uri url, HttpContent content = null)
+        {
+            var request = Request; _request = null;
+            var options = _options; _options = null;
+            request.Method = method;
+            request.RequestUri = url;
+            request.Content = content;
+            return http.Send(request, state, options).ToHttpFetch(0);
+        }
+
         public Query<HttpFetch<HttpContent>> Get(Uri url) =>
-            from ua in Query.TryGetItem("Http.User-Agent", (bool found, string value) => found ? value : null)
-            from http in Query.GetService<HttpService>()
-            select http.Get(url, Options(ua));
+            from e in GetServices((svc, st) => new { Service = svc, State = st })
+            select Send(e.Service, e.State, HttpMethod.Get, url);
 
         public Query<HttpFetch<HttpContent>> Post(Uri url, NameValueCollection data) =>
             Post(url, new FormUrlEncodedContent(from i in Enumerable.Range(0, data.Count)
@@ -55,22 +69,18 @@ namespace WebLinq
                                                 select data.GetKey(i).AsKeyTo(v)));
 
         public Query<HttpFetch<HttpContent>> Post(Uri url, HttpContent content) =>
-            from ua in Query.TryGetItem("Http.User-Agent", (bool found, string value) => found ? value : null)
-            from http in Query.GetService<HttpService>()
-            select http.Post(url, content, Options(ua));
+            from e in GetServices((svc, st) => new { Service = svc, State = st })
+            select Send(e.Service, e.State, HttpMethod.Post, url, content);
 
-        HttpOptions Options(string ua)
-        {
-            var headers = Headers;
-            if (!string.IsNullOrEmpty(ua) && (Headers.IsEmpty || Headers.TryGetValue("User-Agent") == null))
-                headers = headers.Set("User-Agent", ua);
-
-            return new HttpOptions
-            {
-                ReturnErrorneousFetch = _returnErrorneousFetch,
-                Headers = headers,
-            };
-        }
+        static Query<T> GetServices<T>(Func<IHttpService, HttpQueryState, T> selector) =>
+            from currentState in Query.FindService<HttpQueryState>()
+            from state in currentState != null
+                          ? Query.Singleton(currentState)
+                          : from defaultState in Query.Singleton(HttpQueryState.Default.WithCookies(new CookieContainer()))
+                            from _ in Query.SetService(defaultState).Ignore()
+                            select defaultState
+            from service in Query.GetService<IHttpService>()
+            select selector(service, state);
     }
 
     static class SysNetHttpExtensions
