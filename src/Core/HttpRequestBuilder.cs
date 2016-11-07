@@ -23,7 +23,7 @@ namespace WebLinq
     using System.Net.Http;
     using Mannex.Collections.Generic;
 
-    public sealed class HttpSpec
+    public sealed class HttpRequestBuilder
     {
         HttpOptions _options = new HttpOptions();
         HttpRequestMessage _request = new HttpRequestMessage();
@@ -31,19 +31,19 @@ namespace WebLinq
         public HttpOptions Options => _options ?? (_options = new HttpOptions());
         public HttpRequestMessage Request => _request ?? (_request = new HttpRequestMessage());
 
-        public HttpSpec ReturnErrorneousFetch()
+        public HttpRequestBuilder ReturnErrorneousFetch()
         {
             Options.ReturnErrorneousFetch = true;
             return this;
         }
 
-        public HttpSpec UserAgent(string value)
+        public HttpRequestBuilder UserAgent(string value)
         {
             Request.Headers.UserAgent.ParseAdd(value);
             return this;
         }
 
-        public HttpSpec Header(string name, string value)
+        public HttpRequestBuilder Header(string name, string value)
         {
             Request.Headers.Add(name, value);
             return this;

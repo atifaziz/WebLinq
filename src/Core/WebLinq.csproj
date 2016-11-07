@@ -85,7 +85,7 @@
     <Compile Include="HttpHeaderCollection.cs" />
     <Compile Include="HttpFetch.cs" />
     <Compile Include="HttpService.cs" />
-    <Compile Include="HttpSpec.cs" />
+    <Compile Include="HttpRequestBuilder.cs" />
     <Compile Include="LinkedServiceProvider.cs" />
     <Compile Include="LinqPadDumps.cs" />
     <Compile Include="MoreLinq\MoreEnumerable.Generate.cs" />
