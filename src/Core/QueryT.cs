@@ -52,13 +52,13 @@ namespace WebLinq
         // LINQ support
 
         public Query<TResult> Select<TResult>(Func<T, TResult> selector) =>
-            Bind(xs => Query.Return(from x in xs
-                                    select x.WithValue(selector(x.Value))));
+            LiftEnumerable(xs => from x in xs
+                                    select x.WithValue(selector(x.Value)));
 
         public Query<T> Where(Func<T, bool> predicate) =>
-            Bind(xs => Query.Return(from x in xs
+            LiftEnumerable(xs => from x in xs
                                     where predicate(x.Value)
-                                    select x));
+                                    select x);
 
         public Query<TResult> SelectMany<T2, TResult>(Func<T, Query<T2>> f, Func<T, T2, TResult> g) =>
             Bind(xs => Query.Create(context => QueryResult.Create(SelectManyIterator(context, xs, f, g))));
