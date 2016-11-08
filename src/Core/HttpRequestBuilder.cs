@@ -65,20 +65,20 @@ namespace WebLinq
             return this;
         }
 
-        HttpFetch<HttpContent> Send(IHttpService http, HttpQueryState state, TypedValue<HttpFetchId, int> id, HttpMethod method, Uri url, HttpContent content = null)
+        HttpFetch<HttpContent> Send(IHttpService http, HttpConfig config, TypedValue<HttpFetchId, int> id, HttpMethod method, Uri url, HttpContent content = null)
         {
             var request = Request; _request = null;
             var options = _options; _options = null;
             request.Method = method;
             request.RequestUri = url;
             request.Content = content;
-            return http.Send(request, state, options).ToHttpFetch(id.Value);
+            return http.Send(request, config, options).ToHttpFetch(id.Value);
         }
 
         public Query<HttpFetch<HttpContent>> Get(Uri url) =>
             from _ in _query.Ignore()
             from e in ContextQuery
-            select Send(e.Http, e.State, e.Id, HttpMethod.Get, url);
+            select Send(e.Http, e.Config, e.Id, HttpMethod.Get, url);
 
         public Query<HttpFetch<HttpContent>> Post(Uri url, NameValueCollection data) =>
             Post(url, new FormUrlEncodedContent(from i in Enumerable.Range(0, data.Count)
@@ -88,17 +88,17 @@ namespace WebLinq
         public Query<HttpFetch<HttpContent>> Post(Uri url, HttpContent content) =>
             from _ in _query.Ignore()
             from e in ContextQuery
-            select Send(e.Http, e.State, e.Id, HttpMethod.Post, url, content);
+            select Send(e.Http, e.Config, e.Id, HttpMethod.Post, url, content);
 
         static readonly Query<HttpServicesProvider> ContextQuery =
             from context in Query.GetContext()
             from http in Query.FindService<IHttpService>()
-            from state in Query.FindService<HttpQueryState>()
+            from config in Query.FindService<HttpConfig>()
             from id in Query.FindService<Ref<TypedValue<HttpFetchId, int>>>()
             let hsp =
                 new HttpServicesProvider(
                     http ?? new HttpService(),
-                    state ?? HttpQueryState.Default.WithCookies(new CookieContainer()),
+                    config ?? HttpConfig.Default.WithCookies(new CookieContainer()),
                     (id ?? Ref.Create(HttpFetchId.New(0))).Updating(x => HttpFetchId.New(x + 1)),
                     context)
             from _ in Query.SetContext(context.WithServiceProvider(hsp)).Ignore()
@@ -109,20 +109,20 @@ namespace WebLinq
             readonly IServiceProvider _provider;
 
             public IHttpService Http { get; }
-            public HttpQueryState State { get; }
+            public HttpConfig Config { get; }
             public Ref<TypedValue<HttpFetchId, int>> Id { get; }
 
-            public HttpServicesProvider(IHttpService http, HttpQueryState state, Ref<TypedValue<HttpFetchId, int>> id, IServiceProvider provider)
+            public HttpServicesProvider(IHttpService http, HttpConfig config, Ref<TypedValue<HttpFetchId, int>> id, IServiceProvider provider)
             {
                 Id = id;
                 Http = http;
-                State = state;
+                Config = config;
                 _provider = provider;
             }
 
             public object GetService(Type serviceType) =>
                   serviceType == typeof(IHttpService) ? Http
-                : serviceType == typeof(HttpQueryState) ? State
+                : serviceType == typeof(HttpConfig) ? Config
                 : serviceType == typeof(Ref<TypedValue<HttpFetchId, int>>) ? Id
                 : _provider?.GetService(serviceType);
         }

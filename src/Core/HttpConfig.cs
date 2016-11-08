@@ -21,14 +21,14 @@ namespace WebLinq
     using System;
     using System.Net;
 
-    public sealed class HttpQueryState
+    public sealed class HttpConfig
     {
-        public static HttpQueryState Default;
+        public static HttpConfig Default;
 
-        static HttpQueryState()
+        static HttpConfig()
         {
             var req = WebRequest.CreateHttp("http://localhost/");
-            Default = new HttpQueryState(TimeSpan.FromMilliseconds(req.Timeout), req.UseDefaultCredentials, req.Credentials, req.UserAgent, req.CookieContainer);
+            Default = new HttpConfig(TimeSpan.FromMilliseconds(req.Timeout), req.UseDefaultCredentials, req.Credentials, req.UserAgent, req.CookieContainer);
         }
 
         public TimeSpan Timeout           { get; private set; }
@@ -37,7 +37,7 @@ namespace WebLinq
         public string UserAgent           { get; private set; }
         public CookieContainer Cookies    { get; private set; }
 
-        public HttpQueryState(TimeSpan timeout, bool useDefaultCredentials, ICredentials credentials, string userAgent, CookieContainer cookies)
+        public HttpConfig(TimeSpan timeout, bool useDefaultCredentials, ICredentials credentials, string userAgent, CookieContainer cookies)
         {
             Timeout     = timeout;
             UserAgent   = userAgent;
@@ -46,25 +46,25 @@ namespace WebLinq
             UseDefaultCredentials = useDefaultCredentials;
         }
 
-        HttpQueryState(HttpQueryState other) :
+        HttpConfig(HttpConfig other) :
             this(other.Timeout, other.UseDefaultCredentials, other.Credentials, other.UserAgent, other.Cookies) { }
 
-        public HttpQueryState WithTimeout(TimeSpan value) =>
-            Timeout == value ? this : new HttpQueryState(this) { Timeout = value };
+        public HttpConfig WithTimeout(TimeSpan value) =>
+            Timeout == value ? this : new HttpConfig(this) { Timeout = value };
 
-        public HttpQueryState WithUseDefaultCredentials(bool value) =>
-            UseDefaultCredentials == value ? this : new HttpQueryState(this) { UseDefaultCredentials = value };
+        public HttpConfig WithUseDefaultCredentials(bool value) =>
+            UseDefaultCredentials == value ? this : new HttpConfig(this) { UseDefaultCredentials = value };
 
-        public HttpQueryState WithCredentials(ICredentials value) =>
-            Credentials == value ? this : new HttpQueryState(this) { Credentials = value };
+        public HttpConfig WithCredentials(ICredentials value) =>
+            Credentials == value ? this : new HttpConfig(this) { Credentials = value };
 
-        public HttpQueryState WithUserAgent(string value) =>
+        public HttpConfig WithUserAgent(string value) =>
             WithUserAgentImpl(value ?? string.Empty);
 
-        HttpQueryState WithUserAgentImpl(string value) =>
-            UserAgent == value ? this : new HttpQueryState(this) { UserAgent = value };
+        HttpConfig WithUserAgentImpl(string value) =>
+            UserAgent == value ? this : new HttpConfig(this) { UserAgent = value };
 
-        public HttpQueryState WithCookies(CookieContainer value) =>
-            Cookies == value ? this : new HttpQueryState(this) { Cookies = value };
+        public HttpConfig WithCookies(CookieContainer value) =>
+            Cookies == value ? this : new HttpConfig(this) { Cookies = value };
     }
 }

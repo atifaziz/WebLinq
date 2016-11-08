@@ -36,7 +36,7 @@ namespace WebLinq
 
     public interface IHttpService
     {
-        HttpResponseMessage Send(HttpRequestMessage request, HttpQueryState state, HttpOptions options);
+        HttpResponseMessage Send(HttpRequestMessage request, HttpConfig config, HttpOptions options);
     }
 
     public class HttpService : IHttpService
@@ -44,21 +44,21 @@ namespace WebLinq
         public void Register(Action<Type, object> registrationHandler) =>
             registrationHandler(typeof(IHttpService), this);
 
-        public virtual HttpResponseMessage Send(HttpRequestMessage request, HttpQueryState state, HttpOptions options) =>
-            SendAsync(request, state, options).Result;
+        public virtual HttpResponseMessage Send(HttpRequestMessage request, HttpConfig config, HttpOptions options) =>
+            SendAsync(request, config, options).Result;
 
-        static async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpQueryState state, HttpOptions options)
+        static async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpConfig config, HttpOptions options)
         {
             var hwreq = WebRequest.CreateHttp(request.RequestUri);
 
             hwreq.Method                = request.Method.Method;
-            hwreq.Timeout               = (int)state.Timeout.TotalMilliseconds;
-            hwreq.CookieContainer       = state.Cookies;
-            hwreq.Credentials           = state.Credentials;
-            hwreq.UseDefaultCredentials = state.UseDefaultCredentials;
+            hwreq.Timeout               = (int)config.Timeout.TotalMilliseconds;
+            hwreq.CookieContainer       = config.Cookies;
+            hwreq.Credentials           = config.Credentials;
+            hwreq.UseDefaultCredentials = config.UseDefaultCredentials;
 
             var userAgent = request.Headers.UserAgent.ToString();
-            hwreq.UserAgent = userAgent.Length > 0 ? userAgent : state.UserAgent;
+            hwreq.UserAgent = userAgent.Length > 0 ? userAgent : config.UserAgent;
 
             var content = request.Content;
             foreach (var e in from e in request.Headers.Concat(content?.Headers ?? Enumerable.Empty<KeyValuePair<string, IEnumerable<string>>>())
