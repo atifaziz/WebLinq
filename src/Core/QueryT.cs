@@ -52,13 +52,13 @@ namespace WebLinq
         // LINQ support
 
         public Query<TResult> Select<TResult>(Func<T, TResult> selector) =>
-            Bind(xs => Query.Return(from x in xs
-                                    select x.WithValue(selector(x.Value))));
+            LiftEnumerable(xs => from x in xs
+                                    select x.WithValue(selector(x.Value)));
 
         public Query<T> Where(Func<T, bool> predicate) =>
-            Bind(xs => Query.Return(from x in xs
+            LiftEnumerable(xs => from x in xs
                                     where predicate(x.Value)
-                                    select x));
+                                    select x);
 
         public Query<TResult> SelectMany<T2, TResult>(Func<T, Query<T2>> f, Func<T, T2, TResult> g) =>
             Bind(xs => Query.Create(context => QueryResult.Create(SelectManyIterator(context, xs, f, g))));
@@ -84,16 +84,16 @@ namespace WebLinq
         }
 
         public Query<T> SkipWhile(Func<T, bool> predicate) =>
-            Bind(xs => Query.Return(xs.SkipWhile(x => predicate(x.Value))));
+            LiftEnumerable(xs => xs.SkipWhile(x => predicate(x.Value)));
 
         public Query<T> TakeWhile(Func<T, bool> predicate) =>
-            Bind(xs => Query.Return(xs.TakeWhile(x => predicate(x.Value))));
+            LiftEnumerable(xs => xs.TakeWhile(x => predicate(x.Value)));
 
-        public Query<T> Skip(int count) =>
-            Bind(xs => Query.Return(xs.Skip(count)));
+        public Query<T> Skip(int count) => 
+            LiftEnumerable(e => e.Skip(count));
 
-        public Query<T> Take(int count) =>
-            Bind(xs => Query.Return(xs.Take(count)));
+        public Query<T> Take(int count) => 
+            LiftEnumerable(e => e.Skip(count));
 
         public Query<T> Concat(Query<T> query) =>
             Bind(xs => query.Bind(ys => Query.Return(xs.Concat(ys))));
