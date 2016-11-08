@@ -25,13 +25,16 @@ namespace WebLinq
 
     public static class HttpRequestBuilder
     {
-        public static HttpRequestBuilder<T> Then<T>(this Query<HttpFetch<T>> query) =>
-            new HttpRequestBuilder<T>(query);
+        public static HttpRequestBuilder<HttpFetch<T>> Then<T>(this Query<HttpFetch<T>> query) =>
+            new HttpRequestBuilder<HttpFetch<T>>(query);
+
+        public static HttpRequestBuilder<HttpConfig> Then(this Query<HttpConfig> query) =>
+            new HttpRequestBuilder<HttpConfig>(query);
     }
 
     public sealed class HttpRequestBuilder<T>
     {
-        readonly Query<HttpFetch<T>> _query;
+        readonly Query<T> _query;
         HttpOptions _options = new HttpOptions();
         HttpRequestMessage _request = new HttpRequestMessage();
 
@@ -39,9 +42,9 @@ namespace WebLinq
         public HttpRequestMessage Request => _request ?? (_request = new HttpRequestMessage());
 
         public HttpRequestBuilder() :
-            this(Query.Singleton(default(HttpFetch<T>))) { }
+            this(Query.Singleton(default(T))) { }
 
-        internal HttpRequestBuilder(Query<HttpFetch<T>> query)
+        internal HttpRequestBuilder(Query<T> query)
         {
             if (query == null) throw new ArgumentNullException(nameof(query));
             _query = query;
@@ -98,7 +101,7 @@ namespace WebLinq
             let hsp =
                 new HttpServicesProvider(
                     http ?? new HttpService(),
-                    config ?? HttpConfig.Default.WithCookies(new CookieContainer()),
+                    config ?? HttpConfig.Default,
                     (id ?? Ref.Create(HttpFetchId.New(0))).Updating(x => HttpFetchId.New(x + 1)),
                     context)
             from _ in Query.SetContext(context.WithServiceProvider(hsp)).Ignore()

@@ -25,6 +25,30 @@ namespace WebLinq
     {
         public static readonly HttpConfig Default;
 
+        public static Query<HttpConfig> Set(bool? useDefaultCredentials = null,
+                                            bool? useCookies = null,
+                                            string userAgent = null,
+                                            TimeSpan? timeout = null) =>
+            from current in Query.FindService<HttpConfig>()
+            from old in Query.SetService(Set(current, useDefaultCredentials, useCookies, userAgent, timeout))
+            select old;
+
+        static HttpConfig Set(HttpConfig initial, bool? useDefaultCredentials, bool? useCookies, string userAgent, TimeSpan? timeout)
+        {
+            var config = initial ?? Default;
+
+            if (useDefaultCredentials != null)
+                config = config.WithUseDefaultCredentials(useDefaultCredentials.Value);
+            if (useCookies != null)
+                config = config.WithCookies(useCookies.Value ? new CookieContainer() : null);
+            if (userAgent != null)
+                config = config.WithUserAgent(userAgent);
+            if (timeout != null)
+                config = config.WithTimeout(timeout.Value);
+
+            return config;
+        }
+
         static HttpConfig()
         {
             var req = WebRequest.CreateHttp("http://localhost/");
