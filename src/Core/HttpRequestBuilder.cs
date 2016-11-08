@@ -23,27 +23,43 @@ namespace WebLinq
     using System.Net.Http;
     using Mannex.Collections.Generic;
 
-    public sealed class HttpRequestBuilder
+    public static class HttpRequestBuilder
     {
+        public static HttpRequestBuilder<T> Then<T>(this Query<HttpFetch<T>> query) =>
+            new HttpRequestBuilder<T>(query);
+    }
+
+    public sealed class HttpRequestBuilder<T>
+    {
+        readonly Query<HttpFetch<T>> _query;
         HttpOptions _options = new HttpOptions();
         HttpRequestMessage _request = new HttpRequestMessage();
 
         public HttpOptions Options => _options ?? (_options = new HttpOptions());
         public HttpRequestMessage Request => _request ?? (_request = new HttpRequestMessage());
 
-        public HttpRequestBuilder ReturnErrorneousFetch()
+        public HttpRequestBuilder() :
+            this(Query.Singleton(default(HttpFetch<T>))) { }
+
+        internal HttpRequestBuilder(Query<HttpFetch<T>> query)
+        {
+            if (query == null) throw new ArgumentNullException(nameof(query));
+            _query = query;
+        }
+
+        public HttpRequestBuilder<T> ReturnErrorneousFetch()
         {
             Options.ReturnErrorneousFetch = true;
             return this;
         }
 
-        public HttpRequestBuilder UserAgent(string value)
+        public HttpRequestBuilder<T> UserAgent(string value)
         {
             Request.Headers.UserAgent.ParseAdd(value);
             return this;
         }
 
-        public HttpRequestBuilder Header(string name, string value)
+        public HttpRequestBuilder<T> Header(string name, string value)
         {
             Request.Headers.Add(name, value);
             return this;
@@ -60,6 +76,7 @@ namespace WebLinq
         }
 
         public Query<HttpFetch<HttpContent>> Get(Uri url) =>
+            from _ in _query.Ignore()
             from e in ContextQuery
             select Send(e.Http, e.State, e.Id, HttpMethod.Get, url);
 
@@ -69,6 +86,7 @@ namespace WebLinq
                                                 select data.GetKey(i).AsKeyTo(v)));
 
         public Query<HttpFetch<HttpContent>> Post(Uri url, HttpContent content) =>
+            from _ in _query.Ignore()
             from e in ContextQuery
             select Send(e.Http, e.State, e.Id, HttpMethod.Post, url, content);
 

@@ -36,7 +36,7 @@ namespace WebLinq
 
     public static class HttpQuery
     {
-        public static HttpRequestBuilder Http => new HttpRequestBuilder();
+        public static HttpRequestBuilder<Unit> Http => new HttpRequestBuilder<Unit>();
 
         public static Query<T> Content<T>(this Query<HttpFetch<T>> query) =>
             from e in query select e.Content;
