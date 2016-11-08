@@ -68,6 +68,9 @@ namespace WebLinq
             from result in f(x.Value).GetResult(x.Context)
             select QueryResultItem.Create(result.Context, g(x, result.Value));
 
+        public Query<TReturn> LiftEnumerable<TReturn>(Func<IEnumerable<QueryResultItem<T>>, IEnumerable<QueryResultItem<TReturn>>> func) =>
+            Bind(xs => Query.Return(func(xs)));        
+        
         public Query<TResult> Aggregate<TState, TResult>(TState seed,
             Func<TState, T, TState> accumulator,
             Func<TState, TResult> resultSelector)
@@ -91,6 +94,9 @@ namespace WebLinq
 
         public Query<T> Take(int count) =>
             Bind(xs => Query.Return(xs.Take(count)));
+        
+        public Query<T> Distinct =>
+            LiftEnumerable(Enumerable.Distinct);        
 
         public Query<T> Concat(Query<T> query) =>
             Bind(xs => query.Bind(ys => Query.Return(xs.Concat(ys))));
