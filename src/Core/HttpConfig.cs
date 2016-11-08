@@ -23,7 +23,7 @@ namespace WebLinq
 
     public sealed class HttpConfig
     {
-        public static HttpConfig Default;
+        public static readonly HttpConfig Default;
 
         static HttpConfig()
         {
