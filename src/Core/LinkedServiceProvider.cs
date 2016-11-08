@@ -73,6 +73,8 @@ namespace WebLinq
             if (serviceType == null) throw new ArgumentNullException(nameof(serviceType));
             if (serviceType == ServiceType)
                 return Service;
+            if (Link == null)
+                return null;
             object service;
             if (HasCache && Cache.TryGetValue(serviceType, out service))
                 return service;
