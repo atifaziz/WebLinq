@@ -60,8 +60,8 @@ namespace WebLinq
         }
 
         public Query<HttpFetch<HttpContent>> Get(Uri url) =>
-            from e in GetServices((svc, st, fid) => new { Service = svc, State = st, FetchId = fid })
-            select Send(e.Service, e.State, e.FetchId, HttpMethod.Get, url);
+            from e in ContextQuery
+            select Send(e.Http, e.State, e.Id, HttpMethod.Get, url);
 
         public Query<HttpFetch<HttpContent>> Post(Uri url, NameValueCollection data) =>
             Post(url, new FormUrlEncodedContent(from i in Enumerable.Range(0, data.Count)
@@ -69,23 +69,22 @@ namespace WebLinq
                                                 select data.GetKey(i).AsKeyTo(v)));
 
         public Query<HttpFetch<HttpContent>> Post(Uri url, HttpContent content) =>
-            from e in GetServices((svc, st, fid) => new { Service = svc, State = st, FetchId = fid })
-            select Send(e.Service, e.State, e.FetchId, HttpMethod.Post, url, content);
+            from e in ContextQuery
+            select Send(e.Http, e.State, e.Id, HttpMethod.Post, url, content);
 
-        static Query<T> GetServices<T>(Func<IHttpService, HttpQueryState, TypedValue<HttpFetchId, int>, T> selector) =>
+        static readonly Query<HttpServicesProvider> ContextQuery =
             from context in Query.GetContext()
             from http in Query.FindService<IHttpService>()
             from state in Query.FindService<HttpQueryState>()
             from id in Query.FindService<Ref<TypedValue<HttpFetchId, int>>>()
-            let hsp = new HttpServicesProvider
-            (
-                http ?? new HttpService(),
-                state ?? HttpQueryState.Default.WithCookies(new CookieContainer()),
-                (id ?? Ref.Create(HttpFetchId.New(0))).Updating(x => HttpFetchId.New(x + 1)),
-                context
-            )
-            from _ in Query.SetContext(context.WithServiceProvider(hsp))
-            select selector(hsp.Http, hsp.State, hsp.Id);
+            let hsp =
+                new HttpServicesProvider(
+                    http ?? new HttpService(),
+                    state ?? HttpQueryState.Default.WithCookies(new CookieContainer()),
+                    (id ?? Ref.Create(HttpFetchId.New(0))).Updating(x => HttpFetchId.New(x + 1)),
+                    context)
+            from _ in Query.SetContext(context.WithServiceProvider(hsp)).Ignore()
+            select hsp;
 
         sealed class HttpServicesProvider : IServiceProvider
         {
