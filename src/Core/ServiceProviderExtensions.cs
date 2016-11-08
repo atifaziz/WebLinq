@@ -38,19 +38,5 @@ namespace WebLinq
                 throw new Exception($"Service {serviceType.FullName} is unavailable.");
             return service;
         }
-
-        public static IServiceProvider LinkService<T>(this IServiceProvider serviceProvider, T service)
-            where T : class
-        {
-            if (serviceProvider == null) throw new ArgumentNullException(nameof(serviceProvider));
-            return LinkedServiceProvider.Create(service, serviceProvider);
-        }
-
-        public static IServiceProvider LinkService<T>(this IServiceProvider serviceProvider, Type serviceType, T service)
-            where T : class
-        {
-            if (serviceProvider == null) throw new ArgumentNullException(nameof(serviceProvider));
-            return LinkedServiceProvider.Create(serviceType, service, serviceProvider);
-        }
     }
 }

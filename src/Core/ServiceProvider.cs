@@ -33,17 +33,51 @@ namespace WebLinq
                 handler(services.Add);
             return new DelegatingServiceProvider(services.Find);
         }
-    }
 
-    sealed class DelegatingServiceProvider : IServiceProvider
-    {
-        readonly Func<Type, object> _handler;
-
-        public DelegatingServiceProvider(Func<Type, object> handler)
+        public static IServiceProvider CacheServiceQueries(this IServiceProvider provider)
         {
-            _handler = handler;
+            if (provider == null) throw new ArgumentNullException(nameof(provider));
+            var cache = new Dictionary<Type, object>();
+            return new DelegatingServiceProvider(serviceType =>
+            {
+                object service;
+                if (cache.TryGetValue(serviceType, out service))
+                    return service;
+                service = provider.GetService(serviceType);
+                cache.Add(serviceType, service);
+                return service;
+            });
         }
 
-        public object GetService(Type serviceType) => _handler(serviceType);
+        public static IServiceProvider LinkService<T>(this IServiceProvider provider, T service)
+            where T : class =>
+            provider.LinkService(typeof(T), service);
+
+        public static IServiceProvider LinkService<T>(this IServiceProvider provider, Type serviceType, T service)
+            where T : class
+        {
+            if (serviceType == null) throw new ArgumentNullException(nameof(serviceType));
+            return  provider.LinkServiceResponder(rst => rst == serviceType ? service : null);
+        }
+
+        public static IServiceProvider LinkServiceResponder<T>(this IServiceProvider provider, Func<Type, T> responder) where T : class
+        {
+            if (provider == null) throw new ArgumentNullException(nameof(provider));
+            if (responder == null) throw new ArgumentNullException(nameof(responder));
+            return new DelegatingServiceProvider(serviceType => responder(serviceType)
+                                                             ?? provider.GetService(serviceType));
+        }
+
+        sealed class DelegatingServiceProvider : IServiceProvider
+        {
+            readonly Func<Type, object> _handler;
+
+            public DelegatingServiceProvider(Func<Type, object> handler)
+            {
+                _handler = handler;
+            }
+
+            public object GetService(Type serviceType) => _handler(serviceType);
+        }
     }
 }

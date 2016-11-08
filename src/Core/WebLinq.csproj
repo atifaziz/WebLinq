@@ -86,7 +86,6 @@
     <Compile Include="HttpFetch.cs" />
     <Compile Include="HttpClient.cs" />
     <Compile Include="HttpRequestBuilder.cs" />
-    <Compile Include="LinkedServiceProvider.cs" />
     <Compile Include="LinqPadDumps.cs" />
     <Compile Include="MoreLinq\MoreEnumerable.Generate.cs" />
     <Compile Include="ParsedValue.cs" />

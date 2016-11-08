@@ -99,7 +99,7 @@ namespace WebLinq
 
         public static Query<T> SetService<T>(T service) where T : class =>
             from current in FindService<T>()
-            from _ in SetContext(context => context.WithServiceProvider(context.LinkService(typeof(T), service))).Ignore()
+            from _ in SetContext(context => context.WithServiceProvider(context.CacheServiceQueries().LinkService(typeof(T), service))).Ignore()
             select current;
 
         public static Query<Unit> Ignore<T>(this Query<T> query) =>
