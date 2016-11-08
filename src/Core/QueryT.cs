@@ -94,6 +94,12 @@ namespace WebLinq
 
         public Query<T> Take(int count) =>
             LiftEnumerable(e => e.Take(count));
+        
+        public Query<T> Distinct() =>
+            LiftEnumerable(Enumerable.Distinct);
+
+        public Query<T> Distinct(IEqualityComparer<T> comparer) =>
+             LiftEnumerable(xs => xs.Distinct(comparer.ContraMap<T, QueryResultItem<T>> (x => x.Value)));
 
         public Query<T> Concat(Query<T> query) =>
             Bind(xs => query.Bind(ys => Query.Return(xs.Concat(ys))));
