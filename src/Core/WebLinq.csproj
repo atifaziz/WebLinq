@@ -84,7 +84,7 @@
     <Compile Include="HttpConfig.cs" />
     <Compile Include="HttpHeaderCollection.cs" />
     <Compile Include="HttpFetch.cs" />
-    <Compile Include="HttpService.cs" />
+    <Compile Include="HttpClient.cs" />
     <Compile Include="HttpRequestBuilder.cs" />
     <Compile Include="LinkedServiceProvider.cs" />
     <Compile Include="LinqPadDumps.cs" />

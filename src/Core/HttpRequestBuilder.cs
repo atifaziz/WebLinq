@@ -19,7 +19,6 @@ namespace WebLinq
     using System;
     using System.Collections.Specialized;
     using System.Linq;
-    using System.Net;
     using System.Net.Http;
     using Mannex.Collections.Generic;
 
@@ -68,7 +67,7 @@ namespace WebLinq
             return this;
         }
 
-        HttpFetch<HttpContent> Send(IHttpService http, HttpConfig config, TypedValue<HttpFetchId, int> id, HttpMethod method, Uri url, HttpContent content = null)
+        HttpFetch<HttpContent> Send(IHttpClient http, HttpConfig config, TypedValue<HttpFetchId, int> id, HttpMethod method, Uri url, HttpContent content = null)
         {
             var request = Request; _request = null;
             var options = _options; _options = null;
@@ -95,12 +94,12 @@ namespace WebLinq
 
         static readonly Query<HttpServicesProvider> ContextQuery =
             from context in Query.GetContext()
-            from http in Query.FindService<IHttpService>()
+            from http in Query.FindService<IHttpClient>()
             from config in Query.FindService<HttpConfig>()
             from id in Query.FindService<Ref<TypedValue<HttpFetchId, int>>>()
             let hsp =
                 new HttpServicesProvider(
-                    http ?? new HttpService(),
+                    http ?? new HttpClient(),
                     config ?? HttpConfig.Default,
                     (id ?? Ref.Create(HttpFetchId.New(0))).Updating(x => HttpFetchId.New(x + 1)),
                     context)
@@ -111,11 +110,11 @@ namespace WebLinq
         {
             readonly IServiceProvider _provider;
 
-            public IHttpService Http { get; }
+            public IHttpClient Http { get; }
             public HttpConfig Config { get; }
             public Ref<TypedValue<HttpFetchId, int>> Id { get; }
 
-            public HttpServicesProvider(IHttpService http, HttpConfig config, Ref<TypedValue<HttpFetchId, int>> id, IServiceProvider provider)
+            public HttpServicesProvider(IHttpClient http, HttpConfig config, Ref<TypedValue<HttpFetchId, int>> id, IServiceProvider provider)
             {
                 Id = id;
                 Http = http;
@@ -124,7 +123,7 @@ namespace WebLinq
             }
 
             public object GetService(Type serviceType) =>
-                  serviceType == typeof(IHttpService) ? Http
+                  serviceType == typeof(IHttpClient) ? Http
                 : serviceType == typeof(HttpConfig) ? Config
                 : serviceType == typeof(Ref<TypedValue<HttpFetchId, int>>) ? Id
                 : _provider?.GetService(serviceType);

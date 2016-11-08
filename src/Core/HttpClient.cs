@@ -34,15 +34,15 @@ namespace WebLinq
         public bool ReturnErrorneousFetch { get; set; }
     }
 
-    public interface IHttpService
+    public interface IHttpClient
     {
         HttpResponseMessage Send(HttpRequestMessage request, HttpConfig config, HttpOptions options);
     }
 
-    public class HttpService : IHttpService
+    public class HttpClient : IHttpClient
     {
         public void Register(Action<Type, object> registrationHandler) =>
-            registrationHandler(typeof(IHttpService), this);
+            registrationHandler(typeof(IHttpClient), this);
 
         public virtual HttpResponseMessage Send(HttpRequestMessage request, HttpConfig config, HttpOptions options) =>
             SendAsync(request, config, options).Result;
