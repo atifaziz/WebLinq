@@ -60,10 +60,20 @@ namespace WebLinq
             var userAgent = request.Headers.UserAgent.ToString();
             hwreq.UserAgent = userAgent.Length > 0 ? userAgent : config.UserAgent;
 
+            var referrer = request.Headers.Referrer;
+            if (referrer != null)
+                hwreq.Referer = referrer.ToString();
+
+            var accept = request.Headers.Accept.ToString();
+            if (accept.Length > 0)
+                hwreq.Accept = accept;
+
             var content = request.Content;
             foreach (var e in from e in request.Headers.Concat(content?.Headers ?? Enumerable.Empty<KeyValuePair<string, IEnumerable<string>>>())
                               where !e.Key.Equals("Content-Type", StringComparison.OrdinalIgnoreCase)
                                  && !e.Key.Equals("User-Agent", StringComparison.OrdinalIgnoreCase)
+                                 && !e.Key.Equals("Referer", StringComparison.OrdinalIgnoreCase)
+                                 && !e.Key.Equals("Accept", StringComparison.OrdinalIgnoreCase)
                               from v in e.Value
                               select e.Key.AsKeyTo(v))
             {
