@@ -51,14 +51,17 @@ namespace WebLinq
 
         // LINQ support
 
+        Query<TReturn> LiftEnumerable<TReturn>(Func<IEnumerable<QueryResultItem<T>>, IEnumerable<QueryResultItem<TReturn>>> func) =>
+            Bind(xs => Query.Return(func(xs)));
+
         public Query<TResult> Select<TResult>(Func<T, TResult> selector) =>
             LiftEnumerable(xs => from x in xs
-                                    select x.WithValue(selector(x.Value)));
+                                 select x.WithValue(selector(x.Value)));
 
         public Query<T> Where(Func<T, bool> predicate) =>
             LiftEnumerable(xs => from x in xs
-                                    where predicate(x.Value)
-                                    select x);
+                                 where predicate(x.Value)
+                                 select x);
 
         public Query<TResult> SelectMany<T2, TResult>(Func<T, Query<T2>> f, Func<T, T2, TResult> g) =>
             Bind(xs => Query.Create(context => QueryResult.Create(SelectManyIterator(context, xs, f, g))));
@@ -68,9 +71,6 @@ namespace WebLinq
             from result in f(x.Value).GetResult(x.Context)
             select QueryResultItem.Create(result.Context, g(x, result.Value));
 
-        public Query<TReturn> LiftEnumerable<TReturn>(Func<IEnumerable<QueryResultItem<T>>, IEnumerable<QueryResultItem<TReturn>>> func) =>
-            Bind(xs => Query.Return(func(xs)));        
-        
         public Query<TResult> Aggregate<TState, TResult>(TState seed,
             Func<TState, T, TState> accumulator,
             Func<TState, TResult> resultSelector)
@@ -89,10 +89,10 @@ namespace WebLinq
         public Query<T> TakeWhile(Func<T, bool> predicate) =>
             LiftEnumerable(xs => xs.TakeWhile(x => predicate(x.Value)));
 
-        public Query<T> Skip(int count) => 
+        public Query<T> Skip(int count) =>
             LiftEnumerable(e => e.Skip(count));
 
-        public Query<T> Take(int count) => 
+        public Query<T> Take(int count) =>
             LiftEnumerable(e => e.Skip(count));
 
         public Query<T> Concat(Query<T> query) =>
