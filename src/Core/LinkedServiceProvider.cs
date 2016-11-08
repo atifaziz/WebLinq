@@ -38,12 +38,39 @@ namespace WebLinq
             new LinkedServiceProvider<T>(service, previous);
     }
 
-    public sealed class LinkedServiceProvider<T> : IServiceProvider
+    public abstract class LinkedServiceProviderBase : IServiceProvider
+    {
+        Dictionary<Type, object> _cache;
+        public IServiceProvider Link { get; }
+        bool HasCache => _cache != null;
+
+        protected LinkedServiceProviderBase(IServiceProvider link)
+        {
+            Link = link;
+        }
+
+        public Dictionary<Type, object> Cache =>
+            _cache ?? (_cache = new Dictionary<Type, object>());
+
+        public virtual object GetService(Type serviceType)
+        {
+            if (serviceType == null) throw new ArgumentNullException(nameof(serviceType));
+            if (Link == null)
+                return null;
+            object service;
+            if (HasCache && Cache.TryGetValue(serviceType, out service))
+                return service;
+            service = Link.GetService(serviceType);
+            Cache.Add(serviceType, service);
+            return service;
+        }
+    }
+
+    public sealed class LinkedServiceProvider<T> : LinkedServiceProviderBase
         where T : class
     {
         public Type ServiceType { get; }
         public T Service { get; }
-        Dictionary<Type, object> _cache;
 
         public LinkedServiceProvider(T service) :
             this(null, service) {}
@@ -54,33 +81,17 @@ namespace WebLinq
         public LinkedServiceProvider(T service, IServiceProvider link) :
             this(null, service, link) {}
 
-        public LinkedServiceProvider(Type serviceType, T service, IServiceProvider link)
+        public LinkedServiceProvider(Type serviceType, T service, IServiceProvider link) :
+            base(link)
         {
             ServiceType = serviceType ?? typeof(T);
             Service = service;
-            Link = link;
         }
 
-        public IServiceProvider Link { get; }
-
-        bool HasCache => _cache != null;
-
-        public Dictionary<Type, object> Cache =>
-            _cache ?? (_cache = new Dictionary<Type, object>());
-
-        public object GetService(Type serviceType)
+        public override object GetService(Type serviceType)
         {
             if (serviceType == null) throw new ArgumentNullException(nameof(serviceType));
-            if (serviceType == ServiceType)
-                return Service;
-            if (Link == null)
-                return null;
-            object service;
-            if (HasCache && Cache.TryGetValue(serviceType, out service))
-                return service;
-            service = Link.GetService(serviceType);
-            Cache.Add(serviceType, service);
-            return service;
+            return serviceType == ServiceType ? Service : base.GetService(serviceType);
         }
     }
 }

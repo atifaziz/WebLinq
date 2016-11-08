@@ -106,27 +106,25 @@ namespace WebLinq
             from _ in Query.SetContext(context.WithServiceProvider(hsp)).Ignore()
             select hsp;
 
-        sealed class HttpServicesProvider : IServiceProvider
+        sealed class HttpServicesProvider : LinkedServiceProviderBase
         {
-            readonly IServiceProvider _provider;
-
             public IHttpClient Http { get; }
             public HttpConfig Config { get; }
             public Ref<TypedValue<HttpFetchId, int>> Id { get; }
 
-            public HttpServicesProvider(IHttpClient http, HttpConfig config, Ref<TypedValue<HttpFetchId, int>> id, IServiceProvider provider)
+            public HttpServicesProvider(IHttpClient http, HttpConfig config, Ref<TypedValue<HttpFetchId, int>> id, IServiceProvider provider) :
+                base(provider)
             {
                 Id = id;
                 Http = http;
                 Config = config;
-                _provider = provider;
             }
 
-            public object GetService(Type serviceType) =>
+            public override object GetService(Type serviceType) =>
                   serviceType == typeof(IHttpClient) ? Http
                 : serviceType == typeof(HttpConfig) ? Config
                 : serviceType == typeof(Ref<TypedValue<HttpFetchId, int>>) ? Id
-                : _provider?.GetService(serviceType);
+                : base.GetService(serviceType);
         }
     }
 
