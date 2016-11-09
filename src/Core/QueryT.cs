@@ -93,7 +93,7 @@ namespace WebLinq
             LiftEnumerable(e => e.Skip(count));
 
         public Query<T> Take(int count) =>
-            LiftEnumerable(e => e.Skip(count));
+            LiftEnumerable(e => e.Take(count));
 
         public Query<T> Concat(Query<T> query) =>
             Bind(xs => query.Bind(ys => Query.Return(xs.Concat(ys))));
