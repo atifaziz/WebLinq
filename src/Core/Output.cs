@@ -23,12 +23,12 @@ namespace WebLinq
     using System.Reflection;
     using Mannex.Collections.Generic;
 
-    public sealed class CsvOutputQueryBuilder<T>
+    public sealed class CsvOutputFormatBuilder<T>
     {
         readonly IQuery<T> _query;
         List<KeyValuePair<string, Func<T, object>>> _fields;
 
-        internal CsvOutputQueryBuilder(IQuery<T> query)
+        internal CsvOutputFormatBuilder(IQuery<T> query)
         {
             if (query == null) throw new ArgumentNullException(nameof(query));
             _query = query;
@@ -39,7 +39,7 @@ namespace WebLinq
         ICollection<KeyValuePair<string, Func<T, object>>> Fields =>
             _fields ?? (_fields = new List<KeyValuePair<string, Func<T, object>>>());
 
-        public CsvOutputQueryBuilder<T> Field(string name, Func<T, object> selector)
+        public CsvOutputFormatBuilder<T> Field(string name, Func<T, object> selector)
         {
             Fields.Add(name.AsKeyTo(selector));
             return this;
@@ -49,9 +49,9 @@ namespace WebLinq
             SingletonField =
                 new[] { "Item".AsKeyTo(new Func<T, object>(e => e)) };
 
-        public CsvOutputQueryBuilder<T> Reflect() => Reflect(s => s);
+        public CsvOutputFormatBuilder<T> Reflect() => Reflect(s => s);
 
-        public CsvOutputQueryBuilder<T> Reflect(Func<string, string> nameMapper)
+        public CsvOutputFormatBuilder<T> Reflect(Func<string, string> nameMapper)
         {
             if (nameMapper == null) throw new ArgumentNullException(nameof(nameMapper));
 
@@ -85,27 +85,27 @@ namespace WebLinq
               select e;
     }
 
-    public static class CsvQueryOutput
+    public static class CsvOutputFormat
     {
         public static IQuery<string> ToCsv<T>(this IQuery<T> query) =>
-            new CsvOutputQueryBuilder<T>(query).Lines();
+            new CsvOutputFormatBuilder<T>(query).Lines();
 
-        public static IQuery<ICsvQueryOutputPartial> Partial =
-            Query.Singleton(CsvQueryOutputPartial.Singleton);
+        public static IQuery<ICsvOutputFormatPartial> Partial =
+            Query.Singleton(CsvOutputFormatPartial.Singleton);
     }
 
-    public interface ICsvQueryOutputPartial
+    public interface ICsvOutputFormatPartial
     {
-        CsvOutputQueryBuilder<T> Source<T>(IQuery<T> query);
+        CsvOutputFormatBuilder<T> Source<T>(IQuery<T> query);
     }
 
-    sealed class CsvQueryOutputPartial : ICsvQueryOutputPartial
+    sealed class CsvOutputFormatPartial : ICsvOutputFormatPartial
     {
-        internal static readonly ICsvQueryOutputPartial Singleton = new CsvQueryOutputPartial();
+        internal static readonly ICsvOutputFormatPartial Singleton = new CsvOutputFormatPartial();
 
-        public CsvOutputQueryBuilder<T> Source<T>(IQuery<T> query) => new CsvOutputQueryBuilder<T>(query);
+        public CsvOutputFormatBuilder<T> Source<T>(IQuery<T> query) => new CsvOutputFormatBuilder<T>(query);
 
-        CsvQueryOutputPartial() { }
+        CsvOutputFormatPartial() { }
     }
 
     static class Csv
