@@ -22,7 +22,6 @@ namespace WebLinq
     using System.Linq;
     using System.Reflection;
     using Mannex.Collections.Generic;
-    using NamingConventions;
 
     public sealed class CsvOutputQueryBuilder<T>
     {
@@ -48,10 +47,14 @@ namespace WebLinq
 
         static readonly IEnumerable<KeyValuePair<string, Func<T, object>>>
             SingletonField =
-                new[] { "ITEM".AsKeyTo(new Func<T, object>(e => e)) };
+                new[] { "Item".AsKeyTo(new Func<T, object>(e => e)) };
 
-        public CsvOutputQueryBuilder<T> Reflect()
+        public CsvOutputQueryBuilder<T> Reflect() => Reflect(s => s);
+
+        public CsvOutputQueryBuilder<T> Reflect(Func<string, string> nameMapper)
         {
+            if (nameMapper == null) throw new ArgumentNullException(nameof(nameMapper));
+
             var type = typeof(T);
 
             var fields =
@@ -63,11 +66,10 @@ namespace WebLinq
                           ? SingletonField
                           : from p in props
                             where p.CanRead
-                            select SnakeCase.ScreamingFromPascal(p.Name)
-                                            .AsKeyTo(new Func<T, object>(e => p.GetValue(e)))
+                            select p.Name.AsKeyTo(new Func<T, object>(e => p.GetValue(e)))
                       select e;
 
-            return fields.Aggregate(this, (b, e) => b.Field(e.Key, e.Value));
+            return fields.Aggregate(this, (b, e) => b.Field(nameMapper(e.Key), e.Value));
         }
 
         public IQuery<string> Lines(bool includeHeaders = false) =>
@@ -126,7 +128,7 @@ namespace WebLinq.NamingConventions
 {
     using System.Text.RegularExpressions;
 
-    static class SnakeCase
+    public static class SnakeCase
     {
         static string FromPascalCore(string input) =>
             Regex.Replace(input, @"((?<![A-Z]|^)[A-Z]|(?<=[A-Z]+)[A-Z](?=[a-z]))", m => "_" + m.Value);
