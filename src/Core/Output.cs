@@ -41,6 +41,8 @@ namespace WebLinq
 
         public CsvOutputFormatBuilder<T> Field(string name, Func<T, object> selector)
         {
+            if (name == null) throw new ArgumentNullException(nameof(name));
+            if (selector == null) throw new ArgumentNullException(nameof(selector));
             Fields.Add(name.AsKeyTo(selector));
             return this;
         }
