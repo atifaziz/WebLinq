@@ -68,6 +68,7 @@
       <DependentUpon>AssemblyInfo.g.tt</DependentUpon>
     </Compile>
     <Compile Include="ComparerExtensions.cs" />
+    <Compile Include="Output.cs" />
     <Compile Include="QueryLinq.cs" />
     <Compile Include="TypedValue.cs" />
     <Compile Include="Collections\MapBase.cs" />
