@@ -95,8 +95,42 @@ namespace WebLinq
         public Query<T> Take(int count) =>
             Bind(xs => Query.Return(xs.Take(count)));
         
-        public Query<T> Distinct =>
-            LiftEnumerable(Enumerable.Distinct);        
+        public Query<T> Distinct() =>
+            LiftEnumerable(Enumerable.Distinct);
+        
+        private class EqComparer<t, U> : IEqualityComparer<U>
+        {
+            private Func<U, t> contraMapper;
+            private IEqualityComparer<t> comparer;
+
+        private class EqComparer<A, B> : IEqualityComparer<B>
+        {
+            private Func<B, A> contraMapper;
+            private IEqualityComparer<A> comparer;
+
+            public EqComparer(Func<B, A> contraMapper, IEqualityComparer<A> comparer)
+            {
+                if (contraMapper == null)
+                {
+                    throw new ArgumentNullException(nameof(contraMapper));
+                }
+                if (comparer == null)
+                {
+                    throw new ArgumentNullException(nameof(comparer));
+                }
+                this.contraMapper = contraMapper;
+                this.comparer = comparer;
+            }
+
+            public bool Equals(B x, B y) =>
+                comparer.Equals(contraMapper(x), contraMapper(y));
+
+            public int GetHashCode(B obj) =>
+                comparer.GetHashCode(contraMapper(obj));
+        }
+
+        public Query<T> Distinct(IEqualityComparer<T> c) =>
+             LiftEnumerable(e => e.Distinct(new EqComparer<T, QueryResultItem<T>> (x => x.Value, c)));        
 
         public Query<T> Concat(Query<T> query) =>
             Bind(xs => query.Bind(ys => Query.Return(xs.Concat(ys))));
