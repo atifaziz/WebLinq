@@ -18,7 +18,6 @@ namespace WebLinq
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.Globalization;
     using System.Linq;
     using System.Reflection;
@@ -29,18 +28,12 @@ namespace WebLinq
     {
         readonly IQuery<T> _query;
         List<KeyValuePair<string, Func<T, object>>> _fields;
-        ReadOnlyCollection<string> _cachedHeaders;
 
         internal CsvOutputQueryBuilder(IQuery<T> query)
         {
             if (query == null) throw new ArgumentNullException(nameof(query));
             _query = query;
         }
-
-        public IReadOnlyList<string> Headers =>
-            _fields == null
-            ? Reflect().Headers
-            : (_cachedHeaders ?? (_cachedHeaders = Array.AsReadOnly(Fields.Select(e => e.Key).ToArray())));
 
         bool HasFields => _fields?.Count > 0;
 
@@ -49,7 +42,6 @@ namespace WebLinq
 
         public CsvOutputQueryBuilder<T> Field(string name, Func<T, object> selector)
         {
-            _cachedHeaders = null;
             Fields.Add(name.AsKeyTo(selector));
             return this;
         }
