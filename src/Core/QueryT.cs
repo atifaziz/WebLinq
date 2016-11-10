@@ -99,7 +99,7 @@ namespace WebLinq
             LiftEnumerable(Enumerable.Distinct);
 
         public Query<T> Distinct(IEqualityComparer<T> comparer) =>
-             LiftEnumerable(xs => xs.Distinct(new GenericEqualityComparer<T, QueryResultItem<T>> (x => x.Value, comparer)));
+             LiftEnumerable(xs => xs.Distinct(comparer.ContraMap<T, QueryResultItem<T>> (x => x.Value)));
 
         public Query<T> Concat(Query<T> query) =>
             Bind(xs => query.Bind(ys => Query.Return(xs.Concat(ys))));
