@@ -1,4 +1,4 @@
-﻿#region Copyright (c) 2016 Atif Aziz. All rights reserved.
+#region Copyright (c) 2016 Atif Aziz. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,21 +24,21 @@ namespace WebLinq
         public static EqualityComparer<T, TResult> ContraMap<T, TResult>(this IEqualityComparer<T> comparer, Func<TResult, T> contraMapper)
             => new EqualityComparer<T, TResult>(comparer, contraMapper);
 
-        sealed public class EqualityComparer<T, TResult> : IEqualityComparer<TResult>
+        public sealed class EqualityComparer<T, TResult> : IEqualityComparer<TResult>
         {
-            Func<TResult, T> contraMapper;
-            IEqualityComparer<T> comparer;
+            readonly Func<TResult, T> _contraMapper;
+            readonly IEqualityComparer<T> _comparer;
 
             public EqualityComparer(IEqualityComparer<T> comparer, Func<TResult, T> contraMapper)
             {
                 if (contraMapper == null) throw new ArgumentNullException(nameof(contraMapper));
                 if (comparer == null) throw new ArgumentNullException(nameof(comparer));
-                this.contraMapper = contraMapper;
-                this.comparer = comparer;
+                this._contraMapper = contraMapper;
+                this._comparer = comparer;
             }
 
-            public bool Equals(TResult x, TResult y) => comparer.Equals(contraMapper(x), contraMapper(y));
-            public int GetHashCode(TResult obj) => comparer.GetHashCode(contraMapper(obj));
+            public bool Equals(TResult x, TResult y) => _comparer.Equals(_contraMapper(x), _contraMapper(y));
+            public int GetHashCode(TResult obj) => _comparer.GetHashCode(_contraMapper(obj));
         }
     }
 }
