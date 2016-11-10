@@ -33,8 +33,8 @@ namespace WebLinq
             {
                 if (contraMapper == null) throw new ArgumentNullException(nameof(contraMapper));
                 if (comparer == null) throw new ArgumentNullException(nameof(comparer));
-                this._contraMapper = contraMapper;
-                this._comparer = comparer;
+                _contraMapper = contraMapper;
+                _comparer = comparer;
             }
 
             public bool Equals(TResult x, TResult y) => _comparer.Equals(_contraMapper(x), _contraMapper(y));
