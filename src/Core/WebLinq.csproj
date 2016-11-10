@@ -67,7 +67,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>AssemblyInfo.g.tt</DependentUpon>
     </Compile>
-    <Compile Include="GenericEqualityComparer.cs" />
+    <Compile Include="Comparer.cs" />
     <Compile Include="TypedValue.cs" />
     <Compile Include="Collections\MapBase.cs" />
     <Compile Include="Collections\Map.cs" />
