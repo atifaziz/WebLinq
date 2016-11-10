@@ -1,4 +1,4 @@
-#region Copyright (c) 2016 Atif Aziz. All rights reserved.
+﻿#region Copyright (c) 2016 Atif Aziz. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,16 +19,16 @@ namespace WebLinq
     using System;
     using System.Collections.Generic;
 
-    public static class Comparer
+    public static class ComparerExtensions
     {
-        public static EqualityComparer<T, TResult> ContraMap<T, TResult>(this IEqualityComparer<T> comparer, Func<TResult, T> contraMapper)
-            => new EqualityComparer<T, TResult>(comparer, contraMapper);
+        public static IEqualityComparer<TResult> ContraMap<T, TResult>(this IEqualityComparer<T> comparer, Func<TResult, T> contraMapper) =>
+            new EqualityComparer<T, TResult>(comparer, contraMapper);
 
-        public sealed class EqualityComparer<T, TResult> : IEqualityComparer<TResult>
+        internal sealed class EqualityComparer<T, TResult> : IEqualityComparer<TResult>
         {
-            readonly Func<TResult, T> _contraMapper;
             readonly IEqualityComparer<T> _comparer;
-
+            readonly Func<TResult, T> _contraMapper;
+            
             public EqualityComparer(IEqualityComparer<T> comparer, Func<TResult, T> contraMapper)
             {
                 if (contraMapper == null) throw new ArgumentNullException(nameof(contraMapper));
