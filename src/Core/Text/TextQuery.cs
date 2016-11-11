@@ -21,11 +21,11 @@ namespace WebLinq.Text
 
     public static class TextQuery
     {
-        public static Query<string> Delimited<T>(this Query<T> query, string delimiter) =>
+        public static IQuery<string> Delimited<T>(this IQuery<T> query, string delimiter) =>
             query.Aggregate(new StringBuilder(), (sb, e) => sb.Append(e), sb => sb.ToString());
 
 
-        public static Query<HttpFetch<string>> Text(this Query<HttpFetch<HttpContent>> query) =>
+        public static IQuery<HttpFetch<string>> Text(this IQuery<HttpFetch<HttpContent>> query) =>
             from fetch in query select fetch.WithContent(fetch.Content.ReadAsStringAsync().Result);
     }
 }

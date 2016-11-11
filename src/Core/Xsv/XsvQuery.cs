@@ -24,21 +24,21 @@ namespace WebLinq.Xsv
 
     public static class XsvQuery
     {
-        public static Query<HttpFetch<DataTable>> XsvToDataTable(this Query<HttpFetch<HttpContent>> query, string delimiter, bool quoted, params DataColumn[] columns) =>
+        public static IQuery<HttpFetch<DataTable>> XsvToDataTable(this IQuery<HttpFetch<HttpContent>> query, string delimiter, bool quoted, params DataColumn[] columns) =>
             from fetch in query.Text()
             select fetch.WithContent(fetch.Content.Read().ParseXsvAsDataTable(delimiter, quoted, columns));
 
-        public static Query<DataTable> XsvToDataTable(this Query<string> query, string delimiter, bool quoted, params DataColumn[] columns) =>
+        public static IQuery<DataTable> XsvToDataTable(this IQuery<string> query, string delimiter, bool quoted, params DataColumn[] columns) =>
             from xsv in query
             select xsv.Read().ParseXsvAsDataTable(delimiter, quoted, columns);
 
-        public static Query<DataTable> XsvToDataTable(string text, string delimiter, bool quoted, params DataColumn[] columns) =>
+        public static IQuery<DataTable> XsvToDataTable(string text, string delimiter, bool quoted, params DataColumn[] columns) =>
             Query.Singleton(text.Read().ParseXsvAsDataTable(delimiter, quoted, columns));
 
-        public static Query<HttpFetch<DataTable>> CsvToDataTable(this Query<HttpFetch<HttpContent>> query, params DataColumn[] columns) =>
+        public static IQuery<HttpFetch<DataTable>> CsvToDataTable(this IQuery<HttpFetch<HttpContent>> query, params DataColumn[] columns) =>
             query.XsvToDataTable(",", true, columns);
 
-        public static Query<DataTable> CsvToDataTable(this Query<string> query, params DataColumn[] columns) =>
+        public static IQuery<DataTable> CsvToDataTable(this IQuery<string> query, params DataColumn[] columns) =>
             query.XsvToDataTable(",", true, columns);
     }
 }

@@ -26,81 +26,81 @@ namespace WebLinq.Html
 
     public static class HtmlQuery
     {
-        public static Query<ParsedHtml> Html(string html) =>
+        public static IQuery<ParsedHtml> Html(string html) =>
             Html(html, null);
 
-        public static Query<ParsedHtml> Html(string html, Uri baseUrl) =>
+        public static IQuery<ParsedHtml> Html(string html, Uri baseUrl) =>
             from hps in Query.GetService<IHtmlParser>()
             select hps.Parse(html, baseUrl);
 
-        public static Query<HttpFetch<ParsedHtml>> Html(this Query<HttpFetch<HttpContent>> query) =>
+        public static IQuery<HttpFetch<ParsedHtml>> Html(this IQuery<HttpFetch<HttpContent>> query) =>
             from fetch in query.Accept(MediaTypeNames.Text.Html)
             from hps in Query.GetService<IHtmlParser>()
             select fetch.WithContent(hps.Parse(fetch.Content.ReadAsStringAsync().Result, fetch.RequestUrl));
 
-        public static Query<string> Links(string html) =>
+        public static IQuery<string> Links(string html) =>
             Links(html, null, (href, _) => href);
 
-        public static Query<T> Links<T>(string html, Func<string, string, T> selector) =>
+        public static IQuery<T> Links<T>(string html, Func<string, string, T> selector) =>
             Links(html, null, selector);
 
-        public static Query<string> Links(string html, Uri baseUrl) =>
+        public static IQuery<string> Links(string html, Uri baseUrl) =>
             Links(html, baseUrl, (href, _) => href);
 
-        public static Query<T> Links<T>(string html, Uri baseUrl, Func<string, string, T> selector) =>
+        public static IQuery<T> Links<T>(string html, Uri baseUrl, Func<string, string, T> selector) =>
             from ph in Html(html, baseUrl)
             from link in Links(ph, selector)
             select link;
 
-        public static Query<string> Links(ParsedHtml html) =>
+        public static IQuery<string> Links(ParsedHtml html) =>
             Links(html, (href, _) => href);
 
-        public static Query<T> Links<T>(ParsedHtml html, Func<string, string, T> selector) =>
+        public static IQuery<T> Links<T>(ParsedHtml html, Func<string, string, T> selector) =>
             html.Links((href, ho) => selector(href, ho.InnerHtml))
                 .Select(link => link)
                 .ToQuery();
 
-        public static Query<HttpFetch<string>> Links(this Query<HttpFetch<HttpContent>> query) =>
+        public static IQuery<HttpFetch<string>> Links(this IQuery<HttpFetch<HttpContent>> query) =>
             query.Links(null);
 
-        public static Query<HttpFetch<T>> Links<T>(this Query<HttpFetch<HttpContent>> query, Func<string, string, T> selector) =>
+        public static IQuery<HttpFetch<T>> Links<T>(this IQuery<HttpFetch<HttpContent>> query, Func<string, string, T> selector) =>
             Links(query, null, selector);
 
-        public static Query<HttpFetch<string>> Links(this Query<HttpFetch<HttpContent>> query, Uri baseUrl) =>
+        public static IQuery<HttpFetch<string>> Links(this IQuery<HttpFetch<HttpContent>> query, Uri baseUrl) =>
             Links(query, baseUrl, (href, _) => href);
 
-        public static Query<HttpFetch<T>> Links<T>(this Query<HttpFetch<HttpContent>> query, Uri baseUrl, Func<string, string, T> selector) =>
+        public static IQuery<HttpFetch<T>> Links<T>(this IQuery<HttpFetch<HttpContent>> query, Uri baseUrl, Func<string, string, T> selector) =>
             from html in query.Html()
             from link in Links(html.Content, (href, txt) => html.WithContent(selector(href, txt)))
             select link;
 
-        public static Query<HtmlObject> Tables(string html) =>
+        public static IQuery<HtmlObject> Tables(string html) =>
             from ph in Html(html)
             from t in Tables(html)
             select t;
 
-        public static Query<HtmlObject> Tables(ParsedHtml html) =>
+        public static IQuery<HtmlObject> Tables(ParsedHtml html) =>
             html.Tables(null).ToQuery();
 
-        public static Query<HttpFetch<HtmlObject>> Tables(this Query<HttpFetch<HttpContent>> query) =>
+        public static IQuery<HttpFetch<HtmlObject>> Tables(this IQuery<HttpFetch<HttpContent>> query) =>
             from f in query.Html()
             from t in Tables(f.Content)
             select f.WithContent(t);
 
-        public static Query<HttpFetch<DataTable>> FormsAsDataTable(this Query<HttpFetch<HttpContent>> query) =>
+        public static IQuery<HttpFetch<DataTable>> FormsAsDataTable(this IQuery<HttpFetch<HttpContent>> query) =>
             query.Html().FormsAsDataTable();
 
-        public static Query<DataTable> FormsAsDataTable(this Query<ParsedHtml> query) =>
+        public static IQuery<DataTable> FormsAsDataTable(this IQuery<ParsedHtml> query) =>
             from html in query
             from forms in FormsAsDataTable(html)
             select forms;
 
-        public static Query<HttpFetch<DataTable>> FormsAsDataTable(this Query<HttpFetch<ParsedHtml>> query) =>
+        public static IQuery<HttpFetch<DataTable>> FormsAsDataTable(this IQuery<HttpFetch<ParsedHtml>> query) =>
             from html in query
             from forms in FormsAsDataTable(html.Content)
             select html.WithContent(forms);
 
-        public static Query<DataTable> FormsAsDataTable(ParsedHtml html)
+        public static IQuery<DataTable> FormsAsDataTable(ParsedHtml html)
         {
             var forms =
                 from f in html.Forms
@@ -158,20 +158,20 @@ namespace WebLinq.Html
             return Query.Singleton(dt);
         }
 
-        public static Query<HttpFetch<HtmlForm>> Forms(this Query<HttpFetch<HttpContent>> query) =>
+        public static IQuery<HttpFetch<HtmlForm>> Forms(this IQuery<HttpFetch<HttpContent>> query) =>
             query.Html().Forms();
 
-        public static Query<HtmlForm> Forms(this Query<ParsedHtml> query) =>
+        public static IQuery<HtmlForm> Forms(this IQuery<ParsedHtml> query) =>
             from html in query
             from forms in Forms(html)
             select forms;
 
-        public static Query<HttpFetch<HtmlForm>> Forms(this Query<HttpFetch<ParsedHtml>> query) =>
+        public static IQuery<HttpFetch<HtmlForm>> Forms(this IQuery<HttpFetch<ParsedHtml>> query) =>
             from html in query
             from forms in Forms(html.Content)
             select html.WithContent(forms);
 
-        public static Query<HtmlForm> Forms(ParsedHtml html) =>
+        public static IQuery<HtmlForm> Forms(ParsedHtml html) =>
             Query.Return(html.Forms);
     }
 }
