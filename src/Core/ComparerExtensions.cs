@@ -1,4 +1,4 @@
-﻿#region Copyright (c) 2016 Atif Aziz. All rights reserved.
+#region Copyright (c) 2016 Atif Aziz. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,26 +19,29 @@ namespace WebLinq
     using System;
     using System.Collections.Generic;
 
-    public static class ComparerExtensions
+    static class ComparerExtensions
     {
-        public static IEqualityComparer<TResult> ContraMap<T, TResult>(this IEqualityComparer<T> comparer, Func<TResult, T> contraMapper) =>
-            new EqualityComparer<T, TResult>(comparer, contraMapper);
+        public static IEqualityComparer<TResult> ContraMap<T, TResult>(this IEqualityComparer<T> comparer, Func<TResult, T> mapper) =>
+            new ContraMappingEqualityComparer<T, TResult>(comparer, mapper);
 
-        internal sealed class EqualityComparer<T, TResult> : IEqualityComparer<TResult>
+        sealed class ContraMappingEqualityComparer<T, TResult> : IEqualityComparer<TResult>
         {
             readonly IEqualityComparer<T> _comparer;
-            readonly Func<TResult, T> _contraMapper;
-            
-            public EqualityComparer(IEqualityComparer<T> comparer, Func<TResult, T> contraMapper)
+            readonly Func<TResult, T> _mapper;
+
+            public ContraMappingEqualityComparer(IEqualityComparer<T> comparer, Func<TResult, T> mapper)
             {
-                if (contraMapper == null) throw new ArgumentNullException(nameof(contraMapper));
+                if (mapper == null) throw new ArgumentNullException(nameof(mapper));
                 if (comparer == null) throw new ArgumentNullException(nameof(comparer));
-                _contraMapper = contraMapper;
+                _mapper = mapper;
                 _comparer = comparer;
             }
 
-            public bool Equals(TResult x, TResult y) => _comparer.Equals(_contraMapper(x), _contraMapper(y));
-            public int GetHashCode(TResult obj) => _comparer.GetHashCode(_contraMapper(obj));
+            public bool Equals(TResult x, TResult y) =>
+                _comparer.Equals(_mapper(x), _mapper(y));
+
+            public int GetHashCode(TResult obj) =>
+                _comparer.GetHashCode(_mapper(obj));
         }
     }
 }
