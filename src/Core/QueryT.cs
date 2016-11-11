@@ -63,6 +63,14 @@ namespace WebLinq
                                  where predicate(x.Value)
                                  select x);
 
+        public Query<TResult> SelectMany<T2, TResult>(Func<T, IEnumerable<T2>> f, Func<T, T2, TResult> g) =>
+            Bind(xs => Query.Create(context => QueryResult.Create(SelectManyIterator(context, xs, f, g))));
+
+        static IEnumerable<QueryResultItem<TResult>> SelectManyIterator<T2, TResult>(QueryContext context, QueryResult<T> xs, Func<T, IEnumerable<T2>> f, Func<T, T2, TResult> g) =>
+            from x in xs
+            from result in f(x.Value)
+            select QueryResultItem.Create(x.Context, g(x.Value, result));
+
         public Query<TResult> SelectMany<T2, TResult>(Func<T, Query<T2>> f, Func<T, T2, TResult> g) =>
             Bind(xs => Query.Create(context => QueryResult.Create(SelectManyIterator(context, xs, f, g))));
 
@@ -94,7 +102,7 @@ namespace WebLinq
 
         public Query<T> Take(int count) =>
             LiftEnumerable(e => e.Take(count));
-        
+
         public Query<T> Distinct() =>
             LiftEnumerable(Enumerable.Distinct);
 

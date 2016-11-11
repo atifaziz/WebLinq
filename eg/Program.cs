@@ -66,17 +66,14 @@ namespace WebLinq.Samples
             var q =
                 from xml in Spawn("schtasks", @"/query /xml ONE").Delimited(Environment.NewLine)
                 from doc in XmlQuery.Xml(new StringContent(xml))
-                let execs =
-                    from t in doc.Elements("Tasks").Elements(ns + "Task")
-                    from e in t.Elements(ns + "Actions").Elements(ns + "Exec")
-                    select new
-                    {
-                        Name      = ((XComment)t.PreviousNode).Value.Trim(),
-                        Command   = (string)e.Element(ns + "Command"),
-                        Arguments = (string)e.Element(ns + "Arguments"),
-                    }
-                from e in execs.ToQuery()
-                select e;
+                from t in doc.Elements("Tasks").Elements(ns + "Task")
+                from e in t.Elements(ns + "Actions").Elements(ns + "Exec")
+                select new
+                {
+                    Name      = ((XComment)t.PreviousNode).Value.Trim(),
+                    Command   = (string)e.Element(ns + "Command"),
+                    Arguments = (string)e.Element(ns + "Arguments"),
+                };
 
             q.Dump();
         }
@@ -110,41 +107,37 @@ namespace WebLinq.Samples
 
                 from html in Http.Get(album.Url).Html().Content()
 
-                let tracks =
-                    from tb in html.Tables(".tracklist").Take(2)
-                    let trs = tb.QuerySelectorAll("tr")
-                    let hdrs =
-                        trs.FirstOrDefault(tr => tr.QuerySelectorAll("th").Take(4).Count() >= 3)
-                          ?.QuerySelectorAll("th")
-                           .Select(th => th.InnerTextSource.Decoded.Trim())
-                           .ToArray()
-                    where hdrs != null
-                    let idxs =
-                        new[] { "Title", "Writer(s)", "Length" }
-                            .Select(h => Array.FindIndex(hdrs, he => he == h))
-                            .ToArray()
-                    let his = new
-                    {
-                        Title   = idxs[0],
-                        Writers = idxs[1],
-                        Length  = idxs[2],
-                    }
-                    from tr in trs
-                    let tds =
-                        tr.QuerySelectorAll("td")
-                          .Select(td => td.InnerTextSource.Decoded)
-                          .ToArray()
-                    where tds.Length >= 3
-                    select new
-                    {
-                        Album    = album.Title,
-                        Title    = tds[his.Title],
-                        Author   = his.Writers >= 0 ? tds[his.Writers] : null,
-                        Duration = tds[his.Length],
-                    }
-
-                from e in tracks.ToQuery()
-                select e;
+                from tb in html.Tables(".tracklist").Take(2)
+                let trs = tb.QuerySelectorAll("tr")
+                let hdrs =
+                    trs.FirstOrDefault(tr => tr.QuerySelectorAll("th").Take(4).Count() >= 3)
+                        ?.QuerySelectorAll("th")
+                        .Select(th => th.InnerTextSource.Decoded.Trim())
+                        .ToArray()
+                where hdrs != null
+                let idxs =
+                    new[] { "Title", "Writer(s)", "Length" }
+                        .Select(h => Array.FindIndex(hdrs, he => he == h))
+                        .ToArray()
+                let his = new
+                {
+                    Title   = idxs[0],
+                    Writers = idxs[1],
+                    Length  = idxs[2],
+                }
+                from tr in trs
+                let tds =
+                    tr.QuerySelectorAll("td")
+                      .Select(td => td.InnerTextSource.Decoded)
+                      .ToArray()
+                where tds.Length >= 3
+                select new
+                {
+                    Album    = album.Title,
+                    Title    = tds[his.Title],
+                    Author   = his.Writers >= 0 ? tds[his.Writers] : null,
+                    Duration = tds[his.Length],
+                };
 
             q.Dump();
         }
