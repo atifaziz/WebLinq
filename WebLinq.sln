@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebLinq.Samples", "eg\WebLinq.Samples.csproj", "{B4C1F88A-ED2D-4CF1-807F-2B9C13D5C7FE}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebLinq", "src\Core\WebLinq.csproj", "{76FCF387-B33C-49B9-916F-F91862CB648C}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{F1FAE8C9-0AA0-471E-974F-A257ABB2F3E8}"
@@ -14,8 +16,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebLinq.Tests", "tests\WebLinq.Tests.csproj", "{00CDA73A-CA20-4AEB-A29B-CEF37876941D}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebLinq.Samples", "eg\WebLinq.Samples.csproj", "{B4C1F88A-ED2D-4CF1-807F-2B9C13D5C7FE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
