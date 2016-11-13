@@ -18,6 +18,7 @@
 
 namespace WebLinq
 {
+    using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
@@ -28,27 +29,99 @@ namespace WebLinq
             Singleton(QueryResultItem.Create(context, value));
 
         public static QueryResult<T> Singleton<T>(QueryResultItem<T> item) =>
-            new QueryResult<T>(new[] {item});
+            Create(new[] { item });
 
         public static QueryResult<T> Create<T>(IEnumerable<QueryResultItem<T>> items) =>
-            new QueryResult<T>(items);
+            Create(items.GetEnumerator());
+
+        public static QueryResult<T> Create<T>(IEnumerator<QueryResultItem<T>> items) =>
+            new QueryResult2<T>(items);
 
         public static QueryResult<T> Empty<T>(QueryContext context) =>
-            new QueryResult<T>(Enumerable.Empty<QueryResultItem<T>>());
+            Create(Enumerable.Empty<QueryResultItem<T>>());
     }
 
-    public sealed class QueryResult<T> : IEnumerable<QueryResultItem<T>>
+    public abstract class QueryResult<T> : IEnumerator<QueryResultItem<T>>
     {
-        readonly IEnumerable<QueryResultItem<T>> _items;
+        public abstract void Dispose();
+        public abstract bool MoveNext();
+        public abstract void Reset();
+        public abstract QueryResultItem<T> Current { get; }
+        object IEnumerator.Current => Current;
+    }
 
-        public QueryResult(IEnumerable<QueryResultItem<T>> items)
+    public class QueryResult3<T> : QueryResult<T>
+    {
+        IEnumerable<QueryResultItem<T>> _enumerable;
+        IEnumerator<QueryResultItem<T>> _enumerator;
+
+        public QueryResult3(IEnumerable<QueryResultItem<T>> enumerable)
         {
-            _items = items;
+            _enumerable = enumerable;
         }
 
-        public IEnumerator<QueryResultItem<T>> GetEnumerator() => _items.GetEnumerator();
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        IEnumerator<QueryResultItem<T>> Enumerator
+        {
+            get
+            {
+                if (_enumerable != null)
+                {
+                    _enumerator = _enumerable.GetEnumerator();
+                    _enumerable = null;
+                }
+                else if (_enumerator == null)
+                {
+                    throw new ObjectDisposedException(GetType().Name);
+                }
 
-        public static explicit operator T(QueryResult<T> result) => result.Single().Value;
+                return _enumerator;
+            }
+        }
+
+        public override void Dispose()
+        {
+            _enumerable = null;
+            var enumerator = _enumerator;
+            _enumerator = null;
+            enumerator?.Dispose();
+        }
+
+        public override bool MoveNext() => Enumerator.MoveNext();
+        public override void Reset() => Enumerator.Reset();
+        public override QueryResultItem<T> Current => Enumerator.Current;
+
+        //public static explicit operator T(QueryResult<T> result) => result.Single().Value;
+    }
+
+    public class QueryResult2<T> : QueryResult<T>
+    {
+        IEnumerator<QueryResultItem<T>> _enumerator;
+
+        public QueryResult2(IEnumerator<QueryResultItem<T>> enumerator)
+        {
+            _enumerator = enumerator;
+        }
+
+        IEnumerator<QueryResultItem<T>> Enumerator
+        {
+            get
+            {
+                if (_enumerator == null) throw new ObjectDisposedException(GetType().Name);
+                return _enumerator;
+            }
+        }
+
+        public override void Dispose()
+        {
+            var enumerator = _enumerator;
+            _enumerator = null;
+            enumerator?.Dispose();
+        }
+
+        public override bool MoveNext() => Enumerator.MoveNext();
+        public override void Reset() => Enumerator.Reset();
+        public override QueryResultItem<T> Current => Enumerator.Current;
+
+        //public static explicit operator T(QueryResult<T> result) => result.Single().Value;
     }
 }

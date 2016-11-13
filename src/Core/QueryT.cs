@@ -17,8 +17,48 @@
 namespace WebLinq
 {
     using System;
+    using System.Collections.Generic;
 
-    public interface IQuery<T>
+    public static class StateItemPair
+    {
+        public static StateItemPair<TState, T> Create<TState, T>(TState state, T item) =>
+            new StateItemPair<TState, T>(item, state);
+    }
+
+    public struct StateItemPair<TState, T> : IEquatable<StateItemPair<TState, T>>
+    {
+        public readonly T Item;
+        public readonly TState State;
+
+        public StateItemPair(T item, TState state)
+        {
+            Item = item;
+            State = state;
+        }
+
+        public bool Equals(StateItemPair<TState, T> other) =>
+            EqualityComparer<T>.Default.Equals(Item, other.Item)
+            && EqualityComparer<TState>.Default.Equals(State, other.State);
+
+        public override bool Equals(object obj) =>
+            obj is StateItemPair<TState, T> && Equals((StateItemPair<TState, T>) obj);
+
+        public override int GetHashCode() =>
+            unchecked(EqualityComparer<T>.Default.GetHashCode(Item) * 397 ^ EqualityComparer<TState>.Default.GetHashCode(State));
+
+        public static bool operator ==(StateItemPair<TState, T> left, StateItemPair<TState, T> right) =>
+            left.Equals(right);
+
+        public static bool operator !=(StateItemPair<TState, T> left, StateItemPair<TState, T> right) =>
+            !left.Equals(right);
+    }
+
+    public interface IEnumerable<TState, T>
+    {
+        IEnumerator<StateItemPair<TState, T>> GetEnumerator(TState context);
+    }
+
+    public interface IQuery<T> : IEnumerable<QueryContext, T>
     {
         QueryResult<T> GetResult(QueryContext context);
     }
@@ -35,5 +75,11 @@ namespace WebLinq
         }
 
         public QueryResult<T> GetResult(QueryContext context) => _func(context);
+        public IEnumerator<StateItemPair<QueryContext, T>> GetEnumerator(QueryContext context)
+        {
+            using (var e = GetResult(context))
+                while (e.MoveNext())
+                    yield return StateItemPair.Create(e.Current.Context, e.Current.Value);
+        }
     }
 }

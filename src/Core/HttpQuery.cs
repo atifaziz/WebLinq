@@ -156,7 +156,7 @@ namespace WebLinq
                 var url = dequeued.Value;
                 var level = dequeued.Key;
                 // TODO retry intermittent errors?
-                var fetchResult = Http.ReturnErrorneousFetch().Get(url).GetResult(context).Single();
+                var fetchResult = Http.ReturnErrorneousFetch().Get(url).Single(context);
                 var fetch = fetchResult.Value;
 
                 if (!fetch.IsSuccessStatusCode)
@@ -186,12 +186,15 @@ namespace WebLinq
                        && followPredicate(e)
                     select e;
 
-                var links = lq.GetResult(context);
-                foreach (var e in links)
+                using (var links = lq.GetResult(context))
                 {
-                    if (linkSet.Add(e))
-                        queue.Enqueue((level + 1).AsKeyTo(e.Value));
-                    context = e.Context;
+                    while (links.MoveNext())
+                    {
+                        var e = links.Current;
+                        if (linkSet.Add(e))
+                            queue.Enqueue((level + 1).AsKeyTo(e.Value));
+                        context = e.Context;
+                    }
                 }
             }
         }

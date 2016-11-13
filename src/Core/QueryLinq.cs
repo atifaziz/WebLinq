@@ -24,8 +24,14 @@ namespace WebLinq
 
     static partial class Query
     {
+        static IEnumerable<T> ToEnumerable<T>(this IEnumerator<T> enumerator)
+        {
+            while (enumerator.MoveNext())
+                yield return enumerator.Current;
+        }
+
         static IQuery<TReturn> LiftEnumerable<T, TReturn>(this IQuery<T> query, Func<IEnumerable<QueryResultItem<T>>, IEnumerable<QueryResultItem<TReturn>>> func) =>
-            query.Bind(xs => Return(func(xs)));
+            query.Bind(xs => Return(func(xs.ToEnumerable())));
 
         public static IQuery<TResult> Select<T, TResult>(this IQuery<T> query, Func<T, TResult> selector) =>
            query.LiftEnumerable(xs => from x in xs
@@ -40,7 +46,7 @@ namespace WebLinq
             query.Bind(xs => Create(context => QueryResult.Create(SelectManyIterator(context, xs, f, g))));
 
         static IEnumerable<QueryResultItem<TResult>> SelectManyIterator<T1, T2, TResult>(QueryContext context, QueryResult<T1> xs, Func<T1, IEnumerable<T2>> f, Func<T1, T2, TResult> g) =>
-            from x in xs
+            from x in xs.ToEnumerable()
             from result in f(x.Value)
             select QueryResultItem.Create(x.Context, g(x.Value, result));
 
@@ -48,8 +54,8 @@ namespace WebLinq
             query.Bind(xs => Create(context => QueryResult.Create(SelectManyIterator(context, xs, f, g))));
 
         static IEnumerable<QueryResultItem<TResult>> SelectManyIterator<T1, T2, TResult>(QueryContext context, QueryResult<T1> xs, Func<T1, IQuery<T2>> f, Func<T1, T2, TResult> g) =>
-            from x in xs
-            from result in f(x.Value).GetResult(x.Context)
+            from x in xs.ToEnumerable()
+            from result in f(x.Value).GetResult(x.Context).ToEnumerable()
             select QueryResultItem.Create(result.Context, g(x, result.Value));
 
         public static IQuery<TResult> Aggregate<T, TState, TResult>(this IQuery<T> query, TState seed,
@@ -60,8 +66,10 @@ namespace WebLinq
             if (resultSelector == null) throw new ArgumentNullException(nameof(resultSelector));
 
             return from context in GetContext()
-                   select query.GetResult(context).Select(e => e.Value)
-                                                  .Aggregate(seed, accumulator, resultSelector);
+                   select query.GetResult(context)
+                               .ToEnumerable()
+                               .Select(e => e.Value)
+                               .Aggregate(seed, accumulator, resultSelector);
         }
 
         public static IQuery<T> SkipWhile<T>(this IQuery<T> query, Func<T, bool> predicate) =>
@@ -83,6 +91,19 @@ namespace WebLinq
             query.LiftEnumerable(xs => xs.Distinct(comparer.ContraMap<T, QueryResultItem<T>> (x => x.Value)));
 
         public static IQuery<T> Concat<T>(this IQuery<T> first, IQuery<T> second) =>
-            first.Bind(xs => second.Bind(ys => Return(xs.Concat(ys))));
+            first.Bind(xs => second.Bind(ys => Return(xs.ToEnumerable().Concat(ys.ToEnumerable()))));
+
+        public static QueryResultItem<T> Single<T>(this IQuery<T> query, QueryContext context)
+        {
+            using (var e = query.GetResult(context))
+            {
+                if (!e.MoveNext())
+                    throw new InvalidOperationException();
+                var item = e.Current;
+                if (e.MoveNext())
+                    throw new InvalidOperationException();
+                return item;    
+            }
+        }
     }
 }

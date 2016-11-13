@@ -35,7 +35,13 @@ namespace WebLinq
             query.Select(e => { action(e); return e; });
 
         public static IQuery<T> Wait<T>(this IQuery<T> query) =>
-            query.Bind(xs => Return(xs.ToArray()));
+            query.Bind(xs =>
+            {
+                var list = new List<T>();
+                while (xs.MoveNext())
+                    list.Add(xs.Current);
+                return Return(list);
+            });
 
        public static IQuery<int> Sequence(int first, int last) =>
             Sequence(first, last, 1);
@@ -80,8 +86,9 @@ namespace WebLinq
         public static IEnumerable<T> ToEnumerable<T>(this IQuery<T> query, Func<QueryContext> contextFactory)
         {
             // ReSharper disable once LoopCanBeConvertedToQuery
-            foreach (var e in query.GetResult(contextFactory()))
-                yield return e.Value;
+            using (var e = query.GetResult(contextFactory()))
+                while (e.MoveNext())
+                    yield return e.Current.Value;
         }
 
         public static IQuery<T> FindService<T>() where T : class =>
@@ -128,11 +135,15 @@ namespace WebLinq
             var current = seed;
             while (true)
             {
-                foreach (var next in generator(current).GetResult(context))
+                using (var e = generator(current).GetResult(context))
                 {
-                    yield return next;
-                    current = next.Value;
-                    context = next.Context;
+                    while (e.MoveNext())
+                    {
+                        var next = e.Current;
+                        yield return next;
+                        current = next.Value;
+                        context = next.Context;
+                    }
                 }
             }
         }
