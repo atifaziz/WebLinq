@@ -24,21 +24,18 @@ namespace WebLinq
 
     static partial class Query
     {
-        static IEnumerable<T> ToEnumerable<T>(this IEnumerator<T> enumerator)
-        {
-            while (enumerator.MoveNext())
-                yield return enumerator.Current;
-        }
+        static ITerminalEnumerable<T> ToTerminalEnumerable<T>(this IEnumerator<T> enumerator) =>
+            new TerminalEnumerable<T>(enumerator);
 
-        static IQuery<TReturn> LiftEnumerable<T, TReturn>(this IQuery<T> query, Func<IEnumerable<QueryResultItem<T>>, IEnumerable<QueryResultItem<TReturn>>> func) =>
-            query.Bind(xs => Return(func(xs.ToEnumerable())));
+        static IQuery<TReturn> LiftToTerminalEnumerable<T, TReturn>(this IQuery<T> query, Func<IEnumerable<QueryResultItem<T>>, IEnumerable<QueryResultItem<TReturn>>> func) =>
+            query.Bind(xs => Return(func(xs.ToTerminalEnumerable())));
 
         public static IQuery<TResult> Select<T, TResult>(this IQuery<T> query, Func<T, TResult> selector) =>
-           query.LiftEnumerable(xs => from x in xs
+           query.LiftToTerminalEnumerable(xs => from x in xs
                                       select x.WithValue(selector(x.Value)));
 
         public static IQuery<T> Where<T>(this IQuery<T> query, Func<T, bool> predicate) =>
-            query.LiftEnumerable(xs => from x in xs
+            query.LiftToTerminalEnumerable(xs => from x in xs
                                        where predicate(x.Value)
                                        select x);
 
@@ -46,7 +43,7 @@ namespace WebLinq
             query.Bind(xs => Create(context => QueryResult.Create(SelectManyIterator(context, xs, f, g))));
 
         static IEnumerable<QueryResultItem<TResult>> SelectManyIterator<T1, T2, TResult>(QueryContext context, QueryResult<T1> xs, Func<T1, IEnumerable<T2>> f, Func<T1, T2, TResult> g) =>
-            from x in xs.ToEnumerable()
+            from x in xs.ToTerminalEnumerable()
             from result in f(x.Value)
             select QueryResultItem.Create(x.Context, g(x.Value, result));
 
@@ -54,8 +51,8 @@ namespace WebLinq
             query.Bind(xs => Create(context => QueryResult.Create(SelectManyIterator(context, xs, f, g))));
 
         static IEnumerable<QueryResultItem<TResult>> SelectManyIterator<T1, T2, TResult>(QueryContext context, QueryResult<T1> xs, Func<T1, IQuery<T2>> f, Func<T1, T2, TResult> g) =>
-            from x in xs.ToEnumerable()
-            from result in f(x.Value).GetResult(x.Context).ToEnumerable()
+            from x in xs.ToTerminalEnumerable()
+            from result in f(x.Value).GetResult(x.Context).ToTerminalEnumerable()
             select QueryResultItem.Create(result.Context, g(x, result.Value));
 
         public static IQuery<TResult> Aggregate<T, TState, TResult>(this IQuery<T> query, TState seed,
@@ -67,31 +64,31 @@ namespace WebLinq
 
             return from context in GetContext()
                    select query.GetResult(context)
-                               .ToEnumerable()
+                               .ToTerminalEnumerable()
                                .Select(e => e.Value)
                                .Aggregate(seed, accumulator, resultSelector);
         }
 
         public static IQuery<T> SkipWhile<T>(this IQuery<T> query, Func<T, bool> predicate) =>
-            query.LiftEnumerable(xs => xs.SkipWhile(x => predicate(x.Value)));
+            query.LiftToTerminalEnumerable(xs => xs.SkipWhile(x => predicate(x.Value)));
 
         public static IQuery<T> TakeWhile<T>(this IQuery<T> query, Func<T, bool> predicate) =>
-            query.LiftEnumerable(xs => xs.TakeWhile(x => predicate(x.Value)));
+            query.LiftToTerminalEnumerable(xs => xs.TakeWhile(x => predicate(x.Value)));
 
         public static IQuery<T> Skip<T>(this IQuery<T> query, int count) =>
-            query.LiftEnumerable(e => e.Skip(count));
+            query.LiftToTerminalEnumerable(e => e.Skip(count));
 
         public static IQuery<T> Take<T>(this IQuery<T> query, int count) =>
-            query.LiftEnumerable(e => e.Take(count));
+            query.LiftToTerminalEnumerable(e => e.Take(count));
 
         public static IQuery<T> Distinct<T>(this IQuery<T> query) =>
-            query.LiftEnumerable(Enumerable.Distinct);
+            query.LiftToTerminalEnumerable(Enumerable.Distinct);
 
         public static IQuery<T> Distinct<T>(this IQuery<T> query, IEqualityComparer<T> comparer) =>
-            query.LiftEnumerable(xs => xs.Distinct(comparer.ContraMap<T, QueryResultItem<T>> (x => x.Value)));
+            query.LiftToTerminalEnumerable(xs => xs.Distinct(comparer.ContraMap<T, QueryResultItem<T>> (x => x.Value)));
 
         public static IQuery<T> Concat<T>(this IQuery<T> first, IQuery<T> second) =>
-            first.Bind(xs => second.Bind(ys => Return(xs.ToEnumerable().Concat(ys.ToEnumerable()))));
+            first.Bind(xs => second.Bind(ys => Return(xs.ToTerminalEnumerable().Concat(ys.ToTerminalEnumerable()))));
 
         public static QueryResultItem<T> Single<T>(this IQuery<T> query, QueryContext context)
         {

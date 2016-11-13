@@ -41,7 +41,7 @@ namespace WebLinq
                 Exception error = null;
                 try
                 {
-                    foreach (var e in _query.ToEnumerable(DefaultQueryContext.Create))
+                    foreach (var e in _query.ToTerminalEnumerable(DefaultQueryContext.Create))
                         observer.OnNext(e);
                 }
                 catch (Exception e)

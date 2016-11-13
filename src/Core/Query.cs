@@ -83,7 +83,7 @@ namespace WebLinq
         public static IQuery<T> Return<T>(IEnumerable<QueryResultItem<T>> items) =>
             Create(context => QueryResult.Create(items));
 
-        public static IEnumerable<T> ToEnumerable<T>(this IQuery<T> query, Func<QueryContext> contextFactory)
+        public static IEnumerable<T> ToTerminalEnumerable<T>(this IQuery<T> query, Func<QueryContext> contextFactory)
         {
             // ReSharper disable once LoopCanBeConvertedToQuery
             using (var e = query.GetResult(contextFactory()))

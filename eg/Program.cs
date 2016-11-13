@@ -181,7 +181,7 @@ namespace WebLinq.Samples
         static void Dump<T>(this IQuery<T> query, TextWriter output = null)
         {
             output = output ?? Console.Out;
-            foreach (var e in query.ToEnumerable(DefaultQueryContext.Create))
+            foreach (var e in query.ToTerminalEnumerable(DefaultQueryContext.Create))
                 output.WriteLine(e);
         }
     }

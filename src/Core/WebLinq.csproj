@@ -69,6 +69,7 @@
     </Compile>
     <Compile Include="ComparerExtensions.cs" />
     <Compile Include="QueryLinq.cs" />
+    <Compile Include="TerminalEnumerable.cs" />
     <Compile Include="TypedValue.cs" />
     <Compile Include="Collections\MapBase.cs" />
     <Compile Include="Collections\Map.cs" />
