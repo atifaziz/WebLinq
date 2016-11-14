@@ -57,8 +57,18 @@ namespace WebLinq
                                  .ToQuery();
         }
 
+        [Obsolete]
         public static IQuery<T> ToQuery<T>(this IEnumerable<T> items) =>
-            Create(context => QueryResult.Create(from item in items select QueryResultItem.Create(context, item)));
+            Create(context => QueryResult.Create(items.GetEnumerator(context)));
+
+        static IEnumerator<QueryResultItem<T>> GetEnumerator<T>(this IEnumerable<T> items, QueryContext context)
+        {
+            var q =
+                from item in items
+                select QueryResultItem.Create(context, item);
+            foreach (var e in q)
+                yield return e;
+        }
 
         public static IQuery<QueryContext> GetContext() =>
             Create(context => QueryResult.Singleton(context, context));
@@ -72,6 +82,7 @@ namespace WebLinq
         public static IQuery<T> Create<T>(Func<QueryContext, QueryResult<T>> func) =>
             new Query<T>(func);
 
+        [Obsolete]
         public static IQuery<T> Create<T>(Func<QueryContext, IEnumerable<QueryResultItem<T>>> func) =>
             new Query<T>(context => QueryResult.Create(func(context)));
 
@@ -79,7 +90,9 @@ namespace WebLinq
 
         public static IQuery<T> Array<T>(params T[] items) => items.ToQuery();
 
+        [Obsolete]
         public static IQuery<T> Return<T>(IEnumerable<T> items) => items.ToQuery();
+        [Obsolete]
         public static IQuery<T> Return<T>(IEnumerable<QueryResultItem<T>> items) =>
             Create(context => QueryResult.Create(items));
 
@@ -129,7 +142,7 @@ namespace WebLinq
         public static IQuery<T> Generate<T>(T seed, Func<T, IQuery<T>> generator) =>
             Create(context => QueryResult.Create(GenerateCore(context, seed, generator)));
 
-        static IEnumerable<QueryResultItem<T>> GenerateCore<T>(QueryContext context, T seed, Func<T, IQuery<T>> generator)
+        static IEnumerator<QueryResultItem<T>> GenerateCore<T>(QueryContext context, T seed, Func<T, IQuery<T>> generator)
         {
             yield return QueryResultItem.Create(context, seed);
             var current = seed;

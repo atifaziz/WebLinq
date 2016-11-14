@@ -42,18 +42,30 @@ namespace WebLinq
         public static IQuery<TResult> SelectMany<T1, T2, TResult>(this IQuery<T1> query, Func<T1, IEnumerable<T2>> f, Func<T1, T2, TResult> g) =>
             query.Bind(xs => Create(context => QueryResult.Create(SelectManyIterator(context, xs, f, g))));
 
-        static IEnumerable<QueryResultItem<TResult>> SelectManyIterator<T1, T2, TResult>(QueryContext context, QueryResult<T1> xs, Func<T1, IEnumerable<T2>> f, Func<T1, T2, TResult> g) =>
-            from x in xs.ToTerminalEnumerable()
-            from result in f(x.Value)
-            select QueryResultItem.Create(x.Context, g(x.Value, result));
+        static IEnumerator<QueryResultItem<TResult>> SelectManyIterator<T1, T2, TResult>(QueryContext context, QueryResult<T1> xs, Func<T1, IEnumerable<T2>> f, Func<T1, T2, TResult> g)
+        {
+            var q =
+                from x in xs.ToTerminalEnumerable()
+                from result in f(x.Value)
+                select QueryResultItem.Create(x.Context, g(x.Value, result));
+
+            foreach (var e in q)
+                yield return e;
+        }
 
         public static IQuery<TResult> SelectMany<T1, T2, TResult>(this IQuery<T1> query, Func<T1, IQuery<T2>> f, Func<T1, T2, TResult> g) =>
             query.Bind(xs => Create(context => QueryResult.Create(SelectManyIterator(context, xs, f, g))));
 
-        static IEnumerable<QueryResultItem<TResult>> SelectManyIterator<T1, T2, TResult>(QueryContext context, QueryResult<T1> xs, Func<T1, IQuery<T2>> f, Func<T1, T2, TResult> g) =>
-            from x in xs.ToTerminalEnumerable()
-            from result in f(x.Value).GetResult(x.Context).ToTerminalEnumerable()
-            select QueryResultItem.Create(result.Context, g(x, result.Value));
+        static IEnumerator<QueryResultItem<TResult>> SelectManyIterator<T1, T2, TResult>(QueryContext context, QueryResult<T1> xs, Func<T1, IQuery<T2>> f, Func<T1, T2, TResult> g)
+        {
+            var q =
+                from x in xs.ToTerminalEnumerable()
+                from result in f(x.Value).GetResult(x.Context).ToTerminalEnumerable()
+                select QueryResultItem.Create(result.Context, g(x, result.Value));
+
+            foreach (var e in q)
+                yield return e;
+        }
 
         public static IQuery<TResult> Aggregate<T, TState, TResult>(this IQuery<T> query, TState seed,
             Func<TState, T, TState> accumulator,

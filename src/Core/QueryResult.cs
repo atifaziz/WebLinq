@@ -29,8 +29,9 @@ namespace WebLinq
             Singleton(QueryResultItem.Create(context, value));
 
         public static QueryResult<T> Singleton<T>(QueryResultItem<T> item) =>
-            Create(new[] { item });
+            Create(new[] { item }.AsEnumerable().GetEnumerator());
 
+        [Obsolete]
         public static QueryResult<T> Create<T>(IEnumerable<QueryResultItem<T>> items) =>
             Create(items.GetEnumerator());
 
@@ -38,7 +39,7 @@ namespace WebLinq
             new QueryResult2<T>(items);
 
         public static QueryResult<T> Empty<T>(QueryContext context) =>
-            Create(Enumerable.Empty<QueryResultItem<T>>());
+            Create(Enumerable.Empty<QueryResultItem<T>>().GetEnumerator());
     }
 
     public abstract class QueryResult<T> : IEnumerator<QueryResultItem<T>>
