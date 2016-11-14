@@ -22,7 +22,7 @@ namespace WebLinq
 
     /// <summary>
     /// Indicates an <see cref="IEnumerable{T}"/> that can be iterated once
-    /// only and throw <see cref="InvalidOperationException"/> on all
+    /// only and throws <see cref="InvalidOperationException"/> on all
     /// subsequent attempts to iterate.
     /// </summary>
 
