@@ -43,7 +43,7 @@ namespace WebLinq.Samples
                         return Http.Get(new Uri(next)).Html().Content();
                     })
                     .TakeWhile(h => (TryParse.Int32(HttpUtility.ParseQueryString(h.BaseUrl.Query)["start"]) ?? 1) < 30)
-                from r in sr.QuerySelectorAll(".g").ToQuery()
+                from r in sr.QuerySelectorAll(".g")
                 select new
                 {
                     Title   = r.QuerySelector(".r")?.InnerText,
@@ -85,7 +85,7 @@ namespace WebLinq.Samples
                 from t in Http.Get(new Uri("https://en.wikipedia.org/wiki/Queen_discography")).Tables().Content()
                               .Where(t => t.HasClass("wikitable"))
                               .Take(1)
-                from tr in t.TableRows((_, trs) => trs).ToQuery()
+                from tr in t.TableRows((_, trs) => trs)
                 select tr.FirstOrDefault(e => e?.AttributeValueEquals("scope", "row") == true) into th
                 where th != null
                 let a = th.QuerySelector("a[href]")
