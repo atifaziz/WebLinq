@@ -24,16 +24,16 @@ namespace WebLinq
 
     public static class HttpRequestBuilder
     {
-        public static HttpRequestBuilder<HttpFetch<T>> Then<T>(this IQuery<HttpFetch<T>> query) =>
+        public static HttpRequestBuilder<HttpFetch<T>> Then<T>(this IEnumerable<QueryContext, HttpFetch<T>> query) =>
             new HttpRequestBuilder<HttpFetch<T>>(query);
 
-        public static HttpRequestBuilder<HttpConfig> Then(this IQuery<HttpConfig> query) =>
+        public static HttpRequestBuilder<HttpConfig> Then(this IEnumerable<QueryContext, HttpConfig> query) =>
             new HttpRequestBuilder<HttpConfig>(query);
     }
 
     public sealed class HttpRequestBuilder<T>
     {
-        readonly IQuery<T> _query;
+        readonly IEnumerable<QueryContext, T> _query;
         HttpOptions _options = new HttpOptions();
         HttpRequestMessage _request = new HttpRequestMessage();
 
@@ -43,7 +43,7 @@ namespace WebLinq
         public HttpRequestBuilder() :
             this(Query.Singleton(default(T))) { }
 
-        internal HttpRequestBuilder(IQuery<T> query)
+        internal HttpRequestBuilder(IEnumerable<QueryContext, T> query)
         {
             if (query == null) throw new ArgumentNullException(nameof(query));
             _query = query;
@@ -77,22 +77,22 @@ namespace WebLinq
             return http.Send(request, config, options).ToHttpFetch(id.Value);
         }
 
-        public IQuery<HttpFetch<HttpContent>> Get(Uri url) =>
+        public IEnumerable<QueryContext, HttpFetch<HttpContent>> Get(Uri url) =>
             from _ in _query.Ignore()
             from e in ContextQuery
             select Send(e.Http, e.Config, e.Id, HttpMethod.Get, url);
 
-        public IQuery<HttpFetch<HttpContent>> Post(Uri url, NameValueCollection data) =>
+        public IEnumerable<QueryContext, HttpFetch<HttpContent>> Post(Uri url, NameValueCollection data) =>
             Post(url, new FormUrlEncodedContent(from i in Enumerable.Range(0, data.Count)
                                                 from v in data.GetValues(i)
                                                 select data.GetKey(i).AsKeyTo(v)));
 
-        public IQuery<HttpFetch<HttpContent>> Post(Uri url, HttpContent content) =>
+        public IEnumerable<QueryContext, HttpFetch<HttpContent>> Post(Uri url, HttpContent content) =>
             from _ in _query.Ignore()
             from e in ContextQuery
             select Send(e.Http, e.Config, e.Id, HttpMethod.Post, url, content);
 
-        static readonly IQuery<HttpServicesProvider> ContextQuery =
+        static readonly IEnumerable<QueryContext, HttpServicesProvider> ContextQuery =
             from context in Query.GetContext()
             from http in Query.FindService<IHttpClient>()
             from config in Query.FindService<HttpConfig>()

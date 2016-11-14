@@ -27,8 +27,8 @@ namespace WebLinq
 
     public struct StateItemPair<TState, T> : IEquatable<StateItemPair<TState, T>>
     {
-        public readonly T Item;
-        public readonly TState State;
+        public T Item { get; }
+        public TState State { get; }
 
         public StateItemPair(T item, TState state)
         {
@@ -51,6 +51,9 @@ namespace WebLinq
 
         public static bool operator !=(StateItemPair<TState, T> left, StateItemPair<TState, T> right) =>
             !left.Equals(right);
+
+        public StateItemPair<TState, T2> WithValue<T2>(T2 item) => StateItemPair.Create(State, item);
+        public StateItemPair<TState, T> WithContext(TState state) => StateItemPair.Create(state, Item);
     }
 
     public interface IEnumerable<TState, T>
@@ -62,28 +65,23 @@ namespace WebLinq
         : IEnumerable<TState, T>
         where TState : IServiceProvider {}
 
-    public interface IQuery<T> : IServicableEnumerable<QueryContext, T>
+    partial class Query<T> : IEnumerable<QueryContext, T>
     {
-        IEnumerator<QueryResultItem<T>> GetResult(QueryContext context);
-    }
+        public static IEnumerable<QueryContext, T> Empty = Query.Create(QueryResult.Empty<T>);
 
-    partial class Query<T> : IQuery<T>
-    {
-        public static IQuery<T> Empty = Query.Create(QueryResult.Empty<T>);
+        readonly Func<QueryContext, IEnumerator<StateItemPair<QueryContext, T>>> _func;
 
-        readonly Func<QueryContext, IEnumerator<QueryResultItem<T>>> _func;
-
-        internal Query(Func<QueryContext, IEnumerator<QueryResultItem<T>>> func)
+        internal Query(Func<QueryContext, IEnumerator<StateItemPair<QueryContext, T>>> func)
         {
             _func = func;
         }
 
-        public IEnumerator<QueryResultItem<T>> GetResult(QueryContext context) => _func(context);
+        public IEnumerator<StateItemPair<QueryContext, T>> GetResult(QueryContext context) => _func(context);
         public IEnumerator<StateItemPair<QueryContext, T>> GetEnumerator(QueryContext context)
         {
             using (var e = GetResult(context))
                 while (e.MoveNext())
-                    yield return StateItemPair.Create(e.Current.Context, e.Current.Value);
+                    yield return StateItemPair.Create(e.Current.State, e.Current.Item);
         }
     }
 }

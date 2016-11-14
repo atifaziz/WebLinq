@@ -18,33 +18,9 @@
 
 namespace WebLinq
 {
-    using System.Diagnostics;
-
     public static class QueryResultItem
     {
-        public static QueryResultItem<T> Create<T>(QueryContext context, T items) =>
-            new QueryResultItem<T>(context, items);
-    }
-
-    [DebuggerDisplay("{Value}")]
-    public sealed class QueryResultItem<T>
-    {
-        public T Value { get; }
-        public QueryContext Context { get; }
-
-        public QueryResultItem(QueryContext context, T value)
-        {
-            Context = context;
-            Value = value;
-        }
-
-        public QueryResultItem<TResult> WithValue<TResult>(TResult value) =>
-            QueryResultItem.Create(Context, value);
-
-        public QueryResultItem<T> WithContext(QueryContext context) =>
-            QueryResultItem.Create(context, Value);
-
-        public static implicit operator T(QueryResultItem<T> result) => result.Value;
-        public override string ToString() => $"{Value}";
+        public static StateItemPair<QueryContext, T> Create<T>(QueryContext context, T item) =>
+            StateItemPair.Create(context, item);
     }
 }

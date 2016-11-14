@@ -23,30 +23,30 @@ namespace WebLinq
 
     public static partial class Query
     {
-        public static IQuery<TResult> Bind<T, TResult>(this IQuery<T> query, Func<IEnumerator<QueryResultItem<T>>, IQuery<TResult>> func) =>
+        public static IEnumerable<QueryContext, TResult> Bind<T, TResult>(this IEnumerable<QueryContext, T> query, Func<IEnumerator<StateItemPair<QueryContext, T>>, IEnumerable<QueryContext, TResult>> func) =>
             Create(context =>
             {
-                var result = query.GetResult(context);
+                var result = query.GetEnumerator(context);
                 var q = func(result);
-                return q.GetResult(context);
+                return q.GetEnumerator(context);
             });
 
-        public static IQuery<T> Do<T>(this IQuery<T> query, Action<T> action) =>
+        public static IEnumerable<QueryContext, T> Do<T>(this IEnumerable<QueryContext, T> query, Action<T> action) =>
             query.Select(e => { action(e); return e; });
 
-        public static IQuery<T> Wait<T>(this IQuery<T> query) =>
+        public static IEnumerable<QueryContext, T> Wait<T>(this IEnumerable<QueryContext, T> query) =>
             query.Bind(xs =>
             {
                 var list = new List<T>();
                 while (xs.MoveNext())
-                    list.Add(xs.Current);
+                    list.Add(xs.Current.Item);
                 return Return(list);
             });
 
-       public static IQuery<int> Sequence(int first, int last) =>
+       public static IEnumerable<QueryContext, int> Sequence(int first, int last) =>
             Sequence(first, last, 1);
 
-        public static IQuery<int> Sequence(int first, int last, int step)
+        public static IEnumerable<QueryContext, int> Sequence(int first, int last, int step)
         {
             if (step <= 0)
                 throw new ArgumentException(null, nameof(step));
@@ -57,99 +57,99 @@ namespace WebLinq
                                  .ToQuery();
         }
 
-        public static IQuery<T> ToQuery<T>(this IEnumerable<T> items) =>
+        public static IEnumerable<QueryContext, T> ToQuery<T>(this IEnumerable<T> items) =>
             Create(context => QueryResult.Create(items.GetEnumerator(context)));
 
-        static IEnumerator<QueryResultItem<T>> GetEnumerator<T>(this IEnumerable<T> items, QueryContext context)
+        static IEnumerator<StateItemPair<QueryContext, T>> GetEnumerator<T>(this IEnumerable<T> items, QueryContext context)
         {
             var q =
                 from item in items
-                select QueryResultItem.Create(context, item);
+                select StateItemPair.Create(context, item);
             foreach (var e in q)
                 yield return e;
         }
 
-        public static IQuery<QueryContext> GetContext() =>
+        public static IEnumerable<QueryContext, QueryContext> GetContext() =>
             Create(context => QueryResult.Singleton(context, context));
 
-        public static IQuery<QueryContext> SetContext(QueryContext newContext) =>
+        public static IEnumerable<QueryContext, QueryContext> SetContext(QueryContext newContext) =>
             SetContext(_ => newContext);
 
-        public static IQuery<QueryContext> SetContext(Func<QueryContext, QueryContext> contextor) =>
+        public static IEnumerable<QueryContext, QueryContext> SetContext(Func<QueryContext, QueryContext> contextor) =>
             Create(context => QueryResult.Singleton(contextor(context), context));
 
-        public static IQuery<T> Create<T>(Func<QueryContext, IEnumerator<QueryResultItem<T>>> func) =>
+        public static IEnumerable<QueryContext, T> Create<T>(Func<QueryContext, IEnumerator<StateItemPair<QueryContext, T>>> func) =>
             new Query<T>(func);
 
-        public static IQuery<T> Singleton<T>(T item) => Array(item);
+        public static IEnumerable<QueryContext, T> Singleton<T>(T item) => Array(item);
 
-        public static IQuery<T> Array<T>(params T[] items) => items.ToQuery();
+        public static IEnumerable<QueryContext, T> Array<T>(params T[] items) => items.ToQuery();
 
-        public static IQuery<T> Return<T>(IEnumerable<T> items) => items.ToQuery();
+        public static IEnumerable<QueryContext, T> Return<T>(IEnumerable<T> items) => items.ToQuery();
 
-        static IQuery<T> Return<T>(IEnumerable<QueryResultItem<T>> items) =>
+        static IEnumerable<QueryContext, T> Return<T>(IEnumerable<StateItemPair<QueryContext, T>> items) =>
             Create(context => QueryResult.Create(items));
 
-        public static IEnumerable<T> ToEnumerable<T>(this IQuery<T> query, Func<QueryContext> contextFactory)
+        public static IEnumerable<T> ToEnumerable<T>(this IEnumerable<QueryContext, T> query, Func<QueryContext> contextFactory)
         {
             // ReSharper disable once LoopCanBeConvertedToQuery
-            using (var e = query.GetResult(contextFactory()))
+            using (var e = query.GetEnumerator(contextFactory()))
                 while (e.MoveNext())
-                    yield return e.Current.Value;
+                    yield return e.Current.Item;
         }
 
-        public static IQuery<T> FindService<T>() where T : class =>
+        public static IEnumerable<QueryContext, T> FindService<T>() where T : class =>
             from context in GetContext()
             select (IServiceProvider) context into sp
             select (T)sp.GetService(typeof(T));
 
-        public static IQuery<T> GetItem<T>(string key) =>
+        public static IEnumerable<QueryContext, T> GetItem<T>(string key) =>
             from x in TryGetItem(key, (bool found, T value) => new { Found = found, Value = value })
             where x.Found
             select x.Value;
 
-        public static IQuery<TResult> TryGetItem<T, TResult>(string key, Func<bool, T, TResult> resultSelector) =>
+        public static IEnumerable<QueryContext, TResult> TryGetItem<T, TResult>(string key, Func<bool, T, TResult> resultSelector) =>
             from context in GetContext()
             select context.Items.TryGetValue(key, (some, value) => some ? resultSelector(true, (T) value)
                                                                         : resultSelector(false, default(T)));
 
-        public static IQuery<Unit> SetItem<T>(string key, T value) =>
+        public static IEnumerable<QueryContext, Unit> SetItem<T>(string key, T value) =>
             SetItem(key, value, delegate { return new Unit(); });
 
-        public static IQuery<TResult> SetItem<T, TResult>(string key, T value, Func<bool, T, TResult> resultSelector) =>
+        public static IEnumerable<QueryContext, TResult> SetItem<T, TResult>(string key, T value, Func<bool, T, TResult> resultSelector) =>
             from ov in TryGetItem(key, resultSelector)
             from _ in SetContext(context => context.WithItems(context.Items.Set(key, value))).Ignore()
             select ov;
 
-        public static IQuery<T> GetService<T>() where T : class =>
+        public static IEnumerable<QueryContext, T> GetService<T>() where T : class =>
             from context in GetContext()
             select context.GetService<T>();
 
-        public static IQuery<T> SetService<T>(T service) where T : class =>
+        public static IEnumerable<QueryContext, T> SetService<T>(T service) where T : class =>
             from current in FindService<T>()
             from _ in SetContext(context => context.WithServiceProvider(context.CacheServiceQueries().LinkService(typeof(T), service))).Ignore()
             select current;
 
-        public static IQuery<Unit> Ignore<T>(this IQuery<T> query) =>
+        public static IEnumerable<QueryContext, Unit> Ignore<T>(this IEnumerable<QueryContext, T> query) =>
             from _ in query select new Unit();
 
-        public static IQuery<T> Generate<T>(T seed, Func<T, IQuery<T>> generator) =>
+        public static IEnumerable<QueryContext, T> Generate<T>(T seed, Func<T, IEnumerable<QueryContext, T>> generator) =>
             Create(context => QueryResult.Create(GenerateCore(context, seed, generator)));
 
-        static IEnumerator<QueryResultItem<T>> GenerateCore<T>(QueryContext context, T seed, Func<T, IQuery<T>> generator)
+        static IEnumerator<StateItemPair<QueryContext, T>> GenerateCore<T>(QueryContext context, T seed, Func<T, IEnumerable<QueryContext, T>> generator)
         {
             yield return QueryResultItem.Create(context, seed);
             var current = seed;
             while (true)
             {
-                using (var e = generator(current).GetResult(context))
+                using (var e = generator(current).GetEnumerator(context))
                 {
                     while (e.MoveNext())
                     {
                         var next = e.Current;
                         yield return next;
-                        current = next.Value;
-                        context = next.Context;
+                        current = next.Item;
+                        context = next.State;
                     }
                 }
             }

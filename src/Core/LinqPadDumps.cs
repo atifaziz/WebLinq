@@ -29,9 +29,9 @@ namespace WebLinq
 
         sealed class ObservableQuery : IObservable<T>
         {
-            readonly IQuery<T> _query;
+            readonly IEnumerable<QueryContext, T> _query;
 
-            public ObservableQuery(IQuery<T> query)
+            public ObservableQuery(IEnumerable<QueryContext, T> query)
             {
                 _query = query;
             }

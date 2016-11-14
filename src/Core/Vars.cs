@@ -72,14 +72,14 @@ namespace WebLinq
 
     public static class VarQuery
     {
-        public static IQuery<Vars> Vars() =>
+        public static IEnumerable<QueryContext, Vars> Vars() =>
             from s in Query.GetService<IVarService>()
             select s.Vars;
 
-        public static IQuery<object> Var(string name) =>
+        public static IEnumerable<QueryContext, object> Var(string name) =>
             Var<object>(name);
 
-        public static IQuery<T> Var<T>(string name) =>
+        public static IEnumerable<QueryContext, T> Var<T>(string name) =>
             from e in Vars().Select(vars =>
             {
                 object value;
@@ -90,44 +90,44 @@ namespace WebLinq
             where e.Found
             select e.Value;
 
-        public static IQuery<TResult> Var<T, TResult>(string name, Func<T, TResult> selector) =>
+        public static IEnumerable<QueryContext, TResult> Var<T, TResult>(string name, Func<T, TResult> selector) =>
             from a in Var<T>(name)
             select selector(a);
 
-        public static IQuery<TResult> Vars<T1, T2, TResult>(string name1, string name2, Func<T1, T2, TResult> selector) =>
+        public static IEnumerable<QueryContext, TResult> Vars<T1, T2, TResult>(string name1, string name2, Func<T1, T2, TResult> selector) =>
             from a in Var<T1>(name1)
             from b in Var<T2>(name2)
             select selector(a, b);
 
-        public static IQuery<TResult> Vars<T1, T2, T3, TResult>(string name1, string name2, string name3, Func<T1, T2, T3, TResult> selector) =>
+        public static IEnumerable<QueryContext, TResult> Vars<T1, T2, T3, TResult>(string name1, string name2, string name3, Func<T1, T2, T3, TResult> selector) =>
             from a in Var<T1>(name1)
             from b in Var<T2>(name2)
             from c in Var<T3>(name3)
             select selector(a, b, c);
 
-        public static IQuery<TResult> Var<T, TResult>(Func<T, TResult> selector) =>
+        public static IEnumerable<QueryContext, TResult> Var<T, TResult>(Func<T, TResult> selector) =>
             selector.GetParameterNames().GetEnumerator().Map(ns =>
                 from a in Var<T>(ns.Read())
                 select selector(a));
 
-        public static IQuery<TResult> Vars<T1, T2, TResult>(Func<T1, T2, TResult> selector) =>
+        public static IEnumerable<QueryContext, TResult> Vars<T1, T2, TResult>(Func<T1, T2, TResult> selector) =>
             selector.GetParameterNames().GetEnumerator().Map(ns =>
                 from a in Var<T1>(ns.Read())
                 from b in Var<T2>(ns.Read())
                 select selector(a, b));
 
-        public static IQuery<TResult> Vars<T1, T2, T3, TResult>(Func<T1, T2, T3, TResult> selector) =>
+        public static IEnumerable<QueryContext, TResult> Vars<T1, T2, T3, TResult>(Func<T1, T2, T3, TResult> selector) =>
             selector.GetParameterNames().GetEnumerator().Map(ns =>
                 from a in Var<T1>(ns.Read())
                 from b in Var<T2>(ns.Read())
                 from c in Var<T3>(ns.Read())
                 select selector(a, b, c));
 
-        public static IQuery<T> Var<T>(string name, T value) =>
+        public static IEnumerable<QueryContext, T> Var<T>(string name, T value) =>
             from vars in Vars()
             select (T) vars[name];
 
-        public static IQuery<T> Swap<T>(string name, T value) =>
+        public static IEnumerable<QueryContext, T> Swap<T>(string name, T value) =>
             Vars().SelectMany(vars => Var<T>(name), (vars, old) =>
             {
                 vars[name] = value;

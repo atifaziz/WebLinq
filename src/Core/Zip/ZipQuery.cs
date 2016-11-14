@@ -21,7 +21,7 @@ namespace WebLinq.Zip
 
     public static class ZipQuery
     {
-        public static IQuery<HttpFetch<Zip>> DownloadZip(this IQuery<HttpFetch<HttpContent>> query) =>
+        public static IEnumerable<QueryContext, HttpFetch<Zip>> DownloadZip(this IEnumerable<QueryContext, HttpFetch<HttpContent>> query) =>
             from fetch in query
             select fetch.WithContent(new Zip(DownloadZip(fetch.Content)));
 

@@ -25,7 +25,7 @@ namespace WebLinq
     {
         public static readonly HttpConfig Default;
 
-        public static IQuery<HttpConfig> Set(bool? useDefaultCredentials = null,
+        public static IEnumerable<QueryContext, HttpConfig> Set(bool? useDefaultCredentials = null,
                                             bool? useCookies = null,
                                             string userAgent = null,
                                             TimeSpan? timeout = null) =>
