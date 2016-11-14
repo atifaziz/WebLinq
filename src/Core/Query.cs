@@ -57,7 +57,6 @@ namespace WebLinq
                                  .ToQuery();
         }
 
-        [Obsolete]
         public static IQuery<T> ToQuery<T>(this IEnumerable<T> items) =>
             Create(context => QueryResult.Create(items.GetEnumerator(context)));
 
@@ -82,21 +81,19 @@ namespace WebLinq
         public static IQuery<T> Create<T>(Func<QueryContext, QueryResult<T>> func) =>
             new Query<T>(func);
 
-        [Obsolete]
-        public static IQuery<T> Create<T>(Func<QueryContext, IEnumerable<QueryResultItem<T>>> func) =>
+        public static IQuery<T> Create<T>(Func<QueryContext, IEnumerator<QueryResultItem<T>>> func) =>
             new Query<T>(context => QueryResult.Create(func(context)));
 
         public static IQuery<T> Singleton<T>(T item) => Array(item);
 
         public static IQuery<T> Array<T>(params T[] items) => items.ToQuery();
 
-        [Obsolete]
         public static IQuery<T> Return<T>(IEnumerable<T> items) => items.ToQuery();
-        [Obsolete]
-        public static IQuery<T> Return<T>(IEnumerable<QueryResultItem<T>> items) =>
+
+        static IQuery<T> Return<T>(IEnumerable<QueryResultItem<T>> items) =>
             Create(context => QueryResult.Create(items));
 
-        public static IEnumerable<T> ToTerminalEnumerable<T>(this IQuery<T> query, Func<QueryContext> contextFactory)
+        public static IEnumerable<T> ToEnumerable<T>(this IQuery<T> query, Func<QueryContext> contextFactory)
         {
             // ReSharper disable once LoopCanBeConvertedToQuery
             using (var e = query.GetResult(contextFactory()))

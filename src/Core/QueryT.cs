@@ -58,7 +58,11 @@ namespace WebLinq
         IEnumerator<StateItemPair<TState, T>> GetEnumerator(TState context);
     }
 
-    public interface IQuery<T> : IEnumerable<QueryContext, T>
+    public interface IServicableEnumerable<TState, T>
+        : IEnumerable<TState, T>
+        where TState : IServiceProvider {}
+
+    public interface IQuery<T> : IServicableEnumerable<QueryContext, T>
     {
         QueryResult<T> GetResult(QueryContext context);
     }

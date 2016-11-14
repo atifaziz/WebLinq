@@ -29,11 +29,13 @@ namespace WebLinq
             Singleton(QueryResultItem.Create(context, value));
 
         public static QueryResult<T> Singleton<T>(QueryResultItem<T> item) =>
-            Create(new[] { item }.AsEnumerable().GetEnumerator());
-
-        [Obsolete]
+            Create(new[] { item });
+        
         public static QueryResult<T> Create<T>(IEnumerable<QueryResultItem<T>> items) =>
-            new QueryResult3<T>(items.GetEnumerator);
+            Create(items.GetEnumerator);
+
+        public static QueryResult<T> Create<T>(Func<IEnumerator<QueryResultItem<T>>> enumeratorFactory) =>
+            new QueryResult3<T>(enumeratorFactory);
 
         public static QueryResult<T> Create<T>(IEnumerator<QueryResultItem<T>> items) =>
             new QueryResult2<T>(items);
