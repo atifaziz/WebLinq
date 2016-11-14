@@ -42,7 +42,7 @@ namespace WebLinq
         public static IQuery<TResult> SelectMany<T1, T2, TResult>(this IQuery<T1> query, Func<T1, IEnumerable<T2>> f, Func<T1, T2, TResult> g) =>
             query.Bind(xs => Create(context => QueryResult.Create(SelectManyIterator(context, xs, f, g))));
 
-        static IEnumerator<QueryResultItem<TResult>> SelectManyIterator<T1, T2, TResult>(QueryContext context, QueryResult<T1> xs, Func<T1, IEnumerable<T2>> f, Func<T1, T2, TResult> g)
+        static IEnumerator<QueryResultItem<TResult>> SelectManyIterator<T1, T2, TResult>(QueryContext context, IEnumerator<QueryResultItem<T1>> xs, Func<T1, IEnumerable<T2>> f, Func<T1, T2, TResult> g)
         {
             var q =
                 from x in xs.ToTerminalEnumerable()
@@ -56,7 +56,7 @@ namespace WebLinq
         public static IQuery<TResult> SelectMany<T1, T2, TResult>(this IQuery<T1> query, Func<T1, IQuery<T2>> f, Func<T1, T2, TResult> g) =>
             query.Bind(xs => Create(context => QueryResult.Create(SelectManyIterator(context, xs, f, g))));
 
-        static IEnumerator<QueryResultItem<TResult>> SelectManyIterator<T1, T2, TResult>(QueryContext context, QueryResult<T1> xs, Func<T1, IQuery<T2>> f, Func<T1, T2, TResult> g)
+        static IEnumerator<QueryResultItem<TResult>> SelectManyIterator<T1, T2, TResult>(QueryContext context, IEnumerator<QueryResultItem<T1>> xs, Func<T1, IQuery<T2>> f, Func<T1, T2, TResult> g)
         {
             var q =
                 from x in xs.ToTerminalEnumerable()

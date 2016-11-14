@@ -64,21 +64,21 @@ namespace WebLinq
 
     public interface IQuery<T> : IServicableEnumerable<QueryContext, T>
     {
-        QueryResult<T> GetResult(QueryContext context);
+        IEnumerator<QueryResultItem<T>> GetResult(QueryContext context);
     }
 
     partial class Query<T> : IQuery<T>
     {
         public static IQuery<T> Empty = Query.Create(QueryResult.Empty<T>);
 
-        readonly Func<QueryContext, QueryResult<T>> _func;
+        readonly Func<QueryContext, IEnumerator<QueryResultItem<T>>> _func;
 
-        internal Query(Func<QueryContext, QueryResult<T>> func)
+        internal Query(Func<QueryContext, IEnumerator<QueryResultItem<T>>> func)
         {
             _func = func;
         }
 
-        public QueryResult<T> GetResult(QueryContext context) => _func(context);
+        public IEnumerator<QueryResultItem<T>> GetResult(QueryContext context) => _func(context);
         public IEnumerator<StateItemPair<QueryContext, T>> GetEnumerator(QueryContext context)
         {
             using (var e = GetResult(context))

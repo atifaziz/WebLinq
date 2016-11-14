@@ -23,7 +23,7 @@ namespace WebLinq
 
     public static partial class Query
     {
-        public static IQuery<TResult> Bind<T, TResult>(this IQuery<T> query, Func<QueryResult<T>, IQuery<TResult>> func) =>
+        public static IQuery<TResult> Bind<T, TResult>(this IQuery<T> query, Func<IEnumerator<QueryResultItem<T>>, IQuery<TResult>> func) =>
             Create(context =>
             {
                 var result = query.GetResult(context);
@@ -78,11 +78,8 @@ namespace WebLinq
         public static IQuery<QueryContext> SetContext(Func<QueryContext, QueryContext> contextor) =>
             Create(context => QueryResult.Singleton(contextor(context), context));
 
-        public static IQuery<T> Create<T>(Func<QueryContext, QueryResult<T>> func) =>
-            new Query<T>(func);
-
         public static IQuery<T> Create<T>(Func<QueryContext, IEnumerator<QueryResultItem<T>>> func) =>
-            new Query<T>(context => QueryResult.Create(func(context)));
+            new Query<T>(func);
 
         public static IQuery<T> Singleton<T>(T item) => Array(item);
 

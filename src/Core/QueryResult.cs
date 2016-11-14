@@ -25,35 +25,40 @@ namespace WebLinq
 
     public static class QueryResult
     {
-        public static QueryResult<T> Singleton<T>(QueryContext context, T value) =>
+        public static IEnumerator<QueryResultItem<T>> Singleton<T>(QueryContext context, T value) =>
             Singleton(QueryResultItem.Create(context, value));
 
-        public static QueryResult<T> Singleton<T>(QueryResultItem<T> item) =>
+        public static IEnumerator<QueryResultItem<T>> Singleton<T>(QueryResultItem<T> item) =>
             Create(new[] { item });
-        
-        public static QueryResult<T> Create<T>(IEnumerable<QueryResultItem<T>> items) =>
+
+        public static IEnumerator<QueryResultItem<T>> Create<T>(IEnumerable<QueryResultItem<T>> items) =>
             Create(items.GetEnumerator);
 
-        public static QueryResult<T> Create<T>(Func<IEnumerator<QueryResultItem<T>>> enumeratorFactory) =>
-            new QueryResult3<T>(enumeratorFactory);
+        public static IEnumerator<QueryResultItem<T>> Create<T>(Func<IEnumerator<QueryResultItem<T>>> enumeratorFactory) =>
+            new Enumerator<T>(enumeratorFactory);
 
-        public static QueryResult<T> Create<T>(IEnumerator<QueryResultItem<T>> items) =>
-            new QueryResult2<T>(items);
+        public static IEnumerator<QueryResultItem<T>> Create<T>(IEnumerator<QueryResultItem<T>> items) =>
+            new Enumerator<T>(items);
 
-        public static QueryResult<T> Empty<T>(QueryContext context) =>
+        public static IEnumerator<QueryResultItem<T>> Empty<T>(QueryContext context) =>
             Create(Enumerable.Empty<QueryResultItem<T>>().GetEnumerator());
 
-        sealed class QueryResult3<T> : QueryResult<T>
+        sealed class Enumerator<T> : IEnumerator<QueryResultItem<T>>
         {
             Func<IEnumerator<QueryResultItem<T>>> _enumeratorFactory;
             IEnumerator<QueryResultItem<T>> _enumerator;
 
-            public QueryResult3(Func<IEnumerator<QueryResultItem<T>>> enumeratorFactory)
+            public Enumerator(Func<IEnumerator<QueryResultItem<T>>> enumeratorFactory)
             {
                 _enumeratorFactory = enumeratorFactory;
             }
 
-            IEnumerator<QueryResultItem<T>> Enumerator
+            public Enumerator(IEnumerator<QueryResultItem<T>> enumerator)
+            {
+                _enumerator = enumerator;
+            }
+
+            IEnumerator<QueryResultItem<T>> InnerEnumerator
             {
                 get
                 {
@@ -71,7 +76,7 @@ namespace WebLinq
                 }
             }
 
-            public override void Dispose()
+            public void Dispose()
             {
                 _enumeratorFactory = null;
                 var enumerator = _enumerator;
@@ -79,50 +84,11 @@ namespace WebLinq
                 enumerator?.Dispose();
             }
 
-            public override bool MoveNext() => Enumerator.MoveNext();
-            public override void Reset() => Enumerator.Reset();
-            public override QueryResultItem<T> Current => Enumerator.Current;
-        }
-
-        sealed class QueryResult2<T> : QueryResult<T>
-        {
-            IEnumerator<QueryResultItem<T>> _enumerator;
-
-            public QueryResult2(IEnumerator<QueryResultItem<T>> enumerator)
-            {
-                _enumerator = enumerator;
-            }
-
-            IEnumerator<QueryResultItem<T>> Enumerator
-            {
-                get
-                {
-                    if (_enumerator == null) throw new ObjectDisposedException(GetType().Name);
-                    return _enumerator;
-                }
-            }
-
-            public override void Dispose()
-            {
-                var enumerator = _enumerator;
-                _enumerator = null;
-                enumerator?.Dispose();
-            }
-
-            public override bool MoveNext() => Enumerator.MoveNext();
-            public override void Reset() => Enumerator.Reset();
-            public override QueryResultItem<T> Current => Enumerator.Current;
-
-            //public static explicit operator T(QueryResult<T> result) => result.Single().Value;
+            public bool MoveNext() => InnerEnumerator.MoveNext();
+            public void Reset() => InnerEnumerator.Reset();
+            public QueryResultItem<T> Current => InnerEnumerator.Current;
+            object IEnumerator.Current => Current;
         }
     }
 
-    public abstract class QueryResult<T> : IEnumerator<QueryResultItem<T>>
-    {
-        public abstract void Dispose();
-        public abstract bool MoveNext();
-        public abstract void Reset();
-        public abstract QueryResultItem<T> Current { get; }
-        object IEnumerator.Current => Current;
-    }
 }
