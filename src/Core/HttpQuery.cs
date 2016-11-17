@@ -67,24 +67,24 @@ namespace WebLinq
                 throw new Exception($"Unexpected content of type \"{actualMediaType}\". Acceptable types are: {string.Join(", ", mediaTypes)}");
             });
 
-        public static IEnumerable<QueryContext, HttpFetch<HttpContent>> Submit(this IEnumerable<QueryContext, HttpFetch<HttpContent>> query, string formSelector, NameValueCollection data) =>
+        public static IQuery<QueryContext, HttpFetch<HttpContent>> Submit(this IEnumerable<QueryContext, HttpFetch<HttpContent>> query, string formSelector, NameValueCollection data) =>
             Submit(query, formSelector, null, data);
 
-        public static IEnumerable<QueryContext, HttpFetch<HttpContent>> Submit(this IEnumerable<QueryContext, HttpFetch<HttpContent>> query, int formIndex, NameValueCollection data) =>
+        public static IQuery<QueryContext, HttpFetch<HttpContent>> Submit(this IEnumerable<QueryContext, HttpFetch<HttpContent>> query, int formIndex, NameValueCollection data) =>
             Submit(query, null, formIndex, data);
 
-        static IEnumerable<QueryContext, HttpFetch<HttpContent>> Submit(this IEnumerable<QueryContext, HttpFetch<HttpContent>> query, string formSelector, int? formIndex, NameValueCollection data) =>
-            from html in query.Html()
+        static IQuery<QueryContext, HttpFetch<HttpContent>> Submit(this IEnumerable<QueryContext, HttpFetch<HttpContent>> query, string formSelector, int? formIndex, NameValueCollection data) =>
+            from html in query.Html().Single()
             from fetch in Submit(html.Content, formSelector, formIndex, data)
             select fetch;
 
-        public static IEnumerable<QueryContext, HttpFetch<HttpContent>> Submit(ParsedHtml html, string formSelector, NameValueCollection data) =>
+        public static IQuery<QueryContext, HttpFetch<HttpContent>> Submit(ParsedHtml html, string formSelector, NameValueCollection data) =>
             Submit(html, formSelector, null, data);
 
-        public static IEnumerable<QueryContext, HttpFetch<HttpContent>> Submit(ParsedHtml html, int formIndex, NameValueCollection data) =>
+        public static IQuery<QueryContext, HttpFetch<HttpContent>> Submit(ParsedHtml html, int formIndex, NameValueCollection data) =>
             Submit(html, null, formIndex, data);
 
-        static IEnumerable<QueryContext, HttpFetch<HttpContent>> Submit(ParsedHtml html,
+        static IQuery<QueryContext, HttpFetch<HttpContent>> Submit(ParsedHtml html,
                                                     string formSelector, int? formIndex,
                                                     NameValueCollection data)
         {
@@ -142,7 +142,7 @@ namespace WebLinq
             Crawl(url, int.MaxValue, followPredicate);
 
         public static IEnumerable<QueryContext, HttpFetch<HttpContent>> Crawl(Uri url, int depth, Func<Uri, bool> followPredicate) =>
-            Query.Create(context => QueryResult.Create(CrawlImpl(context, url, depth, followPredicate)));
+            SeqQuery.Create((QueryContext context) => QueryResult.Create(CrawlImpl(context, url, depth, followPredicate)));
 
         static IEnumerator<StateItemPair<QueryContext, HttpFetch<HttpContent>>> CrawlImpl(QueryContext context, Uri rootUrl, int depth, Func<Uri, bool> followPredicate)
         {
@@ -156,7 +156,7 @@ namespace WebLinq
                 var url = dequeued.Value;
                 var level = dequeued.Key;
                 // TODO retry intermittent errors?
-                var fetchResult = Http.ReturnErrorneousFetch().Get(url).Single(context);
+                var fetchResult = Http.ReturnErrorneousFetch().Get(url).GetResult(context);
                 var fetch = fetchResult.Item;
 
                 if (!fetch.IsSuccessStatusCode)

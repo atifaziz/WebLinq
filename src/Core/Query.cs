@@ -23,12 +23,23 @@ namespace WebLinq
 
     public static partial class Query
     {
-        public static IEnumerable<QueryContext, TResult> Bind<T, TResult>(this IEnumerable<QueryContext, T> query, Func<IEnumerator<StateItemPair<QueryContext, T>>, IEnumerable<QueryContext, TResult>> func) =>
-            Create(context =>
+        public static IQuery<TState, T> Create<TState, T>(Func<TState, StateItemPair<TState, T>> func) =>
+            new Query<TState, T>(func);
+
+        public static IQuery<TState, TResult> Bind<TState, T, TResult>(
+                this IQuery<TState, T> f, Func<T, IQuery<TState, TResult>> g) =>
+            Create((TState state) =>
             {
-                var result = query.GetEnumerator(context);
+                var x = f.GetResult(state);
+                return g(x.Item).GetResult(x.State);
+            });
+
+        public static IEnumerable<TState, TResult> Bind<TState, T, TResult>(this IEnumerable<TState, T> query, Func<IEnumerator<StateItemPair<TState, T>>, IEnumerable<TState, TResult>> func) =>
+            SeqQuery.Create((TState state) =>
+            {
+                var result = query.GetEnumerator(state);
                 var q = func(result);
-                return q.GetEnumerator(context);
+                return q.GetEnumerator(state);
             });
 
         public static IEnumerable<QueryContext, T> Do<T>(this IEnumerable<QueryContext, T> query, Action<T> action) =>
@@ -57,8 +68,7 @@ namespace WebLinq
                                  .ToQuery();
         }
 
-        public static IEnumerable<QueryContext, T> ToQuery<T>(this IEnumerable<T> items) =>
-            Create(context => QueryResult.Create(items.GetEnumerator(context)));
+        public static IEnumerable<QueryContext, T> ToQuery<T>(this IEnumerable<T> items) => SeqQuery.Create((QueryContext context) => QueryResult.Create(items.GetEnumerator(context)));
 
         static IEnumerator<StateItemPair<QueryContext, T>> GetEnumerator<T>(this IEnumerable<T> items, QueryContext context)
         {
@@ -69,17 +79,12 @@ namespace WebLinq
                 yield return e;
         }
 
-        public static IEnumerable<QueryContext, QueryContext> GetContext() =>
-            Create(context => QueryResult.Singleton(context, context));
+        public static IEnumerable<QueryContext, QueryContext> GetContext() => SeqQuery.Create((QueryContext context) => QueryResult.Singleton(context, context));
 
         public static IEnumerable<QueryContext, QueryContext> SetContext(QueryContext newContext) =>
             SetContext(_ => newContext);
 
-        public static IEnumerable<QueryContext, QueryContext> SetContext(Func<QueryContext, QueryContext> contextor) =>
-            Create(context => QueryResult.Singleton(contextor(context), context));
-
-        public static IEnumerable<QueryContext, T> Create<T>(Func<QueryContext, IEnumerator<StateItemPair<QueryContext, T>>> func) =>
-            new Query<T>(func);
+        public static IEnumerable<QueryContext, QueryContext> SetContext(Func<QueryContext, QueryContext> contextor) => SeqQuery.Create((QueryContext context) => QueryResult.Singleton(contextor(context), context));
 
         public static IEnumerable<QueryContext, T> Singleton<T>(T item) => Array(item);
 
@@ -87,8 +92,7 @@ namespace WebLinq
 
         public static IEnumerable<QueryContext, T> Return<T>(IEnumerable<T> items) => items.ToQuery();
 
-        static IEnumerable<QueryContext, T> Return<T>(IEnumerable<StateItemPair<QueryContext, T>> items) =>
-            Create(context => QueryResult.Create(items));
+        static IEnumerable<QueryContext, T> Return<T>(IEnumerable<StateItemPair<QueryContext, T>> items) => SeqQuery.Create((QueryContext context) => QueryResult.Create(items));
 
         public static IEnumerable<T> ToEnumerable<T>(this IEnumerable<QueryContext, T> query, Func<QueryContext> contextFactory)
         {
@@ -133,8 +137,7 @@ namespace WebLinq
         public static IEnumerable<QueryContext, Unit> Ignore<T>(this IEnumerable<QueryContext, T> query) =>
             from _ in query select new Unit();
 
-        public static IEnumerable<QueryContext, T> Generate<T>(T seed, Func<T, IEnumerable<QueryContext, T>> generator) =>
-            Create(context => QueryResult.Create(GenerateCore(context, seed, generator)));
+        public static IEnumerable<QueryContext, T> Generate<T>(T seed, Func<T, IEnumerable<QueryContext, T>> generator) => SeqQuery.Create((QueryContext context) => QueryResult.Create(GenerateCore(context, seed, generator)));
 
         static IEnumerator<StateItemPair<QueryContext, T>> GenerateCore<T>(QueryContext context, T seed, Func<T, IEnumerable<QueryContext, T>> generator)
         {

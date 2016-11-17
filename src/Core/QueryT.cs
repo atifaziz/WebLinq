@@ -19,18 +19,36 @@ namespace WebLinq
     using System;
     using System.Collections.Generic;
 
+    public interface IQuery<TState, T>
+    {
+        StateItemPair<TState, T> GetResult(TState state);
+    }
+
+    public sealed class Query<TState, T> : IQuery<TState, T>
+    {
+        readonly Func<TState, StateItemPair<TState, T>> _func;
+
+        public Query(Func<TState, StateItemPair<TState, T>> func)
+        {
+            _func = func;
+        }
+
+        public StateItemPair<TState, T> GetResult(TState state) =>
+            _func(state);
+    }
+
     public static class StateItemPair
     {
         public static StateItemPair<TState, T> Create<TState, T>(TState state, T item) =>
-            new StateItemPair<TState, T>(item, state);
+            new StateItemPair<TState, T>(state, item);
     }
 
     public struct StateItemPair<TState, T> : IEquatable<StateItemPair<TState, T>>
     {
-        public T Item { get; }
         public TState State { get; }
+        public T Item { get; }
 
-        public StateItemPair(T item, TState state)
+        public StateItemPair(TState state, T item)
         {
             Item = item;
             State = state;
@@ -58,28 +76,34 @@ namespace WebLinq
 
     public interface IEnumerable<TState, T>
     {
-        IEnumerator<StateItemPair<TState, T>> GetEnumerator(TState context);
+        IEnumerator<StateItemPair<TState, T>> GetEnumerator(TState state);
     }
 
     public interface IServicableEnumerable<TState, T>
         : IEnumerable<TState, T>
         where TState : IServiceProvider {}
 
-    partial class Query<T> : IEnumerable<QueryContext, T>
+    public static class SeqQuery
     {
-        public static IEnumerable<QueryContext, T> Empty = Query.Create(QueryResult.Empty<T>);
+        public static IEnumerable<TState, T> Create<TState, T>(Func<TState, IEnumerator<StateItemPair<TState, T>>> func) =>
+            new SeqQuery<TState, T>(func);
+    }
 
-        readonly Func<QueryContext, IEnumerator<StateItemPair<QueryContext, T>>> _func;
+    partial class SeqQuery<TState, T> : IEnumerable<TState, T>
+    {
+        public static IEnumerable<TState, T> Empty = SeqQuery.Create<TState, T>(QueryResult.Empty<TState, T>);
 
-        internal Query(Func<QueryContext, IEnumerator<StateItemPair<QueryContext, T>>> func)
+        readonly Func<TState, IEnumerator<StateItemPair<TState, T>>> _func;
+
+        internal SeqQuery(Func<TState, IEnumerator<StateItemPair<TState, T>>> func)
         {
             _func = func;
         }
 
-        public IEnumerator<StateItemPair<QueryContext, T>> GetResult(QueryContext context) => _func(context);
-        public IEnumerator<StateItemPair<QueryContext, T>> GetEnumerator(QueryContext context)
+        public IEnumerator<StateItemPair<TState, T>> GetResult(TState state) => _func(state);
+        public IEnumerator<StateItemPair<TState, T>> GetEnumerator(TState state)
         {
-            using (var e = GetResult(context))
+            using (var e = GetResult(state))
                 while (e.MoveNext())
                     yield return StateItemPair.Create(e.Current.State, e.Current.Item);
         }

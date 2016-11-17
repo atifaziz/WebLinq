@@ -20,7 +20,7 @@ namespace WebLinq
 {
     public static class QueryResultItem
     {
-        public static StateItemPair<QueryContext, T> Create<T>(QueryContext context, T item) =>
+        public static StateItemPair<TState, T> Create<TState, T>(TState context, T item) =>
             StateItemPair.Create(context, item);
     }
 }

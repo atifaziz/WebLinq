@@ -39,10 +39,31 @@ namespace WebLinq
                                        where predicate(x.Item)
                                        select x);
 
-        public static IEnumerable<QueryContext, TResult> SelectMany<T1, T2, TResult>(this IEnumerable<QueryContext, T1> query, Func<T1, IEnumerable<T2>> f, Func<T1, T2, TResult> g) =>
-            query.Bind(xs => Create(context => QueryResult.Create(SelectManyIterator(context, xs, f, g))));
+        public static IQuery<TState, TResult> SelectMany<TState, T1, T2, TResult>(
+                this IQuery<TState, T1> query,
+                Func<T1, IQuery<TState, T2>> f,
+                Func<T1, T2, TResult> g) =>
+            query.Bind(x => f(x).Bind(y => Create((TState state) => StateItemPair.Create(state, g(x, y)))));
 
-        static IEnumerator<StateItemPair<QueryContext, TResult>> SelectManyIterator<T1, T2, TResult>(QueryContext context, IEnumerator<StateItemPair<QueryContext, T1>> xs, Func<T1, IEnumerable<T2>> f, Func<T1, T2, TResult> g)
+        public static IEnumerable<TState, TResult> SelectMany<TState, T1, T2, TResult>(
+                this IQuery<TState, T1> query,
+                Func<T1, IEnumerable<TState, T2>> f,
+                Func<T1, T2, TResult> g) =>
+            SeqQuery.Create((TState state) => SelectManyIterator(query.GetResult(state), f, g));
+
+        static IEnumerator<StateItemPair<TState, TResult>> SelectManyIterator<TState, T1, T2, TResult>(StateItemPair<TState, T1> x, Func<T1, IEnumerable<TState, T2>> f, Func<T1, T2, TResult> g)
+        {
+            using (var e = f(x.Item).GetEnumerator(x.State))
+            {
+                while (e.MoveNext())
+                    yield return e.Current.WithValue(g(x.Item, e.Current.Item));
+            }
+        }
+
+        public static IEnumerable<TState, TResult> SelectMany<TState, T1, T2, TResult>(this IEnumerable<TState, T1> query, Func<T1, IEnumerable<T2>> f, Func<T1, T2, TResult> g) =>
+            query.Bind(xs => SeqQuery.Create((TState state) => QueryResult.Create(SelectManyIterator(state, xs, f, g))));
+
+        static IEnumerator<StateItemPair<TState, TResult>> SelectManyIterator<TState, T1, T2, TResult>(TState state, IEnumerator<StateItemPair<TState, T1>> xs, Func<T1, IEnumerable<T2>> f, Func<T1, T2, TResult> g)
         {
             var q =
                 from x in xs.ToTerminalEnumerable()
@@ -53,10 +74,10 @@ namespace WebLinq
                 yield return e;
         }
 
-        public static IEnumerable<QueryContext, TResult> SelectMany<T1, T2, TResult>(this IEnumerable<QueryContext, T1> query, Func<T1, IEnumerable<QueryContext, T2>> f, Func<T1, T2, TResult> g) =>
-            query.Bind(xs => Create(context => QueryResult.Create(SelectManyIterator(context, xs, f, g))));
+        public static IEnumerable<TState, TResult> SelectMany<TState, T1, T2, TResult>(this IEnumerable<TState, T1> query, Func<T1, IEnumerable<TState, T2>> f, Func<T1, T2, TResult> g) =>
+            query.Bind(xs => SeqQuery.Create((TState state) => QueryResult.Create(SelectManyIterator(state, xs, f, g))));
 
-        static IEnumerator<StateItemPair<QueryContext, TResult>> SelectManyIterator<T1, T2, TResult>(QueryContext context, IEnumerator<StateItemPair<QueryContext, T1>> xs, Func<T1, IEnumerable<QueryContext, T2>> f, Func<T1, T2, TResult> g)
+        static IEnumerator<StateItemPair<TState, TResult>> SelectManyIterator<TState, T1, T2, TResult>(TState state, IEnumerator<StateItemPair<TState, T1>> xs, Func<T1, IEnumerable<TState, T2>> f, Func<T1, T2, TResult> g)
         {
             var q =
                 from x in xs.ToTerminalEnumerable()
@@ -102,6 +123,21 @@ namespace WebLinq
         public static IEnumerable<QueryContext, T> Concat<T>(this IEnumerable<QueryContext, T> first, IEnumerable<QueryContext, T> second) =>
             first.Bind(xs => second.Bind(ys => Return(xs.ToTerminalEnumerable().Concat(ys.ToTerminalEnumerable()))));
 
+        [Obsolete]
+        public static IQuery<TState, T> Single<TState, T>(this IEnumerable<TState, T> query) =>
+            Create((TState state) =>
+            {
+                using (var e = query.GetEnumerator(state))
+                {
+                    if (!e.MoveNext())
+                        throw new InvalidOperationException();
+                    var item = e.Current;
+                    if (e.MoveNext())
+                        throw new InvalidOperationException();
+                    return item;
+                }
+            });
+
         public static StateItemPair<QueryContext, T> Single<T>(this IEnumerable<QueryContext, T> query, QueryContext context)
         {
             using (var e = query.GetEnumerator(context))
@@ -114,5 +150,9 @@ namespace WebLinq
                 return item;    
             }
         }
+
+        [Obsolete]
+        public static IEnumerable<TState, T> Dup<TState, T>(this IQuery<TState, T> query) =>
+            SeqQuery.Create((TState state) => new[] { query.GetResult(state) }.AsEnumerable().GetEnumerator());
     }
 }

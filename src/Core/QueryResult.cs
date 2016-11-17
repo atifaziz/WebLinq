@@ -25,40 +25,40 @@ namespace WebLinq
 
     public static class QueryResult
     {
-        public static IEnumerator<StateItemPair<QueryContext, T>> Singleton<T>(QueryContext context, T value) =>
+        public static IEnumerator<StateItemPair<TState, T>> Singleton<TState, T>(TState context, T value) =>
             Singleton(StateItemPair.Create(context, value));
 
-        public static IEnumerator<StateItemPair<QueryContext, T>> Singleton<T>(StateItemPair<QueryContext, T> item) =>
+        public static IEnumerator<StateItemPair<TState, T>> Singleton<TState, T>(StateItemPair<TState, T> item) =>
             Create(new[] { item });
 
-        public static IEnumerator<StateItemPair<QueryContext, T>> Create<T>(IEnumerable<StateItemPair<QueryContext, T>> items) =>
+        public static IEnumerator<StateItemPair<TState, T>> Create<TState, T>(IEnumerable<StateItemPair<TState, T>> items) =>
             Create(items.GetEnumerator);
 
-        public static IEnumerator<StateItemPair<QueryContext, T>> Create<T>(Func<IEnumerator<StateItemPair<QueryContext, T>>> enumeratorFactory) =>
-            new QueryResultEnumerator<T>(enumeratorFactory);
+        public static IEnumerator<StateItemPair<TState, T>> Create<TState, T>(Func<IEnumerator<StateItemPair<TState, T>>> enumeratorFactory) =>
+            new QueryResultEnumerator<TState, T>(enumeratorFactory);
 
-        public static IEnumerator<StateItemPair<QueryContext, T>> Create<T>(IEnumerator<StateItemPair<QueryContext, T>> items) =>
-            new QueryResultEnumerator<T>(items);
+        public static IEnumerator<StateItemPair<TState, T>> Create<TState, T>(IEnumerator<StateItemPair<TState, T>> items) =>
+            new QueryResultEnumerator<TState, T>(items);
 
-        public static IEnumerator<StateItemPair<QueryContext, T>> Empty<T>(QueryContext context) =>
-            Create(Enumerable.Empty<StateItemPair<QueryContext, T>>().GetEnumerator());
+        public static IEnumerator<StateItemPair<TState, T>> Empty<TState, T>(TState context) =>
+            Create(Enumerable.Empty<StateItemPair<TState, T>>().GetEnumerator());
 
-        sealed class QueryResultEnumerator<T> : IEnumerator<StateItemPair<QueryContext, T>>
+        sealed class QueryResultEnumerator<TState, T> : IEnumerator<StateItemPair<TState, T>>
         {
-            Func<IEnumerator<StateItemPair<QueryContext, T>>> _enumeratorFactory;
-            IEnumerator<StateItemPair<QueryContext, T>> _enumerator;
+            Func<IEnumerator<StateItemPair<TState, T>>> _enumeratorFactory;
+            IEnumerator<StateItemPair<TState, T>> _enumerator;
 
-            public QueryResultEnumerator(Func<IEnumerator<StateItemPair<QueryContext, T>>> enumeratorFactory)
+            public QueryResultEnumerator(Func<IEnumerator<StateItemPair<TState, T>>> enumeratorFactory)
             {
                 _enumeratorFactory = enumeratorFactory;
             }
 
-            public QueryResultEnumerator(IEnumerator<StateItemPair<QueryContext, T>> enumerator)
+            public QueryResultEnumerator(IEnumerator<StateItemPair<TState, T>> enumerator)
             {
                 _enumerator = enumerator;
             }
 
-            IEnumerator<StateItemPair<QueryContext, T>> InnerEnumerator
+            IEnumerator<StateItemPair<TState, T>> InnerEnumerator
             {
                 get
                 {
@@ -86,7 +86,7 @@ namespace WebLinq
 
             public bool MoveNext() => InnerEnumerator.MoveNext();
             public void Reset() => InnerEnumerator.Reset();
-            public StateItemPair<QueryContext, T> Current => InnerEnumerator.Current;
+            public StateItemPair<TState, T> Current => InnerEnumerator.Current;
             object IEnumerator.Current => Current;
         }
     }

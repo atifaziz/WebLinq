@@ -77,19 +77,19 @@ namespace WebLinq
             return http.Send(request, config, options).ToHttpFetch(id.Value);
         }
 
-        public IEnumerable<QueryContext, HttpFetch<HttpContent>> Get(Uri url) =>
-            from _ in _query.Ignore()
-            from e in ContextQuery
+        public IQuery<QueryContext, HttpFetch<HttpContent>> Get(Uri url) =>
+            from _ in _query.Ignore().Single()
+            from e in ContextQuery.Single()
             select Send(e.Http, e.Config, e.Id, HttpMethod.Get, url);
 
-        public IEnumerable<QueryContext, HttpFetch<HttpContent>> Post(Uri url, NameValueCollection data) =>
+        public IQuery<QueryContext, HttpFetch<HttpContent>> Post(Uri url, NameValueCollection data) =>
             Post(url, new FormUrlEncodedContent(from i in Enumerable.Range(0, data.Count)
                                                 from v in data.GetValues(i)
                                                 select data.GetKey(i).AsKeyTo(v)));
 
-        public IEnumerable<QueryContext, HttpFetch<HttpContent>> Post(Uri url, HttpContent content) =>
-            from _ in _query.Ignore()
-            from e in ContextQuery
+        public IQuery<QueryContext, HttpFetch<HttpContent>> Post(Uri url, HttpContent content) =>
+            from _ in _query.Ignore().Single()
+            from e in ContextQuery.Single()
             select Send(e.Http, e.Config, e.Id, HttpMethod.Post, url, content);
 
         static readonly IEnumerable<QueryContext, HttpServicesProvider> ContextQuery =

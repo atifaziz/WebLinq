@@ -22,10 +22,15 @@ namespace WebLinq
     using System;
     using System.Linq;
 
-    partial class Query<T>
+    partial class SeqQuery<TState, T>
     {
-        internal object ToDump() =>
-            new ObservableQuery(this);
+        internal object ToDump()
+        {
+            var xs = this as IEnumerable<QueryContext, T>;
+            return xs != null
+                 ? new ObservableQuery(xs)
+                 : (object) this;
+        }
 
         sealed class ObservableQuery : IObservable<T>
         {
