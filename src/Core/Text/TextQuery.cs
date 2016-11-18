@@ -16,16 +16,21 @@
 
 namespace WebLinq.Text
 {
+    using System.Collections.Generic;
+    using System.Linq;
     using System.Net.Http;
     using System.Text;
 
     public static class TextQuery
     {
-        public static IQuery<string> Delimited<T>(this IQuery<T> query, string delimiter) =>
-            query.Aggregate(new StringBuilder(), (sb, e) => sb.Append(e), sb => sb.ToString());
+        public static IEnumerable<string> Delimited<T>(this IEnumerable<T> query, string delimiter)
+        {
+            var result = query.Aggregate(new StringBuilder(), (sb, e) => sb.Append(e), sb => sb.ToString());
+            yield return result;
+        }
 
 
-        public static IQuery<HttpFetch<string>> Text(this IQuery<HttpFetch<HttpContent>> query) =>
+        public static IEnumerable<HttpFetch<string>> Text(this IEnumerable<HttpFetch<HttpContent>> query) =>
             from fetch in query select fetch.WithContent(fetch.Content.ReadAsStringAsync().Result);
     }
 }

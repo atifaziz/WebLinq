@@ -20,13 +20,6 @@ namespace WebLinq
     using System.Diagnostics;
     using System.Net;
 
-    sealed class HttpFetchId
-    {
-        public static readonly HttpFetchId Class = new HttpFetchId();
-        HttpFetchId() { }
-        public static TypedValue<HttpFetchId, int> New(int value) => new TypedValue<HttpFetchId, int>(value, Class);
-    }
-
     public static class HttpFetch
     {
         public static HttpFetch<T> Create<T>(int id,

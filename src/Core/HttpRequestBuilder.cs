@@ -17,6 +17,7 @@
 namespace WebLinq
 {
     using System;
+    using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.Linq;
     using System.Net.Http;
@@ -24,16 +25,17 @@ namespace WebLinq
 
     public static class HttpRequestBuilder
     {
-        public static HttpRequestBuilder<HttpFetch<T>> Then<T>(this IQuery<HttpFetch<T>> query) =>
+        public static HttpRequestBuilder<HttpFetch<T>> Then<T>(this IEnumerable<HttpFetch<T>> query) =>
             new HttpRequestBuilder<HttpFetch<T>>(query);
 
-        public static HttpRequestBuilder<HttpConfig> Then(this IQuery<HttpConfig> query) =>
+        public static HttpRequestBuilder<HttpConfig> Then(this IEnumerable<HttpConfig> query) =>
             new HttpRequestBuilder<HttpConfig>(query);
     }
 
     public sealed class HttpRequestBuilder<T>
     {
-        readonly IQuery<T> _query;
+        HttpConfig _config;
+        readonly IEnumerable<T> _query;
         HttpOptions _options = new HttpOptions();
         HttpRequestMessage _request = new HttpRequestMessage();
 
@@ -41,12 +43,17 @@ namespace WebLinq
         public HttpRequestMessage Request => _request ?? (_request = new HttpRequestMessage());
 
         public HttpRequestBuilder() :
-            this(Query.Singleton(default(T))) { }
+            this(new T[1]) { }
 
-        internal HttpRequestBuilder(IQuery<T> query)
+        internal HttpRequestBuilder(IEnumerable<T> query)
         {
             if (query == null) throw new ArgumentNullException(nameof(query));
             _query = query;
+        }
+
+        public HttpRequestBuilder(HttpConfig config) : this()
+        {
+            _config = config;
         }
 
         public HttpRequestBuilder<T> ReturnErrorneousFetch()
@@ -67,67 +74,38 @@ namespace WebLinq
             return this;
         }
 
-        HttpFetch<HttpContent> Send(IHttpClient http, HttpConfig config, TypedValue<HttpFetchId, int> id, HttpMethod method, Uri url, HttpContent content = null)
+        HttpFetch<HttpContent> Send(IHttpClient http, HttpConfig config, int id, HttpMethod method, Uri url, HttpContent content = null)
         {
             var request = Request; _request = null;
             var options = _options; _options = null;
             request.Method = method;
             request.RequestUri = url;
             request.Content = content;
-            return http.Send(request, config, options).ToHttpFetch(id.Value);
+            return http.Send(request, config ?? _config ?? HttpConfig.Default, options).ToHttpFetch(id);
         }
 
-        public IQuery<HttpFetch<HttpContent>> Get(Uri url) =>
-            from _ in _query.Ignore()
-            from e in ContextQuery
-            select Send(e.Http, e.Config, e.Id, HttpMethod.Get, url);
+        public IEnumerable<HttpFetch<HttpContent>> Get(Uri url) => Get(null, url);
 
-        public IQuery<HttpFetch<HttpContent>> Post(Uri url, NameValueCollection data) =>
-            Post(url, new FormUrlEncodedContent(from i in Enumerable.Range(0, data.Count)
+        public IEnumerable<HttpFetch<HttpContent>> Get(HttpConfig config, Uri url) =>
+            from _ in _query
+            from http in HttpClient.Default
+            select Send(http, config, 0, HttpMethod.Get, url);
+
+        public IEnumerable<HttpFetch<HttpContent>> Post(Uri url, NameValueCollection data) =>
+            Post(null, url, data);
+
+        public IEnumerable<HttpFetch<HttpContent>> Post(HttpConfig config, Uri url, NameValueCollection data) =>
+            Post(config, url, new FormUrlEncodedContent(from i in Enumerable.Range(0, data.Count)
                                                 from v in data.GetValues(i)
                                                 select data.GetKey(i).AsKeyTo(v)));
 
-        public IQuery<HttpFetch<HttpContent>> Post(Uri url, HttpContent content) =>
-            from _ in _query.Ignore()
-            from e in ContextQuery
-            select Send(e.Http, e.Config, e.Id, HttpMethod.Post, url, content);
+        public IEnumerable<HttpFetch<HttpContent>> Post(Uri url, HttpContent content) =>
+            Post(null, url, content);
 
-        static readonly IQuery<HttpServicesProvider> ContextQuery =
-            from context in Query.GetContext()
-            from http in Query.FindService<IHttpClient>()
-            from config in Query.FindService<HttpConfig>()
-            from id in Query.FindService<Ref<TypedValue<HttpFetchId, int>>>()
-            let hsp =
-                new HttpServicesProvider(
-                    http ?? new HttpClient(),
-                    config ?? HttpConfig.Default,
-                    (id ?? Ref.Create(HttpFetchId.New(0))).Updating(x => HttpFetchId.New(x + 1)),
-                    context)
-            from _ in Query.SetContext(context.WithServiceProvider(hsp)).Ignore()
-            select hsp;
-
-        sealed class HttpServicesProvider : IServiceProvider
-        {
-            readonly IServiceProvider _provider;
-
-            public IHttpClient Http { get; }
-            public HttpConfig Config { get; }
-            public Ref<TypedValue<HttpFetchId, int>> Id { get; }
-
-            public HttpServicesProvider(IHttpClient http, HttpConfig config, Ref<TypedValue<HttpFetchId, int>> id, IServiceProvider provider)
-            {
-                Id = id;
-                Http = http;
-                Config = config;
-                _provider = provider;
-            }
-
-            public object GetService(Type serviceType) =>
-                  serviceType == typeof(IHttpClient) ? Http
-                : serviceType == typeof(HttpConfig) ? Config
-                : serviceType == typeof(Ref<TypedValue<HttpFetchId, int>>) ? Id
-                : _provider?.GetService(serviceType);
-        }
+        public IEnumerable<HttpFetch<HttpContent>> Post(HttpConfig config, Uri url, HttpContent content) =>
+            from _ in _query
+            from http in HttpClient.Default
+            select Send(http, config, 0, HttpMethod.Post, url, content);
     }
 
     static class SysNetHttpExtensions

@@ -1,4 +1,5 @@
 #region Copyright (c) 2016 Atif Aziz. All rights reserved.
+
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,29 +13,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 #endregion
 
 namespace WebLinq
 {
     using System;
+    using System.Collections.Generic;
 
-    static class Ref
+    public static class Seq
     {
-        public static Ref<T> Create<T>(T value) where T : struct =>
-            new Ref<T>(value);
-    }
+        public static IEnumerable<T> ToSeq<T>(this T item) => new[] { item };
 
-    sealed class Ref<T> where T : struct
-    {
-        public T Value;
-
-        public Ref(T value) { Value = value; }
-
-        public Ref<T> Updating(T value) { Value = value; return this; }
-        public Ref<T> Updating(Func<T, T> mapper) { Updating(mapper(Value)); return this; }
-
-        public static implicit operator T(Ref<T> value) => value.Value;
-
-        public override string ToString() => $"{Value}";
+        public static IEnumerable<T> Do<T>(this IEnumerable<T> source, Action<T> action)
+        {
+            foreach (var item in source)
+            {
+                action(item);
+                yield return item;
+            }
+        }
     }
 }

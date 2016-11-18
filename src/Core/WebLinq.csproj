@@ -68,8 +68,8 @@
       <DependentUpon>AssemblyInfo.g.tt</DependentUpon>
     </Compile>
     <Compile Include="ComparerExtensions.cs" />
-    <Compile Include="QueryLinq.cs" />
-    <Compile Include="TypedValue.cs" />
+    <Compile Include="Query.cs" />
+    <Compile Include="Seq.cs" />
     <Compile Include="Collections\MapBase.cs" />
     <Compile Include="Collections\Map.cs" />
     <Compile Include="DelegateExtensions.cs" />
@@ -93,8 +93,6 @@
     <Compile Include="ParsedValue.cs" />
     <Compile Include="Mime\MimeMap.cs" />
     <Compile Include="HttpQuery.cs" />
-    <Compile Include="QueryResultItem.cs" />
-    <Compile Include="Ref.cs" />
     <Compile Include="ServiceProviderExtensions.cs" />
     <Compile Include="Collections\ReadOnlyCollection.cs" />
     <Compile Include="Sys\SpawnServiceExtensions.cs" />
@@ -106,10 +104,6 @@
     <Compile Include="Zip\ZipQuery.cs" />
     <Compile Include="Zip\Zip.cs" />
     <Compile Include="Mapper.cs" />
-    <Compile Include="Query.cs" />
-    <Compile Include="QueryContext.cs" />
-    <Compile Include="QueryResult.cs" />
-    <Compile Include="QueryT.cs" />
     <Compile Include="ServiceProvider.cs" />
     <Compile Include="Vars.cs" />
   </ItemGroup>

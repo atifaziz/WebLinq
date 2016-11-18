@@ -17,9 +17,18 @@
 namespace WebLinq.Html
 {
     using System;
+    using System.Collections.Generic;
 
     public interface IHtmlParser
     {
         ParsedHtml Parse(string html, Uri baseUrl);
+    }
+
+    public static class HtmlParser
+    {
+        public static IEnumerable<IHtmlParser> Default
+        {
+            get { yield return new HapHtmlParser(); }
+        }
     }
 }

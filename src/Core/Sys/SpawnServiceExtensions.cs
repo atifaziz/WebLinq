@@ -35,6 +35,14 @@ namespace WebLinq.Sys
         IEnumerable<T> Spawn<T>(string path, string args, string workingDirectory, Func<string, T> stdoutSelector, Func<string, T> stderrSelector);
     }
 
+    public static class SpawnService
+    {
+        public static IEnumerable<ISpawnService> Default
+        {
+            get { yield return new SysSpawnService(); }
+        }
+    }
+
     public static class SpawnServiceExtensions
     {
         public static Action<Action<Type, object>> RegistrationHelper(this ISpawnService service) =>

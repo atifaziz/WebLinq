@@ -37,11 +37,12 @@ namespace WebLinq
     public static class HttpQuery
     {
         public static HttpRequestBuilder<Unit> Http => new HttpRequestBuilder<Unit>();
+        public static HttpRequestBuilder<Unit> HttpWith(HttpConfig config) => new HttpRequestBuilder<Unit>(config);
 
-        public static IQuery<T> Content<T>(this IQuery<HttpFetch<T>> query) =>
+        public static IEnumerable<T> Content<T>(this IEnumerable<HttpFetch<T>> query) =>
             from e in query select e.Content;
 
-        public static IQuery<HttpFetch<HttpContent>> Accept(this IQuery<HttpFetch<HttpContent>> query, params string[] mediaTypes) =>
+        public static IEnumerable<HttpFetch<HttpContent>> Accept(this IEnumerable<HttpFetch<HttpContent>> query, params string[] mediaTypes) =>
             (mediaTypes?.Length ?? 0) == 0
             ? query
             : query.Do(e =>
@@ -67,26 +68,30 @@ namespace WebLinq
                 throw new Exception($"Unexpected content of type \"{actualMediaType}\". Acceptable types are: {string.Join(", ", mediaTypes)}");
             });
 
-        public static IQuery<HttpFetch<HttpContent>> Submit(this IQuery<HttpFetch<HttpContent>> query, string formSelector, NameValueCollection data) =>
+        public static IEnumerable<HttpFetch<HttpContent>> Submit(this IEnumerable<HttpFetch<HttpContent>> query, HttpConfig config, string formSelector, NameValueCollection data) =>
+            Submit(query, formSelector, null, data, config);
+
+        public static IEnumerable<HttpFetch<HttpContent>> Submit(this IEnumerable<HttpFetch<HttpContent>> query, string formSelector, NameValueCollection data) =>
             Submit(query, formSelector, null, data);
 
-        public static IQuery<HttpFetch<HttpContent>> Submit(this IQuery<HttpFetch<HttpContent>> query, int formIndex, NameValueCollection data) =>
+        public static IEnumerable<HttpFetch<HttpContent>> Submit(this IEnumerable<HttpFetch<HttpContent>> query, int formIndex, NameValueCollection data) =>
             Submit(query, null, formIndex, data);
 
-        static IQuery<HttpFetch<HttpContent>> Submit(this IQuery<HttpFetch<HttpContent>> query, string formSelector, int? formIndex, NameValueCollection data) =>
+        static IEnumerable<HttpFetch<HttpContent>> Submit(this IEnumerable<HttpFetch<HttpContent>> query, string formSelector, int? formIndex, NameValueCollection data, HttpConfig config = null) =>
             from html in query.Html()
-            from fetch in Submit(html.Content, formSelector, formIndex, data)
+            from fetch in Submit(html.Content, formSelector, formIndex, data, config)
             select fetch;
 
-        public static IQuery<HttpFetch<HttpContent>> Submit(ParsedHtml html, string formSelector, NameValueCollection data) =>
+        public static IEnumerable<HttpFetch<HttpContent>> Submit(ParsedHtml html, string formSelector, NameValueCollection data) =>
             Submit(html, formSelector, null, data);
 
-        public static IQuery<HttpFetch<HttpContent>> Submit(ParsedHtml html, int formIndex, NameValueCollection data) =>
+        public static IEnumerable<HttpFetch<HttpContent>> Submit(ParsedHtml html, int formIndex, NameValueCollection data) =>
             Submit(html, null, formIndex, data);
 
-        static IQuery<HttpFetch<HttpContent>> Submit(ParsedHtml html,
+        static IEnumerable<HttpFetch<HttpContent>> Submit(ParsedHtml html,
                                                     string formSelector, int? formIndex,
-                                                    NameValueCollection data)
+                                                    NameValueCollection data,
+                                                    HttpConfig config = null)
         {
             var forms =
                 from f in formIndex == null
@@ -119,11 +124,11 @@ namespace WebLinq
             }
 
             return form.Method == HtmlFormMethod.Post
-                 ? Http.Post(form.Action, form.Data)
-                 : Http.Get(new UriBuilder(form.Action) { Query = form.Data.ToW3FormEncoded() }.Uri);
+                 ? Http.Post(config, form.Action, form.Data)
+                 : Http.Get(config, new UriBuilder(form.Action) { Query = form.Data.ToW3FormEncoded() }.Uri);
         }
 
-        public static IQuery<HttpFetch<T>> ExceptStatusCode<T>(this IQuery<HttpFetch<T>> query, params HttpStatusCode[] statusCodes) =>
+        public static IEnumerable<HttpFetch<T>> ExceptStatusCode<T>(this IEnumerable<HttpFetch<T>> query, params HttpStatusCode[] statusCodes) =>
             query.Do(e =>
             {
                 if (e.IsSuccessStatusCode || statusCodes.Any(sc => e.StatusCode == sc))
@@ -132,19 +137,19 @@ namespace WebLinq
                 throw new HttpRequestException($"Response status code does not indicate success: {e.StatusCode}.");
             });
 
-        public static IQuery<HttpFetch<HttpContent>> Crawl(Uri url) =>
+        public static IEnumerable<HttpFetch<HttpContent>> Crawl(Uri url) =>
             Crawl(url, int.MaxValue);
 
-        public static IQuery<HttpFetch<HttpContent>> Crawl(Uri url, int depth) =>
+        public static IEnumerable<HttpFetch<HttpContent>> Crawl(Uri url, int depth) =>
             Crawl(url, depth, _ => true);
 
-        public static IQuery<HttpFetch<HttpContent>> Crawl(Uri url, Func<Uri, bool> followPredicate) =>
+        public static IEnumerable<HttpFetch<HttpContent>> Crawl(Uri url, Func<Uri, bool> followPredicate) =>
             Crawl(url, int.MaxValue, followPredicate);
 
-        public static IQuery<HttpFetch<HttpContent>> Crawl(Uri url, int depth, Func<Uri, bool> followPredicate) =>
-            Query.Create(context => CrawlImpl(context, url, depth, followPredicate));
+        public static IEnumerable<HttpFetch<HttpContent>> Crawl(Uri url, int depth, Func<Uri, bool> followPredicate) =>
+            CrawlImpl(url, depth, followPredicate);
 
-        static IEnumerable<QueryResultItem<HttpFetch<HttpContent>>> CrawlImpl(QueryContext context, Uri rootUrl, int depth, Func<Uri, bool> followPredicate)
+        static IEnumerable<HttpFetch<HttpContent>> CrawlImpl(Uri rootUrl, int depth, Func<Uri, bool> followPredicate)
         {
             var linkSet = new HashSet<Uri> { rootUrl };
             var queue = new Queue<KeyValuePair<int, Uri>>();
@@ -156,14 +161,12 @@ namespace WebLinq
                 var url = dequeued.Value;
                 var level = dequeued.Key;
                 // TODO retry intermittent errors?
-                var fetchResult = Http.ReturnErrorneousFetch().Get(url).GetResult(context).Single();
-                var fetch = fetchResult.Value;
+                var fetch = Http.ReturnErrorneousFetch().Get(url).Single();
 
                 if (!fetch.IsSuccessStatusCode)
                     continue;
 
-                yield return fetchResult;
-                context = fetchResult.Context;
+                yield return fetch;
 
                 if (level >= depth)
                     continue;
@@ -177,7 +180,7 @@ namespace WebLinq
                     continue;
 
                 var lq =
-                    from e in Query.Singleton(fetch).Links().Content()
+                    from e in fetch.ToSeq().Links().Content()
                     select TryParse.Uri(e, UriKind.Absolute) into e
                     where e != null
                        && (e.Scheme == Uri.UriSchemeHttp || e.Scheme == Uri.UriSchemeHttps)
@@ -186,12 +189,10 @@ namespace WebLinq
                        && followPredicate(e)
                     select e;
 
-                var links = lq.GetResult(context);
-                foreach (var e in links)
+                foreach (var e in lq)
                 {
                     if (linkSet.Add(e))
-                        queue.Enqueue((level + 1).AsKeyTo(e.Value));
-                    context = e.Context;
+                        queue.Enqueue((level + 1).AsKeyTo(e));
                 }
             }
         }

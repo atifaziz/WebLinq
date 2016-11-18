@@ -3,6 +3,7 @@ namespace WebLinq.Samples
     #region Imports
 
     using System;
+    using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.IO;
     using System.Linq;
@@ -40,7 +41,7 @@ namespace WebLinq.Samples
                         var next = curr.TryBaseHref(curr.QuerySelectorAll("#foot a.fl")
                                                         .Last() // Next
                                                         .GetAttributeValue("href"));
-                        return Http.Get(new Uri(next)).Html().Content();
+                        return Http.Get(new Uri(next)).Html().Content().Single();
                     })
                     .TakeWhile(h => (TryParse.Int32(HttpUtility.ParseQueryString(h.BaseUrl.Query)["start"]) ?? 1) < 30)
                 from r in sr.QuerySelectorAll(".g")
@@ -142,10 +143,10 @@ namespace WebLinq.Samples
             q.Dump();
         }
 
-        static void Dump<T>(this IQuery<T> query, TextWriter output = null)
+        static void Dump<T>(this IEnumerable<T> query, TextWriter output = null)
         {
             output = output ?? Console.Out;
-            foreach (var e in query.ToEnumerable(DefaultQueryContext.Create))
+            foreach (var e in query)
                 output.WriteLine(e);
         }
     }

@@ -41,6 +41,11 @@ namespace WebLinq
 
     public class HttpClient : IHttpClient
     {
+        public static IEnumerable<IHttpClient> Default
+        {
+            get { yield return new HttpClient(); }
+        }
+
         public void Register(Action<Type, object> registrationHandler) =>
             registrationHandler(typeof(IHttpClient), this);
 

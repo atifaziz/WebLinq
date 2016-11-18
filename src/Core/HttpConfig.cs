@@ -19,21 +19,23 @@
 namespace WebLinq
 {
     using System;
+    using System.Collections.Generic;
     using System.Net;
 
     public sealed class HttpConfig
     {
         public static readonly HttpConfig Default;
 
-        public static IQuery<HttpConfig> Set(bool? useDefaultCredentials = null,
-                                            bool? useCookies = null,
-                                            string userAgent = null,
-                                            TimeSpan? timeout = null) =>
-            from current in Query.FindService<HttpConfig>()
-            from old in Query.SetService(Set(current, useDefaultCredentials, useCookies, userAgent, timeout))
-            select old;
+        public static IEnumerable<HttpConfig> Set(HttpConfig current,
+            bool? useDefaultCredentials = null,
+            bool? useCookies = null,
+            string userAgent = null,
+            TimeSpan? timeout = null)
+        {
+            yield return SetCore(current, useDefaultCredentials, useCookies, userAgent, timeout);
+        }
 
-        static HttpConfig Set(HttpConfig initial, bool? useDefaultCredentials, bool? useCookies, string userAgent, TimeSpan? timeout)
+        static HttpConfig SetCore(HttpConfig initial, bool? useDefaultCredentials, bool? useCookies, string userAgent, TimeSpan? timeout)
         {
             var config = initial ?? Default;
 

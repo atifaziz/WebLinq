@@ -16,21 +16,25 @@
 
 namespace WebLinq.Xml
 {
+    using System.Collections.Generic;
+    using System.Linq;
     using System.Net.Http;
     using System.Xml.Linq;
 
     public static class XmlQuery
     {
-        public static IQuery<XDocument> Xml(HttpContent content) =>
+        public static IEnumerable<XDocument> Xml(HttpContent content) =>
             Xml(content, LoadOptions.None);
 
-        public static IQuery<XDocument> Xml(HttpContent content, LoadOptions options) =>
-            Query.Singleton(Xml(content.ReadAsStringAsync().Result, options));
+        public static IEnumerable<XDocument> Xml(HttpContent content, LoadOptions options)
+        {
+            yield return Xml(content.ReadAsStringAsync().Result, options);
+        }
 
-        public static IQuery<HttpFetch<XDocument>> Xml(this IQuery<HttpFetch<HttpContent>> query) =>
+        public static IEnumerable<HttpFetch<XDocument>> Xml(this IEnumerable<HttpFetch<HttpContent>> query) =>
             Xml(query, LoadOptions.None);
 
-        public static IQuery<HttpFetch<XDocument>> Xml(this IQuery<HttpFetch<HttpContent>> query, LoadOptions options) =>
+        public static IEnumerable<HttpFetch<XDocument>> Xml(this IEnumerable<HttpFetch<HttpContent>> query, LoadOptions options) =>
             from fetch in query
             select fetch.WithContent(Xml(fetch.Content.ReadAsStringAsync().Result, options));
 
