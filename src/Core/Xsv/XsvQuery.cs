@@ -16,33 +16,34 @@
 
 namespace WebLinq.Xsv
 {
-    using System.Collections.Generic;
+    using System;
     using System.Data;
-    using System.Linq;
     using System.Net.Http;
+    using System.Reactive.Linq;
     using Mannex.Data;
     using Mannex.IO;
     using Text;
 
     public static class XsvQuery
     {
-        public static IEnumerable<HttpFetch<DataTable>> XsvToDataTable(this IEnumerable<HttpFetch<HttpContent>> query, string delimiter, bool quoted, params DataColumn[] columns) =>
+        public static IObservable<HttpFetch<DataTable>> XsvToDataTable(this IObservable<HttpFetch<HttpContent>> query, string delimiter, bool quoted, params DataColumn[] columns) =>
             from fetch in query.Text()
             select fetch.WithContent(fetch.Content.Read().ParseXsvAsDataTable(delimiter, quoted, columns));
 
-        public static IEnumerable<DataTable> XsvToDataTable(this IEnumerable<string> query, string delimiter, bool quoted, params DataColumn[] columns) =>
+        public static IObservable<DataTable> XsvToDataTable(this IObservable<string> query, string delimiter, bool quoted, params DataColumn[] columns) =>
             from xsv in query
             select xsv.Read().ParseXsvAsDataTable(delimiter, quoted, columns);
 
-        public static IEnumerable<DataTable> XsvToDataTable(string text, string delimiter, bool quoted, params DataColumn[] columns)
+        public static IObservable<DataTable> XsvToDataTable(string text, string delimiter, bool quoted, params DataColumn[] columns)
         {
-            yield return text.Read().ParseXsvAsDataTable(delimiter, quoted, columns);
+            DataTable dt = null;
+            return Observable.Defer(() => Observable.Return(dt ?? (dt = text.Read().ParseXsvAsDataTable(delimiter, quoted, columns))));
         }
 
-        public static IEnumerable<HttpFetch<DataTable>> CsvToDataTable(this IEnumerable<HttpFetch<HttpContent>> query, params DataColumn[] columns) =>
+        public static IObservable<HttpFetch<DataTable>> CsvToDataTable(this IObservable<HttpFetch<HttpContent>> query, params DataColumn[] columns) =>
             query.XsvToDataTable(",", true, columns);
 
-        public static IEnumerable<DataTable> CsvToDataTable(this IEnumerable<string> query, params DataColumn[] columns) =>
+        public static IObservable<DataTable> CsvToDataTable(this IObservable<string> query, params DataColumn[] columns) =>
             query.XsvToDataTable(",", true, columns);
     }
 }

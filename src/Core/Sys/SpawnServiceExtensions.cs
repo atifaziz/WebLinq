@@ -24,6 +24,7 @@ namespace WebLinq.Sys
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
+    using System.Reactive.Linq;
     using System.Threading.Tasks;
     using Mannex;
     using Mannex.Diagnostics;
@@ -37,10 +38,7 @@ namespace WebLinq.Sys
 
     public static class SpawnService
     {
-        public static IEnumerable<ISpawnService> Default
-        {
-            get { yield return new SysSpawnService(); }
-        }
+        public static IObservable<ISpawnService> Default => Observable.Return(new SysSpawnService());
     }
 
     public static class SpawnServiceExtensions

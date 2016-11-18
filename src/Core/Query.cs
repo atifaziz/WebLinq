@@ -19,7 +19,6 @@ namespace WebLinq
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Linq;
     using MoreLinq;
 
     partial class Query<T> : IEnumerable<T>

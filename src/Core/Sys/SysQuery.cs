@@ -18,29 +18,29 @@ namespace WebLinq.Sys
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
+    using System.Reactive.Linq;
     using Mannex.Collections.Generic;
 
     public static class SysQuery
     {
-        public static IEnumerable<string> Spawn(string path, string args) =>
+        public static IObservable<string> Spawn(string path, string args) =>
             Spawn(path, args, null);
 
-        public static IEnumerable<string> Spawn(string path, string args, string workingDirectory) =>
+        public static IObservable<string> Spawn(string path, string args, string workingDirectory) =>
             Spawn(path, args, workingDirectory, output => output, null);
 
-        public static IEnumerable<KeyValuePair<T, string>> Spawn<T>(string path, string args, T stdoutKey, T stderrKey) =>
+        public static IObservable<KeyValuePair<T, string>> Spawn<T>(string path, string args, T stdoutKey, T stderrKey) =>
             Spawn(path, args, null, stdoutKey, stderrKey);
 
-        public static IEnumerable<KeyValuePair<T, string>> Spawn<T>(string path, string args, string workingDirectory, T stdoutKey, T stderrKey) =>
+        public static IObservable<KeyValuePair<T, string>> Spawn<T>(string path, string args, string workingDirectory, T stdoutKey, T stderrKey) =>
             Spawn(path, args, workingDirectory,
                   stdout => stdoutKey.AsKeyTo(stdout),
                   stderr => stderrKey.AsKeyTo(stderr));
 
-        public static IEnumerable<T> Spawn<T>(string path, string args, Func<string, T> stdoutSelector, Func<string, T> stderrSelector) =>
+        public static IObservable<T> Spawn<T>(string path, string args, Func<string, T> stdoutSelector, Func<string, T> stderrSelector) =>
             Spawn(path, args, null, stdoutSelector, stderrSelector);
 
-        public static IEnumerable<T> Spawn<T>(string path, string args, string workingDirectory, Func<string, T> stdoutSelector, Func<string, T> stderrSelector) =>
+        public static IObservable<T> Spawn<T>(string path, string args, string workingDirectory, Func<string, T> stdoutSelector, Func<string, T> stderrSelector) =>
             from s in SpawnService.Default
             from e in s.Spawn(path, args, workingDirectory, stdoutSelector, stderrSelector)
             select e;

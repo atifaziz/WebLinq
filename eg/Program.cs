@@ -3,11 +3,11 @@ namespace WebLinq.Samples
     #region Imports
 
     using System;
-    using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.IO;
     using System.Linq;
     using System.Net.Http;
+    using System.Reactive.Linq;
     using System.Web;
     using System.Xml.Linq;
     using Text;
@@ -15,7 +15,6 @@ namespace WebLinq.Samples
     using Xml;
     using static HttpQuery;
     using static Sys.SysQuery;
-    using static Html.HtmlQuery;
     using Html;
 
     #endregion
@@ -33,7 +32,7 @@ namespace WebLinq.Samples
         {
             var q =
                 from sp in Http.Get(new Uri("https://google.com/"))
-                               .Submit(0, new NameValueCollection { ["q"] = "foobar" })
+                               .Submit(Http, 0, new NameValueCollection { ["q"] = "foobar" })
                                .Html().Content()
                 from sr in
                     Query.Generate(sp, curr =>
@@ -143,10 +142,10 @@ namespace WebLinq.Samples
             q.Dump();
         }
 
-        static void Dump<T>(this IEnumerable<T> query, TextWriter output = null)
+        static void Dump<T>(this IObservable<T> query, TextWriter output = null)
         {
             output = output ?? Console.Out;
-            foreach (var e in query)
+            foreach (var e in query.ToEnumerable())
                 output.WriteLine(e);
         }
     }

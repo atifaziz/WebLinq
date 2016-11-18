@@ -25,6 +25,7 @@ namespace WebLinq
     using System.Net;
     using System.Net.Http;
     using System.Net.Http.Headers;
+    using System.Reactive.Disposables;
     using System.Threading.Tasks;
     using Mannex.Collections.Generic;
     using Mannex.Collections.Specialized;
@@ -34,20 +35,56 @@ namespace WebLinq
         public bool ReturnErrorneousFetch { get; set; }
     }
 
-    public interface IHttpClient
+    public interface IHttpClient<in T>
     {
-        HttpResponseMessage Send(HttpRequestMessage request, HttpConfig config, HttpOptions options);
+        HttpResponseMessage Send(HttpRequestMessage request, T config, HttpOptions options);
     }
 
-    public class HttpClient : IHttpClient
+    public interface IHttpClientObservable<T> : IObservable<IHttpClient<T>>
     {
-        public static IEnumerable<IHttpClient> Default
+        T Config { get; }
+        IHttpClientObservable<T> WithConfig(T config);
+    }
+
+    sealed class HttpClientObservable : IHttpClientObservable<HttpConfig>
+    {
+        public HttpClientObservable(HttpConfig config)
         {
-            get { yield return new HttpClient(); }
+            Config = config;
+        }
+
+        public IDisposable Subscribe(IObserver<IHttpClient<HttpConfig>> observer)
+        {
+            try
+            {
+                observer.OnNext(new HttpClient(Config));
+                observer.OnCompleted();
+            }
+            catch (Exception e)
+            {
+                observer.OnError(e);
+            }
+
+            return Disposable.Empty;
+        }
+
+        public HttpConfig Config { get; }
+
+        public IHttpClientObservable<HttpConfig> WithConfig(HttpConfig config) =>
+            new HttpClientObservable(config);
+    }
+
+    public class HttpClient : IHttpClient<HttpConfig>
+    {
+        public HttpConfig Config { get; }
+
+        public HttpClient(HttpConfig config)
+        {
+            Config = config;
         }
 
         public void Register(Action<Type, object> registrationHandler) =>
-            registrationHandler(typeof(IHttpClient), this);
+            registrationHandler(typeof(IHttpClient<HttpConfig>), this);
 
         public virtual HttpResponseMessage Send(HttpRequestMessage request, HttpConfig config, HttpOptions options) =>
             SendAsync(request, config, options).Result;

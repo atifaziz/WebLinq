@@ -19,21 +19,30 @@
 namespace WebLinq
 {
     using System;
-    using System.Collections.Generic;
     using System.Net;
 
-    public sealed class HttpConfig
+    public interface IHttpTimeoutOption<out T> { T WithTimeout(TimeSpan duration); }
+    public interface IHttpUserAgentOption<out T> { T WithUserAgent(string ua); }
+
+    partial class HttpConfig
     {
         public static readonly HttpConfig Default;
 
-        public static IEnumerable<HttpConfig> Set(HttpConfig current,
+        static HttpConfig()
+        {
+            var req = WebRequest.CreateHttp("http://localhost/");
+            Default = new HttpConfig(TimeSpan.FromMilliseconds(req.Timeout), req.UseDefaultCredentials, req.Credentials, req.UserAgent, req.CookieContainer);
+        }
+    }
+
+    public sealed partial class HttpConfig : IHttpTimeoutOption<HttpConfig>
+    {
+        public static IHttpClientObservable<HttpConfig> Set(HttpConfig current,
             bool? useDefaultCredentials = null,
             bool? useCookies = null,
             string userAgent = null,
-            TimeSpan? timeout = null)
-        {
-            yield return SetCore(current, useDefaultCredentials, useCookies, userAgent, timeout);
-        }
+            TimeSpan? timeout = null) =>
+            new HttpClientObservable(SetCore(current, useDefaultCredentials, useCookies, userAgent, timeout));
 
         static HttpConfig SetCore(HttpConfig initial, bool? useDefaultCredentials, bool? useCookies, string userAgent, TimeSpan? timeout)
         {
@@ -49,12 +58,6 @@ namespace WebLinq
                 config = config.WithTimeout(timeout.Value);
 
             return config;
-        }
-
-        static HttpConfig()
-        {
-            var req = WebRequest.CreateHttp("http://localhost/");
-            Default = new HttpConfig(TimeSpan.FromMilliseconds(req.Timeout), req.UseDefaultCredentials, req.Credentials, req.UserAgent, req.CookieContainer);
         }
 
         public TimeSpan Timeout           { get; private set; }
