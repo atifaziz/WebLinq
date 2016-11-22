@@ -26,6 +26,7 @@ namespace WebLinq
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Reactive.Disposables;
+    using System.Reactive.Linq;
     using System.Threading.Tasks;
     using Mannex.Collections.Generic;
     using Mannex.Collections.Specialized;
@@ -40,7 +41,7 @@ namespace WebLinq
         HttpResponseMessage Send(HttpRequestMessage request, T config, HttpOptions options);
     }
 
-    public interface IHttpClientObservable<T> : IObservable<IHttpClient<T>>
+    public interface IHttpClientObservable<T> : IObservable<IObservable<IHttpClient<T>>>
     {
         T Config { get; }
         IHttpClientObservable<T> WithConfig(T config);
@@ -53,11 +54,11 @@ namespace WebLinq
             Config = config;
         }
 
-        public IDisposable Subscribe(IObserver<IHttpClient<HttpConfig>> observer)
+        public IDisposable Subscribe(IObserver<IObservable<IHttpClient<HttpConfig>>> observer)
         {
             try
             {
-                observer.OnNext(new HttpClient(Config));
+                observer.OnNext(Observable.Return(new HttpClient(Config)));
                 observer.OnCompleted();
             }
             catch (Exception e)
@@ -87,7 +88,7 @@ namespace WebLinq
             registrationHandler(typeof(IHttpClient<HttpConfig>), this);
 
         public virtual HttpResponseMessage Send(HttpRequestMessage request, HttpConfig config, HttpOptions options) =>
-            SendAsync(request, config, options).Result;
+            SendAsync(request, config ?? Config, options).Result;
 
         static async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpConfig config, HttpOptions options)
         {

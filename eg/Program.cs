@@ -31,8 +31,9 @@ namespace WebLinq.Samples
         static void GoogleSearch()
         {
             var q =
-                from sp in Http.Get(new Uri("https://google.com/"))
-                               .Submit(Http, 0, new NameValueCollection { ["q"] = "foobar" })
+                from http in Http
+                from sp in http.Get(new Uri("https://google.com/"))
+                               .Submit(http, 0, new NameValueCollection { ["q"] = "foobar" })
                                .Html().Content()
                 from sr in
                     Query.Generate(sp, curr =>
@@ -40,7 +41,7 @@ namespace WebLinq.Samples
                         var next = curr.TryBaseHref(curr.QuerySelectorAll("#foot a.fl")
                                                         .Last() // Next
                                                         .GetAttributeValue("href"));
-                        return Http.Get(new Uri(next)).Html().Content().Single();
+                        return http.Get(new Uri(next)).Html().Content().Single();
                     })
                     .TakeWhile(h => (TryParse.Int32(HttpUtility.ParseQueryString(h.BaseUrl.Query)["start"]) ?? 1) < 30)
                 from r in sr.QuerySelectorAll(".g")
@@ -81,8 +82,8 @@ namespace WebLinq.Samples
         static void QueenSongs()
         {
             var q =
-
-                from t in Http.Get(new Uri("https://en.wikipedia.org/wiki/Queen_discography")).Tables().Content()
+                from http in Http
+                from t in http.Get(new Uri("https://en.wikipedia.org/wiki/Queen_discography")).Tables().Content()
                               .Where(t => t.HasClass("wikitable"))
                               .Take(1)
                 from tr in t.TableRows((_, trs) => trs)
@@ -105,7 +106,8 @@ namespace WebLinq.Samples
                 select e
                 into album
 
-                from html in Http.Get(album.Url).Html().Content()
+                from http in Http
+                from html in http.Get(album.Url).Html().Content()
 
                 from tb in html.Tables(".tracklist").Take(2)
                 let trs = tb.QuerySelectorAll("tr")
