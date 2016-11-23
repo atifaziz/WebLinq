@@ -41,7 +41,7 @@ namespace WebLinq
         HttpResponseMessage Send(HttpRequestMessage request, T config, HttpOptions options);
     }
 
-    public interface IHttpClientObservable<T> : IObservable<IObservable<IHttpClient<T>>>
+    public interface IHttpClientObservable<T> : IObservable<Factory<IHttpClient<T>>>
     {
         T Config { get; }
         IHttpClientObservable<T> WithConfig(T config);
@@ -54,11 +54,11 @@ namespace WebLinq
             Config = config;
         }
 
-        public IDisposable Subscribe(IObserver<IObservable<IHttpClient<HttpConfig>>> observer)
+        public IDisposable Subscribe(IObserver<Factory<IHttpClient<HttpConfig>>> observer)
         {
             try
             {
-                observer.OnNext(Observable.Return(new HttpClient(Config)));
+                observer.OnNext(Factory.Create<IHttpClient<HttpConfig>>(() => new HttpClient(Config)));
                 observer.OnCompleted();
             }
             catch (Exception e)
