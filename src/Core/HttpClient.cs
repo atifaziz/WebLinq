@@ -36,12 +36,12 @@ namespace WebLinq
         public bool ReturnErrorneousFetch { get; set; }
     }
 
-    public interface IHttpClient<in T>
+    public interface IHttpClient
     {
-        HttpResponseMessage Send(HttpRequestMessage request, T config, HttpOptions options);
+        HttpResponseMessage Send(HttpRequestMessage request, HttpOptions options);
     }
 
-    public interface IHttpClientObservable<T> : IObservable<IObservable<IHttpClient<T>>>
+    public interface IHttpClientObservable<T> : IObservable<IObservable<IHttpClient>>
     {
         T Config { get; }
         IHttpClientObservable<T> WithConfig(T config);
@@ -54,7 +54,7 @@ namespace WebLinq
             Config = config;
         }
 
-        public IDisposable Subscribe(IObserver<IObservable<IHttpClient<HttpConfig>>> observer)
+        public IDisposable Subscribe(IObserver<IObservable<IHttpClient>> observer)
         {
             try
             {
@@ -75,7 +75,7 @@ namespace WebLinq
             new HttpClientObservable(config);
     }
 
-    public class HttpClient : IHttpClient<HttpConfig>
+    public class HttpClient : IHttpClient
     {
         public HttpConfig Config { get; }
 
@@ -85,10 +85,10 @@ namespace WebLinq
         }
 
         public void Register(Action<Type, object> registrationHandler) =>
-            registrationHandler(typeof(IHttpClient<HttpConfig>), this);
+            registrationHandler(typeof(IHttpClient), this);
 
-        public virtual HttpResponseMessage Send(HttpRequestMessage request, HttpConfig config, HttpOptions options) =>
-            SendAsync(request, config ?? Config, options).Result;
+        public virtual HttpResponseMessage Send(HttpRequestMessage request, HttpOptions options) =>
+            SendAsync(request, Config, options).Result;
 
         static async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpConfig config, HttpOptions options)
         {
