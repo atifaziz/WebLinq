@@ -33,7 +33,7 @@ namespace WebLinq.Samples
             var q =
                 from http in Http
                 from sp in http.Get(new Uri("https://google.com/"))
-                               .Submit(http, 0, new NameValueCollection { ["q"] = "foobar" })
+                               .Submit(0, new NameValueCollection { ["q"] = "foobar" })
                                .Html().Content()
                 from sr in
                     Query.Generate(sp, curr =>

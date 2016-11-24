@@ -36,8 +36,35 @@ namespace WebLinq
 
     #endregion
 
+    public interface IHttpObservable<in TConfig, out TResult> : IObservable<TResult>
+    {
+        IObservable<IHttpClient<TConfig>> HttpClient { get; }
+    }
+
     public static class HttpQuery
     {
+        sealed class HttpObservable<TConfig, TResult> : IHttpObservable<TConfig, TResult>
+        {
+            readonly IObservable<TResult> _results;
+
+            public HttpObservable(IObservable<IHttpClient<TConfig>> httpClient, IObservable<TResult> results)
+            {
+                _results = results;
+                HttpClient = httpClient;
+            }
+
+            public IDisposable Subscribe(IObserver<TResult> observer) =>
+                _results.Subscribe(observer);
+
+            public IObservable<IHttpClient<TConfig>> HttpClient { get; }
+        }
+
+        static class HttpObservable
+        {
+            public static IHttpObservable<TConfig, TResult> Create<TConfig, TResult>(IObservable<IHttpClient<TConfig>> httpClient, IObservable<TResult> results) =>
+                new HttpObservable<TConfig, TResult>(httpClient, results);
+        }
+
         static HttpFetch<HttpContent> Send<T>(IHttpClient<T> http, T config, int id, HttpMethod method, Uri url, HttpContent content = null, HttpOptions options = null)
         {
             var request = new HttpRequestMessage
@@ -49,21 +76,30 @@ namespace WebLinq
             return http.Send(request, config, options).ToHttpFetch(id);
         }
 
-        public static IObservable<HttpFetch<HttpContent>> Get<T>(this IObservable<IHttpClient<T>> http, Uri url) =>
+        public static IHttpObservable<T, HttpFetch<HttpContent>> Get<T>(this IHttpObservable<T, HttpFetch<HttpContent>> http, Uri url) =>
+            http.HttpClient.Get(url, null);
+
+        public static IHttpObservable<T, HttpFetch<HttpContent>> Get<T>(
+                this IHttpObservable<T, HttpFetch<HttpContent>> http, Uri url, HttpOptions options) =>
+            http.HttpClient.Get(url, options);
+
+        public static IHttpObservable<T, HttpFetch<HttpContent>> Get<T>(this IObservable<IHttpClient<T>> http, Uri url) =>
             http.Get(url, null);
 
-        public static IObservable<HttpFetch<HttpContent>> Get<T>(this IObservable<IHttpClient<T>> http, Uri url, HttpOptions options) =>
-            from client in http
-            select Send(client, default(T), 0, HttpMethod.Get, url, options: options);
+        public static IHttpObservable<T, HttpFetch<HttpContent>> Get<T>(this IObservable<IHttpClient<T>> http, Uri url, HttpOptions options) =>
+            HttpObservable.Create(http,
+                from client in http
+                select Send(client, default(T), 0, HttpMethod.Get, url, options: options));
 
-        public static IObservable<HttpFetch<HttpContent>> Post<T>(this IObservable<IHttpClient<T>> http, Uri url, NameValueCollection data) =>
+        public static IHttpObservable<T, HttpFetch<HttpContent>> Post<T>(this IObservable<IHttpClient<T>> http, Uri url, NameValueCollection data) =>
             http.Post(url, new FormUrlEncodedContent(from i in Enumerable.Range(0, data.Count)
                                                      from v in data.GetValues(i)
                                                      select data.GetKey(i).AsKeyTo(v)));
 
-        public static IObservable<HttpFetch<HttpContent>> Post<T>(this IObservable<IHttpClient<T>> http, Uri url, HttpContent content) =>
-            from client in http
-            select Send(client, default(T), 0, HttpMethod.Post, url, content);
+        public static IHttpObservable<T, HttpFetch<HttpContent>> Post<T>(this IObservable<IHttpClient<T>> http, Uri url, HttpContent content) =>
+            HttpObservable.Create(http,
+                from client in http
+                select Send(client, default(T), 0, HttpMethod.Post, url, content));
 
         public static IHttpClientObservable<T> WithTimeout<T>(this IHttpClientObservable<T> client, TimeSpan duration)
             where T : IHttpTimeoutOption<T> =>
@@ -105,24 +141,31 @@ namespace WebLinq
                 throw new Exception($"Unexpected content of type \"{actualMediaType}\". Acceptable types are: {string.Join(", ", mediaTypes)}");
             });
 
-        public static IObservable<HttpFetch<HttpContent>> Submit<T>(this IObservable<HttpFetch<HttpContent>> query, IObservable<IHttpClient<T>> http, string formSelector, NameValueCollection data) =>
+        public static IHttpObservable<T, HttpFetch<HttpContent>> Submit<T>(this IHttpObservable<T, HttpFetch<HttpContent>> query, string formSelector, NameValueCollection data) =>
+            query.Submit(query.HttpClient, formSelector, data);
+
+        public static IHttpObservable<T, HttpFetch<HttpContent>> Submit<T>(this IHttpObservable<T, HttpFetch<HttpContent>> query, int formIndex, NameValueCollection data) =>
+            query.Submit(query.HttpClient, formIndex, data);
+
+        public static IHttpObservable<T, HttpFetch<HttpContent>> Submit<T>(this IObservable<HttpFetch<HttpContent>> query, IObservable<IHttpClient<T>> http, string formSelector, NameValueCollection data) =>
             query.Submit(http, formSelector, null, data);
 
-        public static IObservable<HttpFetch<HttpContent>> Submit<T>(this IObservable<HttpFetch<HttpContent>> query, IObservable<IHttpClient<T>> http, int formIndex, NameValueCollection data) =>
+        public static IHttpObservable<T, HttpFetch<HttpContent>> Submit<T>(this IObservable<HttpFetch<HttpContent>> query, IObservable<IHttpClient<T>> http, int formIndex, NameValueCollection data) =>
             query.Submit(http, null, formIndex, data);
 
-        static IObservable<HttpFetch<HttpContent>> Submit<T>(this IObservable<HttpFetch<HttpContent>> query, IObservable<IHttpClient<T>> http, string formSelector, int? formIndex, NameValueCollection data) =>
-            from html in query.Html()
-            from fetch in Submit(http, html.Content, formSelector, formIndex, data)
-            select fetch;
+        static IHttpObservable<T, HttpFetch<HttpContent>> Submit<T>(this IObservable<HttpFetch<HttpContent>> query, IObservable<IHttpClient<T>> http, string formSelector, int? formIndex, NameValueCollection data) =>
+            HttpObservable.Create(http,
+                from html in query.Html()
+                from fetch in Submit(http, html.Content, formSelector, formIndex, data)
+                select fetch);
 
-        public static IObservable<HttpFetch<HttpContent>> Submit<T>(this IObservable<IHttpClient<T>> http, ParsedHtml html, string formSelector, NameValueCollection data) =>
+        public static IHttpObservable<T, HttpFetch<HttpContent>> Submit<T>(this IObservable<IHttpClient<T>> http, ParsedHtml html, string formSelector, NameValueCollection data) =>
             Submit(http, html, formSelector, null, data);
 
-        public static IObservable<HttpFetch<HttpContent>> Submit<T>(this IObservable<IHttpClient<T>> http, ParsedHtml html, int formIndex, NameValueCollection data) =>
+        public static IHttpObservable<T, HttpFetch<HttpContent>> Submit<T>(this IObservable<IHttpClient<T>> http, ParsedHtml html, int formIndex, NameValueCollection data) =>
             Submit(http, html, null, formIndex, data);
 
-        static IObservable<HttpFetch<HttpContent>> Submit<T>(IObservable<IHttpClient<T>> http, ParsedHtml html,
+        static IHttpObservable<T, HttpFetch<HttpContent>> Submit<T>(IObservable<IHttpClient<T>> http, ParsedHtml html,
                                                     string formSelector, int? formIndex,
                                                     NameValueCollection data)
         {
