@@ -36,12 +36,13 @@ namespace WebLinq
         public bool ReturnErrorneousFetch { get; set; }
     }
 
-    public interface IHttpClient<in T>
+    public interface IHttpClient<T>
     {
+        T Config { get; }
         HttpResponseMessage Send(HttpRequestMessage request, T config, HttpOptions options);
     }
 
-    public interface IHttpClientObservable<T> : IObservable<IObservable<IHttpClient<T>>>
+    public interface IHttpClientObservable<T> : IObservable<IHttpClient<T>>
     {
         T Config { get; }
         IHttpClientObservable<T> WithConfig(T config);
@@ -54,11 +55,11 @@ namespace WebLinq
             Config = config;
         }
 
-        public IDisposable Subscribe(IObserver<IObservable<IHttpClient<HttpConfig>>> observer)
+        public IDisposable Subscribe(IObserver<IHttpClient<HttpConfig>> observer)
         {
             try
             {
-                observer.OnNext(Observable.Return(new HttpClient(Config)));
+                observer.OnNext(new HttpClient(Config));
                 observer.OnCompleted();
             }
             catch (Exception e)
