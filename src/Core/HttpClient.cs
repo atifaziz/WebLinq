@@ -26,7 +26,6 @@ namespace WebLinq
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Reactive.Disposables;
-    using System.Reactive.Linq;
     using System.Threading.Tasks;
     using Mannex.Collections.Generic;
     using Mannex.Collections.Specialized;
@@ -39,6 +38,7 @@ namespace WebLinq
     public interface IHttpClient<T>
     {
         T Config { get; }
+        IHttpClient<T> WithConfig(T config);
         HttpResponseMessage Send(HttpRequestMessage request, T config, HttpOptions options);
     }
 
@@ -84,6 +84,9 @@ namespace WebLinq
         {
             Config = config;
         }
+
+        public IHttpClient<HttpConfig> WithConfig(HttpConfig config) =>
+            new HttpClient(config);
 
         public void Register(Action<Type, object> registrationHandler) =>
             registrationHandler(typeof(IHttpClient<HttpConfig>), this);

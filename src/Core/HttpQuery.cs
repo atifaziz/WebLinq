@@ -45,6 +45,9 @@ namespace WebLinq
         public static IHttpObservable<TConfig, TResult> WithHttpClient<TConfig, TResult>(this IObservable<TResult> results, IHttpClient<TConfig> httpClient) =>
             new Impl<TConfig, TResult>(httpClient, results);
 
+        public static IHttpObservable<TConfig, TResult> WithConfig<TConfig, TResult>(this IHttpObservable<TConfig, TResult> results, TConfig config) =>
+            new Reconfigured<TConfig, TResult>(results, config);
+
         sealed class Impl<TConfig, TResult> : IHttpObservable<TConfig, TResult>
         {
             readonly IObservable<TResult> _results;
@@ -60,10 +63,38 @@ namespace WebLinq
 
             public IHttpClient<TConfig> HttpClient { get; }
         }
+
+        sealed class Reconfigured<TConfig, TResult> : IHttpObservable<TConfig, TResult>
+        {
+            readonly IHttpObservable<TConfig, TResult> _results;
+            readonly TConfig _config;
+
+            public Reconfigured(IHttpObservable<TConfig, TResult> results, TConfig config)
+            {
+                _results = results;
+                _config = config;
+            }
+
+            public IDisposable Subscribe(IObserver<TResult> observer) =>
+                _results.Subscribe(observer);
+
+            public IHttpClient<TConfig> HttpClient =>
+                _results.HttpClient.WithConfig(_config);
+        }
     }
 
     public static class HttpQuery
     {
+        public static IHttpObservable<TConfig, TResult> WithTimeout<TConfig, TResult>(
+            this IHttpObservable<TConfig, TResult> source, TimeSpan duration)
+            where TConfig : IHttpTimeoutOption<TConfig> =>
+            source.WithConfig(source.HttpClient.Config.WithTimeout(duration));
+
+        public static IHttpObservable<TConfig, TResult> WithUserAgent<TConfig, TResult>(
+            this IHttpObservable<TConfig, TResult> source, string value)
+            where TConfig : IHttpUserAgentOption<TConfig> =>
+            source.WithConfig(source.HttpClient.Config.WithUserAgent(value));
+
         static HttpFetch<HttpContent> Send<T>(IHttpClient<T> http, T config, int id, HttpMethod method, Uri url, HttpContent content = null, HttpOptions options = null)
         {
             var request = new HttpRequestMessage
@@ -106,8 +137,14 @@ namespace WebLinq
             where T : IHttpUserAgentOption<T> =>
                 client.WithConfig(client.Config.WithUserAgent(ua));
 
-        public static IHttpClientObservable<HttpConfig> Http =>
-            new HttpClientObservable(HttpConfig.Default);
+        public static IHttpObservable<HttpConfig, IHttpClient<HttpConfig>> Http
+        {
+            get
+            {
+                var http = new HttpClient(HttpConfig.Default);
+                return Observable.Return(http).WithHttpClient(http);
+            }
+        }
 
         public static IObservable<T> Content<T>(this IObservable<HttpFetch<T>> query) =>
             from e in query select e.Content;
