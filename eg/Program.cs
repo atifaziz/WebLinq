@@ -26,6 +26,7 @@ namespace WebLinq.Samples
             GoogleSearch();
             QueenSongs();
             ScheduledTasksViaSpawn();
+            TopHackerNews(100);
         }
 
         static void GoogleSearch()
@@ -139,6 +140,23 @@ namespace WebLinq.Samples
                     Duration = tds[his.Length],
                 };
 
+            q.Dump();
+        }
+
+        static void TopHackerNews(int score)
+        {
+            var q =
+                    from sp in Http.Get(new Uri("https://news.ycombinator.com/")).Html().Content()
+                    let v = sp.QuerySelectorAll(".score")
+                    from r in sp.QuerySelectorAll(".athing") 
+                    let links = new
+                    {
+                        Id = r.GetAttributeValue("id"),
+                        Link = r.QuerySelector(".storylink")?.GetAttributeValue("href"),
+                        Vote = v.Where(a => a.GetAttributeValue("id").Substring(6) == r.GetAttributeValue("id")).Select(a => a.InnerText).FirstOrDefault()
+                    }
+                    where int.Parse(links.Vote?.Replace(" points", string.Empty) ?? "0") > score
+                    select links;
             q.Dump();
         }
 
