@@ -7,6 +7,7 @@ namespace WebLinq.Samples
     using System.IO;
     using System.Linq;
     using System.Net.Http;
+    using System.Text.RegularExpressions;
     using System.Web;
     using System.Xml.Linq;
     using Text;
@@ -146,17 +147,34 @@ namespace WebLinq.Samples
         static void TopHackerNews(int score)
         {
             var q =
-                    from sp in Http.Get(new Uri("https://news.ycombinator.com/")).Html().Content()
-                    let v = sp.QuerySelectorAll(".score")
-                    from r in sp.QuerySelectorAll(".athing") 
-                    let links = new
+                from sp in Http.Get(new Uri("https://news.ycombinator.com/")).Html().Content()
+                let scores =
+                    from s in sp.QuerySelectorAll(".score")
+                    select new
+                    {
+                        Id = Regex.Match(s.GetAttributeValue("id"), @"(?<=^score_)[0-9]+$").Value,
+                        Score = s.InnerText,
+                    }
+                from e in
+                    from r in sp.QuerySelectorAll(".athing")
+                    select new
                     {
                         Id = r.GetAttributeValue("id"),
                         Link = r.QuerySelector(".storylink")?.GetAttributeValue("href"),
-                        Vote = v.Where(a => a.GetAttributeValue("id").Substring(6) == r.GetAttributeValue("id")).Select(a => a.InnerText).FirstOrDefault()
                     }
-                    where int.Parse(links.Vote?.Replace(" points", string.Empty) ?? "0") > score
-                    select links;
+                    into r
+                    join s in scores on r.Id equals s.Id
+                    select new
+                    {
+                        r.Id,
+                        Score = int.Parse(Regex.Match(s.Score, @"\b[0-9]+(?= +points)").Value),
+                        r.Link,
+                    }
+                    into e
+                    where e.Score > score
+                    select e
+                select e;
+
             q.Dump();
         }
 
