@@ -117,7 +117,7 @@ namespace WebLinq
             http.Get(url, null);
 
         public static IHttpObservable<T, HttpFetch<HttpContent>> Get<T>(this IHttpClient<T> http, Uri url, HttpOptions options) =>
-                Observable.Defer(() => Observable.Return(Send(http, default(T), 0, HttpMethod.Get, url, options: options)))
+                Observable.Defer(() => Observable.Return(Send(http, http.Config, 0, HttpMethod.Get, url, options: options)))
                           .WithHttpClient(http);
 
         public static IHttpObservable<T, HttpFetch<HttpContent>> Post<T>(this IHttpClient<T> http, Uri url, NameValueCollection data) =>
@@ -126,7 +126,7 @@ namespace WebLinq
                                                      select data.GetKey(i).AsKeyTo(v)));
 
         public static IHttpObservable<T, HttpFetch<HttpContent>> Post<T>(this IHttpClient<T> http, Uri url, HttpContent content) =>
-                Observable.Defer(() => Observable.Return(Send(http, default(T), 0, HttpMethod.Post, url, content)))
+                Observable.Defer(() => Observable.Return(Send(http, http.Config, 0, HttpMethod.Post, url, content)))
                           .WithHttpClient(http);
 
         public static IHttpClientObservable<T> WithTimeout<T>(this IHttpClientObservable<T> client, TimeSpan duration)
