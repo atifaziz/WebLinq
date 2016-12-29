@@ -106,8 +106,14 @@ namespace WebLinq
             return http.Send(request, config, options).ToHttpFetch(id);
         }
 
-        public static IHttpObservable<T, HttpFetch<HttpContent>> Get<T>(this IHttpObservable<T, HttpFetch<HttpContent>> http, Uri url) =>
-            http.HttpClient.Get(url, null);
+        public static IHttpObservable<T, HttpFetch<HttpContent>> Get<T>(this IHttpObservable<T, HttpFetch<HttpContent>> http, Uri url)
+        {
+            var q =
+                from _ in http
+                from fetch in http.HttpClient.Get(url, null)
+                select fetch;
+            return q.WithHttpClient(http.HttpClient);
+        }
 
         public static IHttpObservable<T, HttpFetch<HttpContent>> Get<T>(
                 this IHttpObservable<T, HttpFetch<HttpContent>> http, Uri url, HttpOptions options) =>
