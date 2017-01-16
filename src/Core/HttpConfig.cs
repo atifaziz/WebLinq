@@ -38,18 +38,19 @@ namespace WebLinq
         }
     }
 
-    public sealed partial class HttpConfig :
+    public /* TODO sealed */ partial class HttpConfig :
         IHttpTimeoutOption<HttpConfig>,
         IHttpUserAgentOption<HttpConfig>,
         IHttpCookies<HttpConfig>
     {
+        /* TODO remove
         public static IHttpClientObservable<HttpConfig> Set(HttpConfig current,
             bool? useDefaultCredentials = null,
             IReadOnlyCollection<Cookie> cookies = null,
             string userAgent = null,
             TimeSpan? timeout = null) =>
             new HttpClientObservable(SetCore(current, useDefaultCredentials, cookies, userAgent, timeout));
-
+        */
         public static readonly IEnumerable<Cookie> ZeroCookies = new Cookie[0];
 
         static HttpConfig SetCore(HttpConfig initial, bool? useDefaultCredentials, IReadOnlyCollection<Cookie> cookies, string userAgent, TimeSpan? timeout)

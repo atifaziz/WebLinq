@@ -25,7 +25,6 @@ namespace WebLinq
     using System.Net;
     using System.Net.Http;
     using System.Net.Http.Headers;
-    using System.Reactive.Disposables;
     using System.Threading.Tasks;
     using Mannex.Collections.Generic;
     using Mannex.Collections.Specialized;
@@ -40,40 +39,6 @@ namespace WebLinq
         T Config { get; }
         IHttpClient<T> WithConfig(T config);
         HttpResponseMessage Send(HttpRequestMessage request, T config, HttpOptions options);
-    }
-
-    public interface IHttpClientObservable<T> : IObservable<IHttpClient<T>>
-    {
-        T Config { get; }
-        IHttpClientObservable<T> WithConfig(T config);
-    }
-
-    sealed class HttpClientObservable : IHttpClientObservable<HttpConfig>
-    {
-        public HttpClientObservable(HttpConfig config)
-        {
-            Config = config;
-        }
-
-        public IDisposable Subscribe(IObserver<IHttpClient<HttpConfig>> observer)
-        {
-            try
-            {
-                observer.OnNext(new HttpClient(Config));
-                observer.OnCompleted();
-            }
-            catch (Exception e)
-            {
-                observer.OnError(e);
-            }
-
-            return Disposable.Empty;
-        }
-
-        public HttpConfig Config { get; }
-
-        public IHttpClientObservable<HttpConfig> WithConfig(HttpConfig config) =>
-            new HttpClientObservable(config);
     }
 
     public class HttpClient : IHttpClient<HttpConfig>

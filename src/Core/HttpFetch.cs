@@ -89,5 +89,10 @@ namespace WebLinq
             new HttpFetch<TContent>(Id, content, Client,
                                     HttpVersion, StatusCode, ReasonPhrase, Headers,
                                     RequestUrl, RequestHeaders);
+
+        public HttpFetch<T> WithConfig(HttpConfig config) =>
+            new HttpFetch<T>(Id, Content, Client.WithConfig(config),
+                             HttpVersion, StatusCode, ReasonPhrase, Headers,
+                             RequestUrl, RequestHeaders);
     }
 }
