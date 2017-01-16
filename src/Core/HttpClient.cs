@@ -100,9 +100,17 @@ namespace WebLinq
 
             hwreq.Method                = request.Method.Method;
             hwreq.Timeout               = (int)config.Timeout.TotalMilliseconds;
-            hwreq.CookieContainer       = config.Cookies;
             hwreq.Credentials           = config.Credentials;
             hwreq.UseDefaultCredentials = config.UseDefaultCredentials;
+            hwreq.AllowAutoRedirect     = false;
+
+            if (config.Cookies?.Any() == true)
+            {
+                CookieContainer cookies;
+                hwreq.CookieContainer = cookies = new CookieContainer();
+                foreach (var cookie in config.Cookies)
+                    cookies.Add(cookie);
+            }
 
             var userAgent = request.Headers.UserAgent.ToString();
             hwreq.UserAgent = userAgent.Length > 0 ? userAgent : config.UserAgent;

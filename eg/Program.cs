@@ -32,24 +32,25 @@ namespace WebLinq.Samples
         {
             var q =
                 from http in Http
-                from sp in http.Get(new Uri("https://google.com/"))
+                from sp in http.Get(new Uri("http://google.com/"))
                                .Submit(0, new NameValueCollection { ["q"] = "foobar" })
-                               .Html().Content()
+                               .Html()
                 from sr in
                     Query.Generate(sp, curr =>
                     {
-                        var next = curr.TryBaseHref(curr.QuerySelectorAll("#foot a.fl")
+                        var next = curr.Content.TryBaseHref(curr.Content.QuerySelectorAll("#foot a.fl")
                                                         .Last() // Next
                                                         .GetAttributeValue("href"));
-                        return http.Get(new Uri(next)).Html().Content().Single();
+                        return curr.Client.Get(new Uri(next)).Html().Single();
                     })
-                    .TakeWhile(h => (TryParse.Int32(HttpUtility.ParseQueryString(h.BaseUrl.Query)["start"]) ?? 1) < 30)
+                    .TakeWhile(h => (TryParse.Int32(HttpUtility.ParseQueryString(h.Content.BaseUrl.Query)["start"]) ?? 1) < 30)
+                select sr.Content into sr
                 from r in sr.QuerySelectorAll(".g")
                 select new
                 {
-                    Title   = r.QuerySelector(".r")?.InnerText,
+                    Title = r.QuerySelector(".r")?.InnerText,
                     Summary = r.QuerySelector(".st")?.InnerText,
-                    Href    = sr.TryBaseHref(r.QuerySelector(".r a")?.GetAttributeValue("href")),
+                    Href = sr.TryBaseHref(r.QuerySelector(".r a")?.GetAttributeValue("href")),
                 }
                 into e
                 where !string.IsNullOrWhiteSpace(e.Title)

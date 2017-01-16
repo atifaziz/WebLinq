@@ -19,10 +19,13 @@
 namespace WebLinq
 {
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using System.Net;
 
     public interface IHttpTimeoutOption<out T> { T WithTimeout(TimeSpan duration); }
     public interface IHttpUserAgentOption<out T> { T WithUserAgent(string ua); }
+    public interface IHttpCookies<out T> { T WithCookies(IReadOnlyCollection<Cookie> cookies); }
 
     partial class HttpConfig
     {
@@ -31,27 +34,32 @@ namespace WebLinq
         static HttpConfig()
         {
             var req = WebRequest.CreateHttp("http://localhost/");
-            Default = new HttpConfig(TimeSpan.FromMilliseconds(req.Timeout), req.UseDefaultCredentials, req.Credentials, req.UserAgent, req.CookieContainer);
+            Default = new HttpConfig(TimeSpan.FromMilliseconds(req.Timeout), req.UseDefaultCredentials, req.Credentials, req.UserAgent, null);
         }
     }
 
-    public sealed partial class HttpConfig : IHttpTimeoutOption<HttpConfig>
+    public sealed partial class HttpConfig :
+        IHttpTimeoutOption<HttpConfig>,
+        IHttpUserAgentOption<HttpConfig>,
+        IHttpCookies<HttpConfig>
     {
         public static IHttpClientObservable<HttpConfig> Set(HttpConfig current,
             bool? useDefaultCredentials = null,
-            bool? useCookies = null,
+            IReadOnlyCollection<Cookie> cookies = null,
             string userAgent = null,
             TimeSpan? timeout = null) =>
-            new HttpClientObservable(SetCore(current, useDefaultCredentials, useCookies, userAgent, timeout));
+            new HttpClientObservable(SetCore(current, useDefaultCredentials, cookies, userAgent, timeout));
 
-        static HttpConfig SetCore(HttpConfig initial, bool? useDefaultCredentials, bool? useCookies, string userAgent, TimeSpan? timeout)
+        public static readonly IEnumerable<Cookie> ZeroCookies = new Cookie[0];
+
+        static HttpConfig SetCore(HttpConfig initial, bool? useDefaultCredentials, IReadOnlyCollection<Cookie> cookies, string userAgent, TimeSpan? timeout)
         {
             var config = initial ?? Default;
 
             if (useDefaultCredentials != null)
                 config = config.WithUseDefaultCredentials(useDefaultCredentials.Value);
-            if (useCookies != null)
-                config = config.WithCookies(useCookies.Value ? new CookieContainer() : null);
+            if (cookies != null)
+                config = config.WithCookies(cookies);
             if (userAgent != null)
                 config = config.WithUserAgent(userAgent);
             if (timeout != null)
@@ -60,13 +68,13 @@ namespace WebLinq
             return config;
         }
 
-        public TimeSpan Timeout           { get; private set; }
-        public bool UseDefaultCredentials { get; private set; }
-        public ICredentials Credentials   { get; private set; }
-        public string UserAgent           { get; private set; }
-        public CookieContainer Cookies    { get; private set; }
+        public TimeSpan Timeout                    { get; private set; }
+        public bool UseDefaultCredentials          { get; private set; }
+        public ICredentials Credentials            { get; private set; }
+        public string UserAgent                    { get; private set; }
+        public IReadOnlyCollection<Cookie> Cookies { get; private set; }
 
-        public HttpConfig(TimeSpan timeout, bool useDefaultCredentials, ICredentials credentials, string userAgent, CookieContainer cookies)
+        public HttpConfig(TimeSpan timeout, bool useDefaultCredentials, ICredentials credentials, string userAgent, IReadOnlyCollection<Cookie> cookies)
         {
             Timeout     = timeout;
             UserAgent   = userAgent;
@@ -93,7 +101,9 @@ namespace WebLinq
         HttpConfig WithUserAgentImpl(string value) =>
             UserAgent == value ? this : new HttpConfig(this) { UserAgent = value };
 
-        public HttpConfig WithCookies(CookieContainer value) =>
-            Cookies == value ? this : new HttpConfig(this) { Cookies = value };
+        public HttpConfig WithCookies(IReadOnlyCollection<Cookie> value) =>
+            ReferenceEquals(Cookies, value) || Cookies?.SequenceEqual(value ?? ZeroCookies) == true
+            ? this
+            : new HttpConfig(this) { Cookies = value };
     }
 }

@@ -95,7 +95,54 @@ namespace WebLinq
             where TConfig : IHttpUserAgentOption<TConfig> =>
             source.WithConfig(source.HttpClient.Config.WithUserAgent(value));
 
+        static readonly int MaximumAutomaticRedirections = WebRequest.CreateHttp("http://localhost/").MaximumAutomaticRedirections;
+
         static HttpFetch<HttpContent> Send<T>(IHttpClient<T> http, T config, int id, HttpMethod method, Uri url, HttpContent content = null, HttpOptions options = null)
+            where T : IHttpCookies<T>
+        {
+            http = http.WithConfig(config);
+
+            for (var redirections = 0; ; redirections++)
+            {
+                if (redirections > MaximumAutomaticRedirections)
+                    throw new Exception("The maximum number of redirection responses permitted has been exceeded.");
+
+                var result =
+                    HttpFetch(http, http.Config, method, url, content, options,
+                        (cfg, rsp) => new
+                        {
+                            Config   = cfg,
+                            Method   = default(HttpMethod),
+                            Url      = default(Uri),
+                            Content  = default(HttpContent),
+                            Response = rsp,
+                        },
+                        (cfg, rm, rl, rc) => new
+                        {
+                            Config   = cfg,
+                            Method   = rm,
+                            Url      = rl,
+                            Content  = rc,
+                            Response = default(HttpResponseMessage),
+                        });
+
+                if (result.Response != null)
+                    return result.Response.ToHttpFetch(id, (IHttpClient<HttpConfig>) http.WithConfig(result.Config));
+
+                // TODO tail call recursion?
+
+                http    = http.WithConfig(result.Config);
+                method  = result.Method;
+                url     = result.Url;
+                content = result.Content;
+            }
+        }
+
+        static TResult HttpFetch<TConfig, TResult>(IHttpClient<TConfig> http, TConfig config,
+            HttpMethod method, Uri url, HttpContent content, HttpOptions options,
+            Func<TConfig, HttpResponseMessage, TResult> responseSelector,
+            Func<TConfig, HttpMethod, Uri, HttpContent, TResult> redirectionSelector)
+            where TConfig : IHttpCookies<TConfig>
         {
             var request = new HttpRequestMessage
             {
@@ -103,10 +150,75 @@ namespace WebLinq
                 RequestUri = url,
                 Content = content
             };
-            return http.Send(request, config, options).ToHttpFetch(id);
+
+            var response = http.Send(request, config, options);
+            IEnumerable<string> cookies;
+            if (response.Headers.TryGetValues("Set-Cookie", out cookies))
+            {
+                var cc = new CookieContainer();
+                foreach (var cookie in cookies)
+                    cc.SetCookies(url, cookie);
+                config = config.WithCookies(cc.GetCookies(url).Cast<Cookie>().ToArray());
+            }
+
+            // Source:
+            // https://referencesource.microsoft.com/#System/net/System/Net/HttpWebRequest.cs,5669
+            //
+            // Check for Redirection
+            //
+            // Table View:
+            // Method            301             302             303             307
+            //    *                *               *             GET               *
+            // POST              GET             GET             GET            POST
+            //
+            // Put another way:
+            //  301 & 302  - All methods are redirected to the same method but POST. POST is redirected to a GET.
+            //  303 - All methods are redirected to GET
+            //  307 - All methods are redirected to the same method.
+            //
+
+            var sc = response.StatusCode;
+            if (sc == HttpStatusCode.Ambiguous || // 300
+                sc == HttpStatusCode.Moved || // 301
+                sc == HttpStatusCode.Redirect || // 302
+                sc == HttpStatusCode.RedirectMethod || // 303
+                sc == HttpStatusCode.RedirectKeepVerb) // 307
+            {
+                var redirectionUrl = response.Headers.Location;
+                if (redirectionUrl == null)
+                {
+                    // 300
+                    // If the server has a preferred choice of representation,
+                    // it SHOULD include the specific URI for that
+                    // representation in the Location field; user agents MAY
+                    // use the Location field value for automatic redirection.
+
+                    if (sc != HttpStatusCode.Ambiguous)
+                        throw new ProtocolViolationException("Server did not supply a URL for a redirection response.");
+                }
+                else
+                {
+                    if (redirectionUrl.Scheme == "ws" || redirectionUrl.Scheme == "wss")
+                        throw new NotSupportedException($"Redirection to a WebSocket URL ({redirectionUrl}) is not supported.");
+
+                    if (redirectionUrl.Scheme != Uri.UriSchemeHttp && redirectionUrl.Scheme != Uri.UriSchemeHttps)
+                        throw new ProtocolViolationException(
+                            $"Server sent a redirection response where the redirection URL ({redirectionUrl}) scheme was neither HTTP nor HTTPS.");
+
+                    return sc == HttpStatusCode.RedirectMethod
+                        || method == HttpMethod.Post && (sc == HttpStatusCode.Moved || sc == HttpStatusCode.Redirect)
+                         ? redirectionSelector(config, HttpMethod.Get, redirectionUrl, null)
+                         : redirectionSelector(config, method, redirectionUrl, content);
+                   
+                }
+
+            }
+
+            return responseSelector(config, response);
         }
 
         public static IHttpObservable<T, HttpFetch<HttpContent>> Get<T>(this IHttpObservable<T, HttpFetch<HttpContent>> http, Uri url)
+            where T : IHttpCookies<T>
         {
             var q =
                 from _ in http
@@ -116,24 +228,29 @@ namespace WebLinq
         }
 
         public static IHttpObservable<T, HttpFetch<HttpContent>> Get<T>(
-                this IHttpObservable<T, HttpFetch<HttpContent>> http, Uri url, HttpOptions options) =>
+            this IHttpObservable<T, HttpFetch<HttpContent>> http, Uri url, HttpOptions options)
+            where T : IHttpCookies<T> =>
             http.HttpClient.Get(url, options);
 
-        public static IHttpObservable<T, HttpFetch<HttpContent>> Get<T>(this IHttpClient<T> http, Uri url) =>
+        public static IHttpObservable<T, HttpFetch<HttpContent>> Get<T>(this IHttpClient<T> http, Uri url)
+            where T : IHttpCookies<T> =>
             http.Get(url, null);
 
-        public static IHttpObservable<T, HttpFetch<HttpContent>> Get<T>(this IHttpClient<T> http, Uri url, HttpOptions options) =>
-                Observable.Defer(() => Observable.Return(Send(http, http.Config, 0, HttpMethod.Get, url, options: options)))
-                          .WithHttpClient(http);
+        public static IHttpObservable<T, HttpFetch<HttpContent>> Get<T>(this IHttpClient<T> http, Uri url, HttpOptions options)
+            where T : IHttpCookies<T> =>
+            Observable.Defer(() => Observable.Return(Send(http, http.Config, 0, HttpMethod.Get, url, options: options)))
+                        .WithHttpClient(http);
 
-        public static IHttpObservable<T, HttpFetch<HttpContent>> Post<T>(this IHttpClient<T> http, Uri url, NameValueCollection data) =>
+        public static IHttpObservable<T, HttpFetch<HttpContent>> Post<T>(this IHttpClient<T> http, Uri url, NameValueCollection data)
+            where T : IHttpCookies<T> =>
             http.Post(url, new FormUrlEncodedContent(from i in Enumerable.Range(0, data.Count)
                                                      from v in data.GetValues(i)
                                                      select data.GetKey(i).AsKeyTo(v)));
 
-        public static IHttpObservable<T, HttpFetch<HttpContent>> Post<T>(this IHttpClient<T> http, Uri url, HttpContent content) =>
-                Observable.Defer(() => Observable.Return(Send(http, http.Config, 0, HttpMethod.Post, url, content)))
-                          .WithHttpClient(http);
+        public static IHttpObservable<T, HttpFetch<HttpContent>> Post<T>(this IHttpClient<T> http, Uri url, HttpContent content)
+            where T : IHttpCookies<T> =>
+            Observable.Defer(() => Observable.Return(Send(http, http.Config, 0, HttpMethod.Post, url, content)))
+                      .WithHttpClient(http);
 
         public static IHttpClientObservable<T> WithTimeout<T>(this IHttpClientObservable<T> client, TimeSpan duration)
             where T : IHttpTimeoutOption<T> =>
@@ -159,6 +276,9 @@ namespace WebLinq
                 IHttpClient<HttpConfig> http = new HttpClient(configurator(HttpConfig.Default));
                 return Observable.Return(http);
             });
+
+        public static IObservable<TResult> Content<T, TResult>(this IObservable<HttpFetch<T>> query, Func<IHttpClient<HttpConfig>, T, TResult> selector) =>
+            from e in query select selector(e.Client, e.Content);
 
         public static IObservable<T> Content<T>(this IObservable<HttpFetch<T>> query) =>
             from e in query select e.Content;
@@ -189,36 +309,44 @@ namespace WebLinq
                 throw new Exception($"Unexpected content of type \"{actualMediaType}\". Acceptable types are: {string.Join(", ", mediaTypes)}");
             });
 
-        public static IHttpObservable<T, HttpFetch<HttpContent>> Submit<T>(this IHttpObservable<T, HttpFetch<HttpContent>> query, string formSelector, NameValueCollection data) =>
+        public static IHttpObservable<T, HttpFetch<HttpContent>> Submit<T>(this IHttpObservable<T, HttpFetch<HttpContent>> query, string formSelector, NameValueCollection data)
+            where T : IHttpCookies<T> =>
             query.Submit(query.HttpClient, formSelector, data);
 
-        public static IHttpObservable<T, HttpFetch<HttpContent>> Submit<T>(this IHttpObservable<T, HttpFetch<HttpContent>> query, int formIndex, NameValueCollection data) =>
+        public static IHttpObservable<T, HttpFetch<HttpContent>> Submit<T>(this IHttpObservable<T, HttpFetch<HttpContent>> query, int formIndex, NameValueCollection data)
+            where T : IHttpCookies<T> =>
             query.Submit(query.HttpClient, formIndex, data);
 
-        public static IHttpObservable<T, HttpFetch<HttpContent>> Submit<T>(this IObservable<HttpFetch<HttpContent>> query, IHttpClient<T> http, string formSelector, NameValueCollection data) =>
+        public static IHttpObservable<T, HttpFetch<HttpContent>> Submit<T>(this IObservable<HttpFetch<HttpContent>> query, IHttpClient<T> http, string formSelector, NameValueCollection data)
+            where T : IHttpCookies<T> =>
             query.Submit(http, formSelector, null, data);
 
-        public static IHttpObservable<T, HttpFetch<HttpContent>> Submit<T>(this IObservable<HttpFetch<HttpContent>> query, IHttpClient<T> http, int formIndex, NameValueCollection data) =>
+        public static IHttpObservable<T, HttpFetch<HttpContent>> Submit<T>(this IObservable<HttpFetch<HttpContent>> query, IHttpClient<T> http, int formIndex, NameValueCollection data)
+            where T : IHttpCookies<T> =>
             query.Submit(http, null, formIndex, data);
 
         static IHttpObservable<T, HttpFetch<HttpContent>> Submit<T>(this IObservable<HttpFetch<HttpContent>> query, IHttpClient<T> http, string formSelector, int? formIndex, NameValueCollection data)
+            where T : IHttpCookies<T>
         {
             var q =
                 from html in query.Html()
-                from fetch in Submit(http, html.Content, formSelector, formIndex, data)
+                from fetch in Submit(html.Client, html.Content, formSelector, formIndex, data)
                 select fetch;
             return q.WithHttpClient(http);
         }
 
-        public static IHttpObservable<T, HttpFetch<HttpContent>> Submit<T>(this IHttpClient<T> http, ParsedHtml html, string formSelector, NameValueCollection data) =>
+        public static IHttpObservable<T, HttpFetch<HttpContent>> Submit<T>(this IHttpClient<T> http, ParsedHtml html, string formSelector, NameValueCollection data)
+            where T : IHttpCookies<T> =>
             Submit(http, html, formSelector, null, data);
 
-        public static IHttpObservable<T, HttpFetch<HttpContent>> Submit<T>(this IHttpClient<T> http, ParsedHtml html, int formIndex, NameValueCollection data) =>
+        public static IHttpObservable<T, HttpFetch<HttpContent>> Submit<T>(this IHttpClient<T> http, ParsedHtml html, int formIndex, NameValueCollection data)
+            where T : IHttpCookies<T> =>
             Submit(http, html, null, formIndex, data);
 
         static IHttpObservable<T, HttpFetch<HttpContent>> Submit<T>(IHttpClient<T> http, ParsedHtml html,
-                                                    string formSelector, int? formIndex,
-                                                    NameValueCollection data)
+                                                                    string formSelector, int? formIndex,
+                                                                    NameValueCollection data)
+            where T : IHttpCookies<T>
         {
             var forms =
                 from f in formIndex == null
