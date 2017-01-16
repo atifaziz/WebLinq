@@ -31,8 +31,7 @@ namespace WebLinq.Samples
         static void GoogleSearch()
         {
             var q =
-                from http in Http
-                from sp in http.Get(new Uri("http://google.com/"))
+                from sp in Http.Get(new Uri("http://google.com/"))
                                .Submit(0, new NameValueCollection { ["q"] = "foobar" })
                                .Html()
                 from sr in
@@ -83,22 +82,23 @@ namespace WebLinq.Samples
         static void QueenSongs()
         {
             var q =
-                from http in Http
-                from t in http.Get(new Uri("https://en.wikipedia.org/wiki/Queen_discography")).Tables().Content()
-                              .Where(t => t.HasClass("wikitable"))
+                from t in Http.Get(new Uri("https://en.wikipedia.org/wiki/Queen_discography")).Tables().Content((http, t) => new { Http = http, Table = t })
+                              .Where(t => t.Table.HasClass("wikitable"))
                               .Take(1)
-                from tr in t.TableRows((_, trs) => trs)
-                select tr.FirstOrDefault(e => e?.AttributeValueEquals("scope", "row") == true) into th
+                from tr in t.Table.TableRows((_, trs) => trs)
+                let th = tr.FirstOrDefault(e => e?.AttributeValueEquals("scope", "row") == true)
                 where th != null
                 let a = th.QuerySelector("a[href]")
                 select new
                 {
+                    t.Http,
                     Title = a.GetAttributeValue("title")?.Trim(),
                     Href = a.Owner.TryBaseHref(a.GetAttributeValue("href")?.Trim()),
                 }
                 into e
                 select new
                 {
+                    e.Http,
                     e.Title,
                     Url = TryParse.Uri(e.Href, UriKind.Absolute),
                 }
@@ -107,8 +107,7 @@ namespace WebLinq.Samples
                 select e
                 into album
 
-                from http in Http
-                from html in http.Get(album.Url).Html().Content()
+                from html in album.Http.Get(album.Url).Html().Content()
 
                 from tb in html.Tables(".tracklist").Take(2)
                 let trs = tb.QuerySelectorAll("tr")

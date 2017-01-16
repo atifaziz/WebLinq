@@ -190,8 +190,7 @@ namespace WebLinq
             from e in query
             select e.WithConfig(e.Client.Config.WithUserAgent(ua));
 
-        public static IObservable<IHttpClient<HttpConfig>> Http =>
-            Observable.Return(new HttpClient(HttpConfig.Default));
+        public static readonly IHttpClient<HttpConfig> Http = new HttpClient(HttpConfig.Default);
 
         public static IObservable<IHttpClient<HttpConfig>> HttpWithConfig(
             Func<HttpConfig, HttpConfig> configurator) =>
@@ -324,7 +323,7 @@ namespace WebLinq
                 var url = dequeued.Value;
                 var level = dequeued.Key;
                 // TODO retry intermittent errors?
-                var fetch = Http.SelectMany(http => http.Get(url, new HttpOptions {ReturnErrorneousFetch = true})).Single();
+                var fetch = Http.Get(url, new HttpOptions {ReturnErrorneousFetch = true}).Single();
 
                 if (!fetch.IsSuccessStatusCode)
                     continue;
