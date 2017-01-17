@@ -19,12 +19,15 @@ namespace WebLinq
     #region Imports
 
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.Diagnostics;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Reactive.Concurrency;
+    using System.Reactive.Disposables;
     using System.Reactive.Linq;
     using Html;
     using Mannex.Collections.Generic;
@@ -157,6 +160,133 @@ namespace WebLinq
 
             return responseSelector(config, response);
         }
+
+        /*
+        public static IObservable<TResult> Scan<T, TContent, TResult>(this IObservable<T> source,
+            Func<T, IObservable<HttpFetch<TContent>>> seeder,
+            Func<T, IHttpClient<HttpConfig>, IObservable<HttpFetch<TContent>>> fetcher,
+            Func<T, HttpFetch<TContent>, TResult> selector) =>
+            Observable.Create<TResult>(o =>
+            {
+                var cts = new CancellationTokenSource();
+                var queue = new BlockingCollection<Tuple<T>>();
+                IDisposable ss;
+                var subscriptions = new CompositeDisposable();
+                var onNext = new Action<Tuple<T, HttpFetch<TContent>>>[] { null };
+                onNext[0] = t =>
+                {
+                    try
+                    {
+                        o.OnNext(selector(t.Item1, t.Item2));
+                        Tuple<T> xr;
+                        try
+                        {
+                            xr = queue.Take(cts.Token);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            return;
+                        }
+                        if (xr != null)
+                        {
+                            var x = xr.Item1;
+                            var s = fetcher(x, t.Item2.Client).Select(f => Tuple.Create(x, f)).Subscribe(onNext[0]);
+                            lock (subscriptions)
+                                subscriptions.Add(s);
+                        }
+                        else
+                        {
+                            o.OnCompleted();
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        lock (subscriptions)
+                            subscriptions.Dispose();
+                        o.OnError(e);
+                    }
+                };
+
+                var subscription = source.Select((x, i) => new KeyValuePair<int, T>(i, x)).Subscribe(x =>
+                {
+                    if (x.Key == 0)
+                    {
+                        ss = seeder(x.Value).Select(f => Tuple.Create(x.Value, f)).Subscribe(onNext[0]);
+                        lock (subscriptions) subscriptions.Add(ss);
+                    }
+                    else
+                        queue.Add(Tuple.Create(x.Value));
+                }, o.OnError, () => { queue.Add(null); });
+
+                lock (subscriptions)
+                    subscriptions.Add(subscription);
+
+                return Disposable.Create(() =>
+                {
+                    cts.Cancel();
+                    lock (subscriptions)
+                        subscriptions.Dispose();
+                });
+            });
+        */
+
+        public static IObservable<HttpFetch<TContent>> Scan<TContent>(this HttpFetch<TContent> initial,
+            Func<HttpFetch<TContent>, IObservable<HttpFetch<TContent>>> fetcher) =>
+            initial.Scan((f, _) => fetcher(f));
+
+        public static IObservable<HttpFetch<TContent>> Scan<TContent>(this HttpFetch<TContent> initial,
+            Func<HttpFetch<TContent>, int, IObservable<HttpFetch<TContent>>> fetcher) =>
+            Observable.Create<HttpFetch<TContent>>(o =>
+            {
+                var i = 0;
+                var subscription = new MultipleAssignmentDisposable();
+                var onNext = new Action<HttpFetch<TContent>>[] { null };
+                onNext[0] = f =>
+                {
+                    try
+                    {
+                        o.OnNext(f);
+                        if (subscription.IsDisposed)
+                            return;
+                        subscription.Disposable = fetcher(f, ++i).Subscribe(onNext[0]);
+                    }
+                    catch (Exception e)
+                    {
+                        subscription.Dispose();
+                        o.OnError(e);
+                    }
+                };
+                subscription.Disposable = fetcher(initial, i).Subscribe(onNext[0]);
+                return subscription;
+            });
+
+        public static IObservable<HttpFetch<TContent>> Scan<TContent>(this IHttpClient<HttpConfig> http,
+            Func<IHttpClient<HttpConfig>, IObservable<HttpFetch<TContent>>> fetcher) =>
+            http.Scan((f, _) => fetcher(f));
+
+        public static IObservable<HttpFetch<TContent>> Scan<TContent>(this IHttpClient<HttpConfig> http,
+            Func<IHttpClient<HttpConfig>, int, IObservable<HttpFetch<TContent>>> fetcher) =>
+            new HttpResponseMessage().ToHttpFetch(0, http)
+                                     .WithContent(default(TContent))
+                                     .Scan((f, i) => fetcher(f.Client, i));
+
+        public static IObservable<HttpFetch<TContent>> Scan<T, TContent>(this IObservable<T> query,
+            IHttpClient<HttpConfig> http,
+            Func<IHttpClient<HttpConfig>, T, IObservable<HttpFetch<TContent>>> fetchFunc) =>
+            Observable.Create<HttpFetch<TContent>>(s =>
+                query.Subscribe(e =>
+                {
+                    try
+                    {
+                        var r = fetchFunc(http, e).ToEnumerable().Single();
+                        s.OnNext(r);
+                        http = r.Client;
+                    }
+                    catch (Exception ex)
+                    {
+                        s.OnError(ex);
+                    }
+                }));
 
         public static IObservable<HttpFetch<HttpContent>> Get(
             this IObservable<HttpFetch<HttpContent>> query, Uri url) =>
