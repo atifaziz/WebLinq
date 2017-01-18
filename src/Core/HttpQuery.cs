@@ -97,6 +97,8 @@ namespace WebLinq
             if (response.Headers.TryGetValues("Set-Cookie", out cookies))
             {
                 var cc = new CookieContainer();
+                foreach (var cookie in http.Config.Cookies ?? Enumerable.Empty<Cookie>())
+                    cc.Add(cookie);
                 foreach (var cookie in cookies)
                     cc.SetCookies(url, cookie);
                 config = config.WithCookies(cc.GetCookies(url).Cast<Cookie>().ToArray());
