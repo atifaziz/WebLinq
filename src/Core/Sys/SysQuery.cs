@@ -40,6 +40,6 @@ namespace WebLinq.Sys
             Spawn(path, args, null, stdoutSelector, stderrSelector);
 
         public static IObservable<T> Spawn<T>(string path, string args, string workingDirectory, Func<string, T> stdoutSelector, Func<string, T> stderrSelector) =>
-            SpawnService.Default.Spawn(path, args, workingDirectory, stdoutSelector, stderrSelector);
+            Sys.Spawn.Default.Spawn(path, args, workingDirectory, stdoutSelector, stderrSelector);
     }
 }
