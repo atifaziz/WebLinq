@@ -25,6 +25,7 @@ namespace WebLinq
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Reactive.Linq;
     using Html;
     using Mannex.Collections.Generic;
     using Mannex.Collections.Specialized;
@@ -34,14 +35,178 @@ namespace WebLinq
 
     #endregion
 
+
     public static class HttpQuery
     {
-        public static HttpRequestBuilder<Unit> Http => new HttpRequestBuilder<Unit>();
+        static readonly int MaximumAutomaticRedirections = WebRequest.CreateHttp("http://localhost/").MaximumAutomaticRedirections;
 
-        public static IQuery<T> Content<T>(this IQuery<HttpFetch<T>> query) =>
+        static HttpFetch<HttpContent> Send(IHttpClient<HttpConfig> http, HttpConfig config, int id, HttpMethod method, Uri url, HttpContent content = null, HttpOptions options = null)
+        {
+            http = http.WithConfig(config);
+
+            for (var redirections = 0; ; redirections++)
+            {
+                if (redirections > MaximumAutomaticRedirections)
+                    throw new Exception("The maximum number of redirection responses permitted has been exceeded.");
+
+                var result =
+                    HttpFetch(http, http.Config, method, url, content, options,
+                        (cfg, rsp) => new
+                        {
+                            Config   = cfg,
+                            Method   = default(HttpMethod),
+                            Url      = default(Uri),
+                            Content  = default(HttpContent),
+                            Response = rsp,
+                        },
+                        (cfg, rm, rl, rc) => new
+                        {
+                            Config   = cfg,
+                            Method   = rm,
+                            Url      = rl,
+                            Content  = rc,
+                            Response = default(HttpResponseMessage),
+                        });
+
+                if (result.Response != null)
+                    return result.Response.ToHttpFetch(id, http.WithConfig(result.Config));
+
+                // TODO tail call recursion?
+
+                http    = http.WithConfig(result.Config);
+                method  = result.Method;
+                url     = result.Url;
+                content = result.Content;
+            }
+        }
+
+        static T HttpFetch<T>(IHttpClient<HttpConfig> http, HttpConfig config,
+            HttpMethod method, Uri url, HttpContent content, HttpOptions options,
+            Func<HttpConfig, HttpResponseMessage, T> responseSelector,
+            Func<HttpConfig, HttpMethod, Uri, HttpContent, T> redirectionSelector)
+        {
+            var request = new HttpRequestMessage
+            {
+                Method = method,
+                RequestUri = url,
+                Content = content
+            };
+
+            var response = http.Send(request, config, options);
+            IEnumerable<string> cookies;
+            if (response.Headers.TryGetValues("Set-Cookie", out cookies))
+            {
+                var cc = new CookieContainer();
+                foreach (var cookie in cookies)
+                    cc.SetCookies(url, cookie);
+                config = config.WithCookies(cc.GetCookies(url).Cast<Cookie>().ToArray());
+            }
+
+            // Source:
+            // https://referencesource.microsoft.com/#System/net/System/Net/HttpWebRequest.cs,5669
+            //
+            // Check for Redirection
+            //
+            // Table View:
+            // Method            301             302             303             307
+            //    *                *               *             GET               *
+            // POST              GET             GET             GET            POST
+            //
+            // Put another way:
+            //  301 & 302  - All methods are redirected to the same method but POST. POST is redirected to a GET.
+            //  303 - All methods are redirected to GET
+            //  307 - All methods are redirected to the same method.
+            //
+
+            var sc = response.StatusCode;
+            if (sc == HttpStatusCode.Ambiguous || // 300
+                sc == HttpStatusCode.Moved || // 301
+                sc == HttpStatusCode.Redirect || // 302
+                sc == HttpStatusCode.RedirectMethod || // 303
+                sc == HttpStatusCode.RedirectKeepVerb) // 307
+            {
+                var redirectionUrl = response.Headers.Location;
+                if (redirectionUrl == null)
+                {
+                    // 300
+                    // If the server has a preferred choice of representation,
+                    // it SHOULD include the specific URI for that
+                    // representation in the Location field; user agents MAY
+                    // use the Location field value for automatic redirection.
+
+                    if (sc != HttpStatusCode.Ambiguous)
+                        throw new ProtocolViolationException("Server did not supply a URL for a redirection response.");
+                }
+                else
+                {
+                    if (redirectionUrl.Scheme == "ws" || redirectionUrl.Scheme == "wss")
+                        throw new NotSupportedException($"Redirection to a WebSocket URL ({redirectionUrl}) is not supported.");
+
+                    if (redirectionUrl.Scheme != Uri.UriSchemeHttp && redirectionUrl.Scheme != Uri.UriSchemeHttps)
+                        throw new ProtocolViolationException(
+                            $"Server sent a redirection response where the redirection URL ({redirectionUrl}) scheme was neither HTTP nor HTTPS.");
+
+                    return sc == HttpStatusCode.RedirectMethod
+                        || method == HttpMethod.Post && (sc == HttpStatusCode.Moved || sc == HttpStatusCode.Redirect)
+                         ? redirectionSelector(config, HttpMethod.Get, redirectionUrl, null)
+                         : redirectionSelector(config, method, redirectionUrl, content);
+                   
+                }
+
+            }
+
+            return responseSelector(config, response);
+        }
+
+        public static IObservable<HttpFetch<HttpContent>> Get(
+            this IObservable<HttpFetch<HttpContent>> query, Uri url) =>
+            query.Get(url, null);
+
+        public static IObservable<HttpFetch<HttpContent>> Get(
+            this IObservable<HttpFetch<HttpContent>> query, Uri url, HttpOptions options) =>
+            from first in query
+            from second in first.Client.Get(url, options)
+            select second;
+
+        public static IObservable<HttpFetch<HttpContent>> Get(this IHttpClient<HttpConfig> http, Uri url) =>
+            http.Get(url, null);
+
+        public static IObservable<HttpFetch<HttpContent>> Get(this IHttpClient<HttpConfig> http, Uri url, HttpOptions options) =>
+            Observable.Defer(() => Observable.Return(Send(http, http.Config, 0, HttpMethod.Get, url, options: options)));
+
+        public static IObservable<HttpFetch<HttpContent>> Post(this IHttpClient<HttpConfig> http, Uri url, NameValueCollection data) =>
+            http.Post(url, new FormUrlEncodedContent(from i in Enumerable.Range(0, data.Count)
+                                                     from v in data.GetValues(i)
+                                                     select data.GetKey(i).AsKeyTo(v)));
+
+        public static IObservable<HttpFetch<HttpContent>> Post(this IHttpClient<HttpConfig> http, Uri url, HttpContent content) =>
+            Observable.Defer(() => Observable.Return(Send(http, http.Config, 0, HttpMethod.Post, url, content)));
+
+        public static IObservable<HttpFetch<T>> WithTimeout<T>(this IObservable<HttpFetch<T>> query, TimeSpan duration) =>
+            from e in query
+            select e.WithConfig(e.Client.Config.WithTimeout(duration));
+
+        public static IObservable<HttpFetch<T>> WithUserAgent<T>(this IObservable<HttpFetch<T>> query, string ua) =>
+            from e in query
+            select e.WithConfig(e.Client.Config.WithUserAgent(ua));
+
+        public static readonly IHttpClient<HttpConfig> Http = new HttpClient(HttpConfig.Default);
+
+        public static IObservable<IHttpClient<HttpConfig>> HttpWithConfig(
+            Func<HttpConfig, HttpConfig> configurator) =>
+            Observable.Defer(() =>
+            {
+                IHttpClient<HttpConfig> http = new HttpClient(configurator(HttpConfig.Default));
+                return Observable.Return(http);
+            });
+
+        public static IObservable<TResult> Content<TContent, TResult>(this IObservable<HttpFetch<TContent>> query, Func<IHttpClient<HttpConfig>, TContent, TResult> selector) =>
+            from e in query select selector(e.Client, e.Content);
+
+        public static IObservable<T> Content<T>(this IObservable<HttpFetch<T>> query) =>
             from e in query select e.Content;
 
-        public static IQuery<HttpFetch<HttpContent>> Accept(this IQuery<HttpFetch<HttpContent>> query, params string[] mediaTypes) =>
+        public static IObservable<HttpFetch<HttpContent>> Accept(this IObservable<HttpFetch<HttpContent>> query, params string[] mediaTypes) =>
             (mediaTypes?.Length ?? 0) == 0
             ? query
             : query.Do(e =>
@@ -67,26 +232,28 @@ namespace WebLinq
                 throw new Exception($"Unexpected content of type \"{actualMediaType}\". Acceptable types are: {string.Join(", ", mediaTypes)}");
             });
 
-        public static IQuery<HttpFetch<HttpContent>> Submit(this IQuery<HttpFetch<HttpContent>> query, string formSelector, NameValueCollection data) =>
+        public static IObservable<HttpFetch<HttpContent>> Submit(this IObservable<HttpFetch<HttpContent>> query, string formSelector, NameValueCollection data) =>
             Submit(query, formSelector, null, data);
 
-        public static IQuery<HttpFetch<HttpContent>> Submit(this IQuery<HttpFetch<HttpContent>> query, int formIndex, NameValueCollection data) =>
+        public static IObservable<HttpFetch<HttpContent>> Submit(this IObservable<HttpFetch<HttpContent>> query, int formIndex, NameValueCollection data) =>
             Submit(query, null, formIndex, data);
 
-        static IQuery<HttpFetch<HttpContent>> Submit(this IQuery<HttpFetch<HttpContent>> query, string formSelector, int? formIndex, NameValueCollection data) =>
+        static IObservable<HttpFetch<HttpContent>> Submit(IObservable<HttpFetch<HttpContent>> query, string formSelector, int? formIndex, NameValueCollection data) =>
             from html in query.Html()
-            from fetch in Submit(html.Content, formSelector, formIndex, data)
+            from fetch in Submit(html.Client, html.Content, formSelector, formIndex, data)
             select fetch;
 
-        public static IQuery<HttpFetch<HttpContent>> Submit(ParsedHtml html, string formSelector, NameValueCollection data) =>
-            Submit(html, formSelector, null, data);
+        public static IObservable<HttpFetch<HttpContent>> Submit<T>(this IHttpClient<HttpConfig> http, ParsedHtml html, string formSelector, NameValueCollection data)
+            where T : IHttpCookies<T> =>
+            Submit(http, html, formSelector, null, data);
 
-        public static IQuery<HttpFetch<HttpContent>> Submit(ParsedHtml html, int formIndex, NameValueCollection data) =>
-            Submit(html, null, formIndex, data);
+        public static IObservable<HttpFetch<HttpContent>> Submit<T>(this IHttpClient<HttpConfig> http, ParsedHtml html, int formIndex, NameValueCollection data)
+            where T : IHttpCookies<T> =>
+            Submit(http, html, null, formIndex, data);
 
-        static IQuery<HttpFetch<HttpContent>> Submit(ParsedHtml html,
-                                                    string formSelector, int? formIndex,
-                                                    NameValueCollection data)
+        static IObservable<HttpFetch<HttpContent>> Submit(IHttpClient<HttpConfig> http, ParsedHtml html,
+                                                          string formSelector, int? formIndex,
+                                                          NameValueCollection data)
         {
             var forms =
                 from f in formIndex == null
@@ -119,11 +286,11 @@ namespace WebLinq
             }
 
             return form.Method == HtmlFormMethod.Post
-                 ? Http.Post(form.Action, form.Data)
-                 : Http.Get(new UriBuilder(form.Action) { Query = form.Data.ToW3FormEncoded() }.Uri);
+                 ? http.Post(form.Action, form.Data)
+                 : http.Get(new UriBuilder(form.Action) { Query = form.Data.ToW3FormEncoded() }.Uri);
         }
 
-        public static IQuery<HttpFetch<T>> ExceptStatusCode<T>(this IQuery<HttpFetch<T>> query, params HttpStatusCode[] statusCodes) =>
+        public static IObservable<HttpFetch<T>> ExceptStatusCode<T>(this IObservable<HttpFetch<T>> query, params HttpStatusCode[] statusCodes) =>
             query.Do(e =>
             {
                 if (e.IsSuccessStatusCode || statusCodes.Any(sc => e.StatusCode == sc))
@@ -132,19 +299,19 @@ namespace WebLinq
                 throw new HttpRequestException($"Response status code does not indicate success: {e.StatusCode}.");
             });
 
-        public static IQuery<HttpFetch<HttpContent>> Crawl(Uri url) =>
+        public static IObservable<HttpFetch<HttpContent>> Crawl(Uri url) =>
             Crawl(url, int.MaxValue);
 
-        public static IQuery<HttpFetch<HttpContent>> Crawl(Uri url, int depth) =>
+        public static IObservable<HttpFetch<HttpContent>> Crawl(Uri url, int depth) =>
             Crawl(url, depth, _ => true);
 
-        public static IQuery<HttpFetch<HttpContent>> Crawl(Uri url, Func<Uri, bool> followPredicate) =>
+        public static IObservable<HttpFetch<HttpContent>> Crawl(Uri url, Func<Uri, bool> followPredicate) =>
             Crawl(url, int.MaxValue, followPredicate);
 
-        public static IQuery<HttpFetch<HttpContent>> Crawl(Uri url, int depth, Func<Uri, bool> followPredicate) =>
-            Query.Create(context => CrawlImpl(context, url, depth, followPredicate));
+        public static IObservable<HttpFetch<HttpContent>> Crawl(Uri url, int depth, Func<Uri, bool> followPredicate) =>
+            CrawlImpl(url, depth, followPredicate).ToObservable();
 
-        static IEnumerable<QueryResultItem<HttpFetch<HttpContent>>> CrawlImpl(QueryContext context, Uri rootUrl, int depth, Func<Uri, bool> followPredicate)
+        static IEnumerable<HttpFetch<HttpContent>> CrawlImpl(Uri rootUrl, int depth, Func<Uri, bool> followPredicate)
         {
             var linkSet = new HashSet<Uri> { rootUrl };
             var queue = new Queue<KeyValuePair<int, Uri>>();
@@ -156,14 +323,12 @@ namespace WebLinq
                 var url = dequeued.Value;
                 var level = dequeued.Key;
                 // TODO retry intermittent errors?
-                var fetchResult = Http.ReturnErrorneousFetch().Get(url).GetResult(context).Single();
-                var fetch = fetchResult.Value;
+                var fetch = Http.Get(url, new HttpOptions {ReturnErrorneousFetch = true}).Single();
 
                 if (!fetch.IsSuccessStatusCode)
                     continue;
 
-                yield return fetchResult;
-                context = fetchResult.Context;
+                yield return fetch;
 
                 if (level >= depth)
                     continue;
@@ -177,7 +342,7 @@ namespace WebLinq
                     continue;
 
                 var lq =
-                    from e in Query.Singleton(fetch).Links().Content()
+                    from e in Observable.Return(fetch).Links().Content()
                     select TryParse.Uri(e, UriKind.Absolute) into e
                     where e != null
                        && (e.Scheme == Uri.UriSchemeHttp || e.Scheme == Uri.UriSchemeHttps)
@@ -186,12 +351,10 @@ namespace WebLinq
                        && followPredicate(e)
                     select e;
 
-                var links = lq.GetResult(context);
-                foreach (var e in links)
+                foreach (var e in lq.ToEnumerable())
                 {
                     if (linkSet.Add(e))
-                        queue.Enqueue((level + 1).AsKeyTo(e.Value));
-                    context = e.Context;
+                        queue.Enqueue((level + 1).AsKeyTo(e));
                 }
             }
         }
