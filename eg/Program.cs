@@ -37,13 +37,13 @@ namespace WebLinq.Samples
                                .Submit(0, new NameValueCollection { ["q"] = "foobar" })
                                .Html()
                 from sr in
-                    Query.Generate(sp, curr =>
+                    Observable.Generate(sp, _ => true, curr =>
                     {
                         var next = curr.Content.TryBaseHref(curr.Content.QuerySelectorAll("#foot a.fl")
                                                         .Last() // Next
                                                         .GetAttributeValue("href"));
                         return curr.Client.Get(new Uri(next)).Html().Single();
-                    })
+                    }, h => h)
                     .TakeWhile(h => (TryParse.Int32(HttpUtility.ParseQueryString(h.Content.BaseUrl.Query)["start"]) ?? 1) < 30)
                 select sr.Content into sr
                 from r in sr.QuerySelectorAll(".g")

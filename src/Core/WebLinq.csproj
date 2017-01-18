@@ -96,7 +96,6 @@
       <DependentUpon>AssemblyInfo.g.tt</DependentUpon>
     </Compile>
     <Compile Include="ComparerExtensions.cs" />
-    <Compile Include="Query.cs" />
     <Compile Include="Collections\MapBase.cs" />
     <Compile Include="Collections\Map.cs" />
     <Compile Include="DelegateExtensions.cs" />
