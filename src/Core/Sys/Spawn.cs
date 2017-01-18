@@ -60,12 +60,12 @@ namespace WebLinq.Sys
     public static class Spawn
     {
         public static ISpawn Default => new SysSpawn();
-    }
 
-    class SysSpawn : ISpawn
-    {
-        public IObservable<T> Spawn<T>(string path, string args, string workingDirectory, Func<string, T> stdoutSelector, Func<string, T> stderrSelector) =>
-            SpawnCore(path, args, workingDirectory, stdoutSelector, stderrSelector).ToObservable();
+        sealed class SysSpawn : ISpawn
+        {
+            public IObservable<T> Spawn<T>(string path, string args, string workingDirectory, Func<string, T> stdoutSelector, Func<string, T> stderrSelector) =>
+                SpawnCore(path, args, workingDirectory, stdoutSelector, stderrSelector).ToObservable();
+        }
 
         // TODO Make true observable
         static IEnumerable<T> SpawnCore<T>(string path, string args, string workingDirectory, Func<string, T> stdoutSelector, Func<string, T> stderrSelector)
