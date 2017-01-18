@@ -27,6 +27,7 @@ namespace WebLinq.Sys
     using System.Reactive.Linq;
     using System.Threading.Tasks;
     using Mannex;
+    using Mannex.Collections.Generic;
     using Mannex.Diagnostics;
 
     #endregion
@@ -34,6 +35,26 @@ namespace WebLinq.Sys
     public interface ISpawn
     {
         IObservable<T> Spawn<T>(string path, string args, string workingDirectory, Func<string, T> stdoutSelector, Func<string, T> stderrSelector);
+    }
+
+    public static class SpawnExtensions
+    {
+        public static IObservable<string> Spawn(this ISpawn spawn, string path, string args) =>
+            spawn.Spawn(path, args, null);
+
+        public static IObservable<string> Spawn(this ISpawn spawn, string path, string args, string workingDirectory) =>
+            spawn.Spawn(path, args, workingDirectory, output => output, null);
+
+        public static IObservable<KeyValuePair<T, string>> Spawn<T>(this ISpawn spawn, string path, string args, T stdoutKey, T stderrKey) =>
+            spawn.Spawn(path, args, null, stdoutKey, stderrKey);
+
+        public static IObservable<KeyValuePair<T, string>> Spawn<T>(this ISpawn spawn, string path, string args, string workingDirectory, T stdoutKey, T stderrKey) =>
+            spawn.Spawn(path, args, workingDirectory,
+                        stdout => stdoutKey.AsKeyTo(stdout),
+                        stderr => stderrKey.AsKeyTo(stderr));
+
+        public static IObservable<T> Spawn<T>(this ISpawn spawn, string path, string args, Func<string, T> stdoutSelector, Func<string, T> stderrSelector) =>
+            spawn.Spawn(path, args, null, stdoutSelector, stderrSelector);
     }
 
     public static class Spawn
