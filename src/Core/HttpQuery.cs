@@ -125,7 +125,7 @@ namespace WebLinq
                 sc == HttpStatusCode.RedirectMethod || // 303
                 sc == HttpStatusCode.RedirectKeepVerb) // 307
             {
-                var redirectionUrl = response.Headers.Location;
+                var redirectionUrl = response.Headers.Location?.AsRelativeTo(response.RequestMessage.RequestUri);
                 if (redirectionUrl == null)
                 {
                     // 300
@@ -357,6 +357,15 @@ namespace WebLinq
                         queue.Enqueue((level + 1).AsKeyTo(e));
                 }
             }
+        }
+    }
+
+    static class UriExtensions
+    {
+        public static Uri AsRelativeTo(this Uri uri, Uri baseUri)
+        {
+            if (uri == null) throw new ArgumentNullException(nameof(uri));
+            return uri.IsAbsoluteUri ? uri : new Uri(baseUri, uri);
         }
     }
 }
