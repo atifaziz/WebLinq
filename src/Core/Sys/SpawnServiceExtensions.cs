@@ -24,6 +24,7 @@ namespace WebLinq.Sys
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
+    using System.Reactive.Linq;
     using System.Threading.Tasks;
     using Mannex;
     using Mannex.Diagnostics;
@@ -32,7 +33,7 @@ namespace WebLinq.Sys
 
     public interface ISpawnService
     {
-        IEnumerable<T> Spawn<T>(string path, string args, string workingDirectory, Func<string, T> stdoutSelector, Func<string, T> stderrSelector);
+        IObservable<T> Spawn<T>(string path, string args, string workingDirectory, Func<string, T> stdoutSelector, Func<string, T> stderrSelector);
     }
 
     public static class SpawnService
@@ -40,9 +41,13 @@ namespace WebLinq.Sys
         public static ISpawnService Default => new SysSpawnService();
     }
 
-    public sealed class SysSpawnService : ISpawnService
+    class SysSpawnService : ISpawnService
     {
-        public IEnumerable<T> Spawn<T>(string path, string args, string workingDirectory, Func<string, T> stdoutSelector, Func<string, T> stderrSelector)
+        public IObservable<T> Spawn<T>(string path, string args, string workingDirectory, Func<string, T> stdoutSelector, Func<string, T> stderrSelector) =>
+            SpawnCore(path, args, workingDirectory, stdoutSelector, stderrSelector).ToObservable();
+
+        // TODO Make true observable
+        static IEnumerable<T> SpawnCore<T>(string path, string args, string workingDirectory, Func<string, T> stdoutSelector, Func<string, T> stderrSelector)
         {
             using (var process = Process.Start(new ProcessStartInfo(path, args)
             {

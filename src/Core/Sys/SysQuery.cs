@@ -18,7 +18,6 @@ namespace WebLinq.Sys
 {
     using System;
     using System.Collections.Generic;
-    using System.Reactive.Linq;
     using Mannex.Collections.Generic;
 
     public static class SysQuery
@@ -41,7 +40,6 @@ namespace WebLinq.Sys
             Spawn(path, args, null, stdoutSelector, stderrSelector);
 
         public static IObservable<T> Spawn<T>(string path, string args, string workingDirectory, Func<string, T> stdoutSelector, Func<string, T> stderrSelector) =>
-            SpawnService.Default.Spawn(path, args, workingDirectory, stdoutSelector, stderrSelector)
-                                .ToObservable();
+            SpawnService.Default.Spawn(path, args, workingDirectory, stdoutSelector, stderrSelector);
     }
 }
