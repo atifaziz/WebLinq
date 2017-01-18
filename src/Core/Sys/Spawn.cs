@@ -31,17 +31,17 @@ namespace WebLinq.Sys
 
     #endregion
 
-    public interface ISpawnService
+    public interface ISpawn
     {
         IObservable<T> Spawn<T>(string path, string args, string workingDirectory, Func<string, T> stdoutSelector, Func<string, T> stderrSelector);
     }
 
-    public static class SpawnService
+    public static class Spawn
     {
-        public static ISpawnService Default => new SysSpawnService();
+        public static ISpawn Default => new SysSpawn();
     }
 
-    class SysSpawnService : ISpawnService
+    class SysSpawn : ISpawn
     {
         public IObservable<T> Spawn<T>(string path, string args, string workingDirectory, Func<string, T> stdoutSelector, Func<string, T> stderrSelector) =>
             SpawnCore(path, args, workingDirectory, stdoutSelector, stderrSelector).ToObservable();

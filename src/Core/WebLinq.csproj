@@ -120,7 +120,7 @@
     <Compile Include="Mime\MimeMap.cs" />
     <Compile Include="HttpQuery.cs" />
     <Compile Include="Collections\ReadOnlyCollection.cs" />
-    <Compile Include="Sys\SpawnServiceExtensions.cs" />
+    <Compile Include="Sys\Spawn.cs" />
     <Compile Include="Sys\SysQuery.cs" />
     <Compile Include="Text\TextQuery.cs" />
     <Compile Include="Unit.cs" />
