@@ -15,8 +15,8 @@ namespace WebLinq.Samples
     using TryParsers;
     using Xml;
     using static HttpQuery;
-    using static Sys.SysQuery;
     using Html;
+    using Sys;
 
     #endregion
 
@@ -67,7 +67,7 @@ namespace WebLinq.Samples
             var ns = XNamespace.Get("http://schemas.microsoft.com/windows/2004/02/mit/task");
 
             var q =
-                from xml in Spawn("schtasks", @"/query /xml ONE").Delimited(Environment.NewLine)
+                from xml in Spawn.Default.Spawn("schtasks", "/query /xml ONE").Delimited(Environment.NewLine)
                 from doc in XmlQuery.Xml(new StringContent(xml))
                 from t in doc.Elements("Tasks").Elements(ns + "Task")
                 from e in t.Elements(ns + "Actions").Elements(ns + "Exec")
