@@ -8,6 +8,7 @@ namespace WebLinq.Samples
     using System.Linq;
     using System.Net.Http;
     using System.Text.RegularExpressions;
+    using System.Reactive.Linq;
     using System.Web;
     using System.Xml.Linq;
     using Text;
@@ -15,7 +16,6 @@ namespace WebLinq.Samples
     using Xml;
     using static HttpQuery;
     using static Sys.SysQuery;
-    using static Html.HtmlQuery;
     using Html;
 
     #endregion
@@ -33,24 +33,25 @@ namespace WebLinq.Samples
         static void GoogleSearch()
         {
             var q =
-                from sp in Http.Get(new Uri("https://google.com/"))
+                from sp in Http.Get(new Uri("http://google.com/"))
                                .Submit(0, new NameValueCollection { ["q"] = "foobar" })
-                               .Html().Content()
+                               .Html()
                 from sr in
                     Query.Generate(sp, curr =>
                     {
-                        var next = curr.TryBaseHref(curr.QuerySelectorAll("#foot a.fl")
+                        var next = curr.Content.TryBaseHref(curr.Content.QuerySelectorAll("#foot a.fl")
                                                         .Last() // Next
                                                         .GetAttributeValue("href"));
-                        return Http.Get(new Uri(next)).Html().Content();
+                        return curr.Client.Get(new Uri(next)).Html().Single();
                     })
-                    .TakeWhile(h => (TryParse.Int32(HttpUtility.ParseQueryString(h.BaseUrl.Query)["start"]) ?? 1) < 30)
+                    .TakeWhile(h => (TryParse.Int32(HttpUtility.ParseQueryString(h.Content.BaseUrl.Query)["start"]) ?? 1) < 30)
+                select sr.Content into sr
                 from r in sr.QuerySelectorAll(".g")
                 select new
                 {
-                    Title   = r.QuerySelector(".r")?.InnerText,
+                    Title = r.QuerySelector(".r")?.InnerText,
                     Summary = r.QuerySelector(".st")?.InnerText,
-                    Href    = sr.TryBaseHref(r.QuerySelector(".r a")?.GetAttributeValue("href")),
+                    Href = sr.TryBaseHref(r.QuerySelector(".r a")?.GetAttributeValue("href")),
                 }
                 into e
                 where !string.IsNullOrWhiteSpace(e.Title)
@@ -83,22 +84,23 @@ namespace WebLinq.Samples
         static void QueenSongs()
         {
             var q =
-
-                from t in Http.Get(new Uri("https://en.wikipedia.org/wiki/Queen_discography")).Tables().Content()
-                              .Where(t => t.HasClass("wikitable"))
+                from t in Http.Get(new Uri("https://en.wikipedia.org/wiki/Queen_discography")).Tables().Content((http, t) => new { Http = http, Table = t })
+                              .Where(t => t.Table.HasClass("wikitable"))
                               .Take(1)
-                from tr in t.TableRows((_, trs) => trs)
-                select tr.FirstOrDefault(e => e?.AttributeValueEquals("scope", "row") == true) into th
+                from tr in t.Table.TableRows((_, trs) => trs)
+                let th = tr.FirstOrDefault(e => e?.AttributeValueEquals("scope", "row") == true)
                 where th != null
                 let a = th.QuerySelector("a[href]")
                 select new
                 {
+                    t.Http,
                     Title = a.GetAttributeValue("title")?.Trim(),
                     Href = a.Owner.TryBaseHref(a.GetAttributeValue("href")?.Trim()),
                 }
                 into e
                 select new
                 {
+                    e.Http,
                     e.Title,
                     Url = TryParse.Uri(e.Href, UriKind.Absolute),
                 }
@@ -107,7 +109,7 @@ namespace WebLinq.Samples
                 select e
                 into album
 
-                from html in Http.Get(album.Url).Html().Content()
+                from html in album.Http.Get(album.Url).Html().Content()
 
                 from tb in html.Tables(".tracklist").Take(2)
                 let trs = tb.QuerySelectorAll("tr")
@@ -178,10 +180,10 @@ namespace WebLinq.Samples
             q.Dump();
         }
 
-        static void Dump<T>(this IQuery<T> query, TextWriter output = null)
+        static void Dump<T>(this IObservable<T> query, TextWriter output = null)
         {
             output = output ?? Console.Out;
-            foreach (var e in query.ToEnumerable(DefaultQueryContext.Create))
+            foreach (var e in query.ToEnumerable())
                 output.WriteLine(e);
         }
     }

@@ -17,9 +17,15 @@
 namespace WebLinq.Html
 {
     using System;
+    using System.Reactive.Linq;
 
     public interface IHtmlParser
     {
         ParsedHtml Parse(string html, Uri baseUrl);
+    }
+
+    public static class HtmlParser
+    {
+        public static IObservable<IHtmlParser> Default => Observable.Return(new HapHtmlParser());
     }
 }

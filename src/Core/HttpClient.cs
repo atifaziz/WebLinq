@@ -34,18 +34,30 @@ namespace WebLinq
         public bool ReturnErrorneousFetch { get; set; }
     }
 
-    public interface IHttpClient
+    public interface IHttpClient<T>
     {
-        HttpResponseMessage Send(HttpRequestMessage request, HttpConfig config, HttpOptions options);
+        T Config { get; }
+        IHttpClient<T> WithConfig(T config);
+        HttpResponseMessage Send(HttpRequestMessage request, T config, HttpOptions options);
     }
 
-    public class HttpClient : IHttpClient
+    public class HttpClient : IHttpClient<HttpConfig>
     {
+        public HttpConfig Config { get; }
+
+        public HttpClient(HttpConfig config)
+        {
+            Config = config;
+        }
+
+        public IHttpClient<HttpConfig> WithConfig(HttpConfig config) =>
+            new HttpClient(config);
+
         public void Register(Action<Type, object> registrationHandler) =>
-            registrationHandler(typeof(IHttpClient), this);
+            registrationHandler(typeof(IHttpClient<HttpConfig>), this);
 
         public virtual HttpResponseMessage Send(HttpRequestMessage request, HttpConfig config, HttpOptions options) =>
-            SendAsync(request, config, options).Result;
+            SendAsync(request, config ?? Config, options).Result;
 
         static async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpConfig config, HttpOptions options)
         {
@@ -53,9 +65,17 @@ namespace WebLinq
 
             hwreq.Method                = request.Method.Method;
             hwreq.Timeout               = (int)config.Timeout.TotalMilliseconds;
-            hwreq.CookieContainer       = config.Cookies;
             hwreq.Credentials           = config.Credentials;
             hwreq.UseDefaultCredentials = config.UseDefaultCredentials;
+            hwreq.AllowAutoRedirect     = false;
+
+            if (config.Cookies?.Any() == true)
+            {
+                CookieContainer cookies;
+                hwreq.CookieContainer = cookies = new CookieContainer();
+                foreach (var cookie in config.Cookies)
+                    cookies.Add(cookie);
+            }
 
             var userAgent = request.Headers.UserAgent.ToString();
             hwreq.UserAgent = userAgent.Length > 0 ? userAgent : config.UserAgent;

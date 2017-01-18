@@ -16,12 +16,14 @@
 
 namespace WebLinq.Zip
 {
+    using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Net.Http;
 
     public static class ZipQuery
     {
-        public static IQuery<HttpFetch<Zip>> DownloadZip(this IQuery<HttpFetch<HttpContent>> query) =>
+        public static IEnumerable<HttpFetch<Zip>> DownloadZip(this IEnumerable<HttpFetch<HttpContent>> query) =>
             from fetch in query
             select fetch.WithContent(new Zip(DownloadZip(fetch.Content)));
 

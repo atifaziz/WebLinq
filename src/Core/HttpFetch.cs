@@ -20,24 +20,18 @@ namespace WebLinq
     using System.Diagnostics;
     using System.Net;
 
-    sealed class HttpFetchId
-    {
-        public static readonly HttpFetchId Class = new HttpFetchId();
-        HttpFetchId() { }
-        public static TypedValue<HttpFetchId, int> New(int value) => new TypedValue<HttpFetchId, int>(value, Class);
-    }
-
     public static class HttpFetch
     {
         public static HttpFetch<T> Create<T>(int id,
                                              T content,
+                                             IHttpClient<HttpConfig> client,
                                              Version httpVersion,
                                              HttpStatusCode statusCode,
                                              string reasonPhrase,
                                              HttpHeaderCollection headers,
                                              Uri requestUrl,
                                              HttpHeaderCollection requestHeaders) =>
-            new HttpFetch<T>(id, content,
+            new HttpFetch<T>(id, content, client,
                              httpVersion, statusCode, reasonPhrase, headers,
                              requestUrl, requestHeaders);
     }
@@ -49,6 +43,7 @@ namespace WebLinq
 
         public int Id                              { get; }
         public T Content                           { get; private set; }
+        public IHttpClient<HttpConfig> Client      { get; }
         public Version HttpVersion                 { get; }
         public HttpStatusCode StatusCode           { get; }
         public string ReasonPhrase                 { get; }
@@ -58,6 +53,7 @@ namespace WebLinq
 
         public HttpFetch(int id,
                          T content,
+                         IHttpClient<HttpConfig> client,
                          Version httpVersion,
                          HttpStatusCode statusCode,
                          string reasonPhrase,
@@ -67,6 +63,7 @@ namespace WebLinq
         {
             Id             = id;
             Content        = content;
+            Client         = client;
             HttpVersion    = httpVersion;
             StatusCode     = statusCode;
             ReasonPhrase   = reasonPhrase;
@@ -89,8 +86,13 @@ namespace WebLinq
         }
 
         public HttpFetch<TContent> WithContent<TContent>(TContent content) =>
-            new HttpFetch<TContent>(Id, content,
+            new HttpFetch<TContent>(Id, content, Client,
                                     HttpVersion, StatusCode, ReasonPhrase, Headers,
                                     RequestUrl, RequestHeaders);
+
+        public HttpFetch<T> WithConfig(HttpConfig config) =>
+            new HttpFetch<T>(Id, Content, Client.WithConfig(config),
+                             HttpVersion, StatusCode, ReasonPhrase, Headers,
+                             RequestUrl, RequestHeaders);
     }
 }

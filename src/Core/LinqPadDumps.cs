@@ -20,6 +20,7 @@
 namespace WebLinq
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
 
     partial class Query<T>
@@ -29,9 +30,9 @@ namespace WebLinq
 
         sealed class ObservableQuery : IObservable<T>
         {
-            readonly IQuery<T> _query;
+            readonly IEnumerable<T> _query;
 
-            public ObservableQuery(IQuery<T> query)
+            public ObservableQuery(IEnumerable<T> query)
             {
                 _query = query;
             }
@@ -41,7 +42,7 @@ namespace WebLinq
                 Exception error = null;
                 try
                 {
-                    foreach (var e in _query.ToEnumerable(DefaultQueryContext.Create))
+                    foreach (var e in _query)
                         observer.OnNext(e);
                 }
                 catch (Exception e)
