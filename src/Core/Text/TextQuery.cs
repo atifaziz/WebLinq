@@ -28,6 +28,7 @@ namespace WebLinq.Text
 
 
         public static IObservable<HttpFetch<string>> Text(this IObservable<HttpFetch<HttpContent>> query) =>
+            // TODO fix to be non-blocking
             from fetch in query select fetch.WithContent(fetch.Content.ReadAsStringAsync().Result);
     }
 }

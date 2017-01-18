@@ -17,7 +17,6 @@
 namespace WebLinq.Html
 {
     using System;
-    using System.Reactive.Linq;
 
     public interface IHtmlParser
     {
@@ -26,6 +25,6 @@ namespace WebLinq.Html
 
     public static class HtmlParser
     {
-        public static IObservable<IHtmlParser> Default => Observable.Return(new HapHtmlParser());
+        public static IHtmlParser Default => new HapHtmlParser();
     }
 }

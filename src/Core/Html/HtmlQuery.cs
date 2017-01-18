@@ -17,6 +17,7 @@
 namespace WebLinq.Html
 {
     using System;
+    using System.Collections.Generic;
     using System.Data;
     using System.Linq;
     using System.Net.Http;
@@ -27,37 +28,33 @@ namespace WebLinq.Html
 
     public static class HtmlQuery
     {
-        public static IObservable<ParsedHtml> Html(string html) =>
+        public static ParsedHtml Html(string html) =>
             Html(html, null);
 
-        public static IObservable<ParsedHtml> Html(string html, Uri baseUrl) =>
-            from hps in HtmlParser.Default
-            select hps.Parse(html, baseUrl);
+        public static ParsedHtml Html(string html, Uri baseUrl) =>
+            HtmlParser.Default.Parse(html, baseUrl);
 
         public static IObservable<HttpFetch<ParsedHtml>> Html(this IObservable<HttpFetch<HttpContent>> query) =>
             from fetch in query.Accept(MediaTypeNames.Text.Html)
-            from hps in HtmlParser.Default
-            select fetch.WithContent(hps.Parse(fetch.Content.ReadAsStringAsync().Result, fetch.RequestUrl));
+            select fetch.WithContent(Html(fetch.Content.ReadAsStringAsync().Result, fetch.RequestUrl));
 
-        public static IObservable<string> Links(string html) =>
+        public static IEnumerable<string> Links(string html) =>
             Links(html, null, (href, _) => href);
 
-        public static IObservable<T> Links<T>(string html, Func<string, string, T> selector) =>
+        public static IEnumerable<T> Links<T>(string html, Func<string, string, T> selector) =>
             Links(html, null, selector);
 
-        public static IObservable<string> Links(string html, Uri baseUrl) =>
+        public static IEnumerable<string> Links(string html, Uri baseUrl) =>
             Links(html, baseUrl, (href, _) => href);
 
-        public static IObservable<T> Links<T>(string html, Uri baseUrl, Func<string, string, T> selector) =>
-            from ph in Html(html, baseUrl)
-            from link in Links(ph, selector)
-            select link;
+        public static IEnumerable<T> Links<T>(string html, Uri baseUrl, Func<string, string, T> selector) =>
+            Links(Html(html, baseUrl), selector);
 
-        public static IObservable<string> Links(ParsedHtml html) =>
+        public static IEnumerable<string> Links(ParsedHtml html) =>
             Links(html, (href, _) => href);
 
-        public static IObservable<T> Links<T>(ParsedHtml html, Func<string, string, T> selector) =>
-            html.Links((href, ho) => selector(href, ho.InnerHtml)).ToObservable();
+        public static IEnumerable<T> Links<T>(ParsedHtml html, Func<string, string, T> selector) =>
+            html.Links((href, ho) => selector(href, ho.InnerHtml));
 
         public static IObservable<HttpFetch<string>> Links(this IObservable<HttpFetch<HttpContent>> query) =>
             query.Links(null);
@@ -73,13 +70,11 @@ namespace WebLinq.Html
             from link in Links(html.Content, (href, txt) => html.WithContent(selector(href, txt)))
             select link;
 
-        public static IObservable<HtmlObject> Tables(string html) =>
-            from ph in Html(html)
-            from t in Tables(html)
-            select t;
+        public static IEnumerable<HtmlObject> Tables(string html) =>
+            Tables(Html(html));
 
-        public static IObservable<HtmlObject> Tables(ParsedHtml html) =>
-            html.Tables(null).ToObservable();
+        public static IEnumerable<HtmlObject> Tables(ParsedHtml html) =>
+            html.Tables(null);
 
         public static IObservable<HttpFetch<HtmlObject>> Tables(this IObservable<HttpFetch<HttpContent>> query) =>
             from f in query.Html()
