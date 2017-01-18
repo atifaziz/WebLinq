@@ -130,7 +130,6 @@
     <Compile Include="Zip\ZipQuery.cs" />
     <Compile Include="Zip\Zip.cs" />
     <Compile Include="Mapper.cs" />
-    <Compile Include="Vars.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />
