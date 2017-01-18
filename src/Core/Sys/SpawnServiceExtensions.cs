@@ -24,7 +24,6 @@ namespace WebLinq.Sys
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
-    using System.Reactive.Linq;
     using System.Threading.Tasks;
     using Mannex;
     using Mannex.Diagnostics;
@@ -38,13 +37,7 @@ namespace WebLinq.Sys
 
     public static class SpawnService
     {
-        public static IObservable<ISpawnService> Default => Observable.Return(new SysSpawnService());
-    }
-
-    public static class SpawnServiceExtensions
-    {
-        public static Action<Action<Type, object>> RegistrationHelper(this ISpawnService service) =>
-            rh => rh(typeof(ISpawnService), service);
+        public static ISpawnService Default => new SysSpawnService();
     }
 
     public sealed class SysSpawnService : ISpawnService

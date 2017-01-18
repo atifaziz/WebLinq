@@ -28,6 +28,7 @@ namespace WebLinq.Xml
 
         public static IEnumerable<XDocument> Xml(HttpContent content, LoadOptions options)
         {
+            // TODO Fix to be non-blocking
             yield return Xml(content.ReadAsStringAsync().Result, options);
         }
 

@@ -120,7 +120,6 @@
     <Compile Include="ParsedValue.cs" />
     <Compile Include="Mime\MimeMap.cs" />
     <Compile Include="HttpQuery.cs" />
-    <Compile Include="ServiceProviderExtensions.cs" />
     <Compile Include="Collections\ReadOnlyCollection.cs" />
     <Compile Include="Sys\SpawnServiceExtensions.cs" />
     <Compile Include="Sys\SysQuery.cs" />
@@ -131,7 +130,6 @@
     <Compile Include="Zip\ZipQuery.cs" />
     <Compile Include="Zip\Zip.cs" />
     <Compile Include="Mapper.cs" />
-    <Compile Include="ServiceProvider.cs" />
     <Compile Include="Vars.cs" />
   </ItemGroup>
   <ItemGroup>
