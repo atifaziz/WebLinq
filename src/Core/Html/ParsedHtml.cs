@@ -19,9 +19,13 @@ namespace WebLinq.Html
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Data;
     using System.Globalization;
     using System.Linq;
     using System.Net.Mime;
+    using System.Reactive.Linq;
+    using Mannex.Collections.Generic;
+    using Mannex.Collections.Specialized;
     using TryParsers;
 
     public abstract class ParsedHtml
@@ -100,6 +104,9 @@ namespace WebLinq.Html
 
     public static class ParsedHtmlExtensions
     {
+        public static IEnumerable<string> Links(this ParsedHtml html) =>
+            html.Links((href, _) => href);
+
         public static IEnumerable<T> Links<T>(this ParsedHtml self, Func<string, HtmlObject, T> selector)
         {
             return
@@ -109,13 +116,14 @@ namespace WebLinq.Html
                 select selector(self.TryBaseHref(href), a);
         }
 
+        public static IEnumerable<HtmlObject> Tables(this ParsedHtml html) =>
+            html.Tables(null);
+
         public static IEnumerable<HtmlObject> Tables(this ParsedHtml self, string selector) =>
             from e in self.QuerySelectorAll(selector ?? "table")
             where "table".Equals(e.Name, StringComparison.OrdinalIgnoreCase)
             select e;
-
-
-
+        
         public static IEnumerable<T> TableRows<T>(this HtmlObject table, Func<HtmlObject, IEnumerable<HtmlObject>, T> rowSelector)
         {
             if (table == null) throw new ArgumentNullException(nameof(table));
@@ -194,6 +202,64 @@ namespace WebLinq.Html
             public override bool Equals(object obj) => obj is CellSpan && Equals((CellSpan)obj);
             public override int GetHashCode() => unchecked((Cols * 397) ^ Rows);
             public override string ToString() => $"[{Cols}, {Rows}]";
+        }
+
+        public static DataTable FormsAsDataTable(this ParsedHtml html)
+        {
+            var forms =
+                from f in html.Forms
+                select f.GetForm((fd, fs) => new
+                {
+                    f.Name,
+                    Action       = new Uri(html.TryBaseHref(f.Action), UriKind.Absolute),
+                    Method       = f.Method.ToString().ToUpperInvariant(),
+                    f.EncType,
+                    Data         = fd,
+                    Submittables = fs,
+                });
+
+            var dt = new DataTable();
+            dt.Columns.AddRange(new []
+            {
+                new DataColumn("#")                         { AllowDBNull = false },
+                new DataColumn("FormName")                  { AllowDBNull = true  },
+                new DataColumn("FormAction")                { AllowDBNull = false },
+                new DataColumn("FormMethod")                { AllowDBNull = true  },
+                new DataColumn("FormEncoding")              { AllowDBNull = true  },
+                new DataColumn("Name")                      { AllowDBNull = false },
+                new DataColumn("Value")                     { AllowDBNull = false },
+                new DataColumn("Submittable", typeof(bool)) { AllowDBNull = false },
+            });
+
+            foreach (var form in
+                from fi in forms.Select((f, i) => (i + 1).AsKeyTo(f))
+                let form = fi.Value
+                from controls in new[]
+                {
+                    from e in form.Data.AsEnumerable()
+                    from v in e.Value
+                    select new { e.Key, Value = v, Submittable = false },
+                    from e in form.Submittables.AsEnumerable()
+                    from v in e.Value
+                    select new { e.Key, Value = v, Submittable = true  },
+                }
+                from control in controls
+                select new object[]
+                {
+                    fi.Key,
+                    form.Name,
+                    form.Action.OriginalString,
+                    form.Method,
+                    form.EncType,
+                    control.Key,
+                    control.Value,
+                    control.Submittable,
+                })
+            {
+                dt.Rows.Add(form);
+            }
+
+            return dt;
         }
     }
 }
