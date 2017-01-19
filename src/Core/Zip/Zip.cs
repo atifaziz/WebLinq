@@ -156,6 +156,8 @@ namespace WebLinq.Zip
 
         static HttpContent HttpContent(ZipEntry entry, Stream input, Func<string, string> mimeMapper)
         {
+            if (entry.FileName.Length == 0) throw new ArgumentException("ZIP entry must be a file.", nameof(entry));
+
             var content = new StreamContent(input);
             var headers = content.Headers;
             headers.ContentLength      = entry.Length;
