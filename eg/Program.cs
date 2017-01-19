@@ -33,18 +33,17 @@ namespace WebLinq.Samples
         static void GoogleSearch()
         {
             var q =
-                from sp in Http.Get(new Uri("http://google.com/"))
+                from sr in Http.Get(new Uri("http://google.com/"))
                                .Submit(0, new NameValueCollection { ["q"] = "foobar" })
                                .Html()
-                from sr in
-                    Observable.Generate(sp, _ => true, curr =>
-                    {
-                        var next = curr.Content.TryBaseHref(curr.Content.QuerySelectorAll("#foot a.fl")
-                                                        .Last() // Next
-                                                        .GetAttributeValue("href"));
-                        return curr.Client.Get(new Uri(next)).Html().Single();
-                    }, h => h)
-                    .TakeWhile(h => (TryParse.Int32(HttpUtility.ParseQueryString(h.Content.BaseUrl.Query)["start"]) ?? 1) < 30)
+                               .Expand(curr =>
+                               {
+                                   var next = curr.Content.TryBaseHref(curr.Content.QuerySelectorAll("#foot a.fl")
+                                                                                   .Last() // Next
+                                                                                   .GetAttributeValue("href"));
+                                   return curr.Client.Get(new Uri(next)).Html();
+                               })
+                               .TakeWhile(h => (TryParse.Int32(HttpUtility.ParseQueryString(h.Content.BaseUrl.Query)["start"]) ?? 1) < 30)
                 select sr.Content into sr
                 from r in sr.QuerySelectorAll(".g")
                 select new
