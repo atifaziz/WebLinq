@@ -6,17 +6,16 @@ namespace WebLinq.Samples
     using System.Collections.Specialized;
     using System.IO;
     using System.Linq;
-    using System.Net.Http;
     using System.Text.RegularExpressions;
     using System.Reactive.Linq;
     using System.Web;
     using System.Xml.Linq;
     using Text;
     using TryParsers;
-    using Xml;
-    using static HttpQuery;
     using Html;
-    using Sys;
+    using static Modules.HttpModule;
+    using static Modules.SpawnModule;
+    using static Modules.XmlModule;
 
     #endregion
 
@@ -66,9 +65,8 @@ namespace WebLinq.Samples
             var ns = XNamespace.Get("http://schemas.microsoft.com/windows/2004/02/mit/task");
 
             var q =
-                from xml in Spawner.Default.Spawn("schtasks", "/query /xml ONE").Delimited(Environment.NewLine)
-                from doc in XmlQuery.Xml(new StringContent(xml))
-                from t in doc.Elements("Tasks").Elements(ns + "Task")
+                from xml in Spawn("schtasks", "/query /xml ONE").Delimited(Environment.NewLine)
+                from t in ParseXml(xml).Elements("Tasks").Elements(ns + "Task")
                 from e in t.Elements(ns + "Actions").Elements(ns + "Exec")
                 select new
                 {

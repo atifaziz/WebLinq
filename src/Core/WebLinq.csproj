@@ -109,6 +109,7 @@
     <Compile Include="Html\HapHtmlParser.cs" />
     <Compile Include="Html\HtmlInputType.cs" />
     <Compile Include="Html\HtmlQuery.cs" />
+    <Compile Include="Scripting.cs" />
     <Compile Include="HttpConfig.cs" />
     <Compile Include="HttpHeaderCollection.cs" />
     <Compile Include="HttpFetch.cs" />
