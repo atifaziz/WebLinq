@@ -16,30 +16,27 @@
 
 namespace WebLinq.Xml
 {
-    using System.Collections.Generic;
-    using System.Linq;
+    using System;
     using System.Net.Http;
+    using System.Reactive.Linq;
     using System.Xml.Linq;
 
     public static class XmlQuery
     {
-        public static IEnumerable<XDocument> Xml(HttpContent content) =>
+        public static IObservable<XDocument> Xml(HttpContent content) =>
             Xml(content, LoadOptions.None);
 
-        public static IEnumerable<XDocument> Xml(HttpContent content, LoadOptions options)
-        {
-            // TODO Fix to be non-blocking
-            yield return Xml(content.ReadAsStringAsync().Result, options);
-        }
+        public static IObservable<XDocument> Xml(HttpContent content, LoadOptions options) =>
+            from c in Observable.Return(content)
+            from xml in c.ReadAsStringAsync()
+            select XDocument.Parse(xml, options);
 
-        public static IEnumerable<HttpFetch<XDocument>> Xml(this IEnumerable<HttpFetch<HttpContent>> query) =>
-            Xml(query, LoadOptions.None);
+        public static IObservable<HttpFetch<XDocument>> Xml(this IObservable<HttpFetch<HttpContent>> query) =>
+            query.Xml(LoadOptions.None);
 
-        public static IEnumerable<HttpFetch<XDocument>> Xml(this IEnumerable<HttpFetch<HttpContent>> query, LoadOptions options) =>
-            from fetch in query
-            select fetch.WithContent(Xml(fetch.Content.ReadAsStringAsync().Result, options));
-
-        static XDocument Xml(string xml, LoadOptions options) =>
-            XDocument.Parse(xml, options);
+        public static IObservable<HttpFetch<XDocument>> Xml(this IObservable<HttpFetch<HttpContent>> query, LoadOptions options) =>
+            from e in query
+            from xml in Xml(e.Content, options)
+            select e.WithContent(xml);
     }
 }
