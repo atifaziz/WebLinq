@@ -16,22 +16,24 @@
 
 namespace WebLinq.Zip
 {
-    using System.Collections.Generic;
+    using System;
     using System.IO;
-    using System.Linq;
     using System.Net.Http;
+    using System.Reactive.Linq;
+    using System.Threading.Tasks;
 
     public static class ZipQuery
     {
-        public static IEnumerable<HttpFetch<Zip>> DownloadZip(this IEnumerable<HttpFetch<HttpContent>> query) =>
+        public static IObservable<HttpFetch<Zip>> DownloadZip(this IObservable<HttpFetch<HttpContent>> query) =>
             from fetch in query
-            select fetch.WithContent(new Zip(DownloadZip(fetch.Content)));
+            from path in DownloadZip(fetch.Content)
+            select fetch.WithContent(new Zip(path));
 
-        static string DownloadZip(HttpContent content)
+        static async Task<string> DownloadZip(HttpContent content)
         {
             var path = Path.GetTempFileName();
             using (var output = File.Create(path))
-                content.CopyToAsync(output).Wait();
+                await content.CopyToAsync(output);
             return path;
         }
     }
