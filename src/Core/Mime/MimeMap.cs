@@ -26,7 +26,7 @@ namespace WebLinq.Mime
         public static string FindMimeTypeFromFileName(string fileName)
         {
             if (fileName == null) throw new ArgumentNullException(nameof(fileName));
-            if (fileName[0] == '.')
+            if (fileName[0] == '.' && fileName.IndexOf('.', 1) < 0)
                 return null;
             var extension = Path.GetExtension(fileName);
             return extension.Length > 0 ? Map.Find(extension) : null;
