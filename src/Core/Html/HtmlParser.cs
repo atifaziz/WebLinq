@@ -26,5 +26,8 @@ namespace WebLinq.Html
     public static class HtmlParser
     {
         public static IHtmlParser Default => new HapHtmlParser();
+
+        public static ParsedHtml Parse(this IHtmlParser parser, string html) =>
+            parser.Parse(html, null);
     }
 }

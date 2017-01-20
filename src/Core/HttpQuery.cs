@@ -33,7 +33,6 @@ namespace WebLinq
     using Mannex.Collections.Specialized;
     using Mannex.Web;
     using Mime;
-    using TryParsers;
 
     #endregion
     
@@ -228,28 +227,27 @@ namespace WebLinq
                 throw new Exception($"Unexpected content of type \"{actualMediaType}\". Acceptable types are: {string.Join(", ", mediaTypes)}");
             });
 
-        public static IObservable<HttpFetch<HttpContent>> Submit(this IObservable<HttpFetch<HttpContent>> query, string formSelector, NameValueCollection data) =>
-            Submit(query, formSelector, null, data);
 
-        public static IObservable<HttpFetch<HttpContent>> Submit(this IObservable<HttpFetch<HttpContent>> query, int formIndex, NameValueCollection data) =>
-            Submit(query, null, formIndex, data);
+        public static IObservable<HttpFetch<HttpContent>> Submit(this IObservable<HttpFetch<ParsedHtml>> query, string formSelector, NameValueCollection data) =>
+            from html in query
+            from next in html.Client.Submit(html.Content, formSelector, data)
+            select next;
 
-        static IObservable<HttpFetch<HttpContent>> Submit(IObservable<HttpFetch<HttpContent>> query, string formSelector, int? formIndex, NameValueCollection data) =>
-            from html in query.Html()
-            from fetch in Submit(html.Client, html.Content, formSelector, formIndex, data)
-            select fetch;
+        public static IObservable<HttpFetch<HttpContent>> Submit(this IObservable<HttpFetch<ParsedHtml>> query, int formIndex, NameValueCollection data) =>
+            from html in query
+            from next in html.Client.Submit(html.Content, formIndex, data)
+            select next;
 
-        public static IObservable<HttpFetch<HttpContent>> Submit<T>(this IHttpClient<HttpConfig> http, ParsedHtml html, string formSelector, NameValueCollection data)
-            where T : IHttpCookies<T> =>
+        public static IObservable<HttpFetch<HttpContent>> Submit(this IHttpClient<HttpConfig> http, ParsedHtml html, string formSelector, NameValueCollection data) =>
             Submit(http, html, formSelector, null, data);
 
-        public static IObservable<HttpFetch<HttpContent>> Submit<T>(this IHttpClient<HttpConfig> http, ParsedHtml html, int formIndex, NameValueCollection data)
-            where T : IHttpCookies<T> =>
+        public static IObservable<HttpFetch<HttpContent>> Submit(this IHttpClient<HttpConfig> http, ParsedHtml html, int formIndex, NameValueCollection data) =>
             Submit(http, html, null, formIndex, data);
 
-        static IObservable<HttpFetch<HttpContent>> Submit(IHttpClient<HttpConfig> http, ParsedHtml html,
-                                                          string formSelector, int? formIndex,
-                                                          NameValueCollection data)
+        internal static IObservable<HttpFetch<HttpContent>> Submit(
+            IHttpClient<HttpConfig> http, ParsedHtml html,
+            string formSelector, int? formIndex,
+            NameValueCollection data)
         {
             var forms =
                 from f in formIndex == null
@@ -295,65 +293,6 @@ namespace WebLinq
                 throw new HttpRequestException($"Response status code does not indicate success: {e.StatusCode}.");
             });
 
-        public static IObservable<HttpFetch<HttpContent>> Crawl(Uri url) =>
-            Crawl(url, int.MaxValue);
-
-        public static IObservable<HttpFetch<HttpContent>> Crawl(Uri url, int depth) =>
-            Crawl(url, depth, _ => true);
-
-        public static IObservable<HttpFetch<HttpContent>> Crawl(Uri url, Func<Uri, bool> followPredicate) =>
-            Crawl(url, int.MaxValue, followPredicate);
-
-        public static IObservable<HttpFetch<HttpContent>> Crawl(Uri url, int depth, Func<Uri, bool> followPredicate) =>
-            CrawlImpl(url, depth, followPredicate).ToObservable();
-
-        static IEnumerable<HttpFetch<HttpContent>> CrawlImpl(Uri rootUrl, int depth, Func<Uri, bool> followPredicate)
-        {
-            var linkSet = new HashSet<Uri> { rootUrl };
-            var queue = new Queue<KeyValuePair<int, Uri>>();
-            queue.Enqueue(0.AsKeyTo(rootUrl));
-
-            while (queue.Count > 0)
-            {
-                var dequeued = queue.Dequeue();
-                var url = dequeued.Value;
-                var level = dequeued.Key;
-                // TODO retry intermittent errors?
-                var fetch = Http.Get(url, new HttpOptions {ReturnErrorneousFetch = true}).Single();
-
-                if (!fetch.IsSuccessStatusCode)
-                    continue;
-
-                yield return fetch;
-
-                if (level >= depth)
-                    continue;
-
-                // If content is HTML then sniff links and add them to the
-                // queue assuming they are from the same domain and pass the
-                // user-supplied condition to follow.
-
-                var contentMediaType = fetch.Content.Headers.ContentType?.MediaType;
-                if (!"text/html".Equals(contentMediaType, StringComparison.OrdinalIgnoreCase))
-                    continue;
-
-                var lq =
-                    from e in Observable.Return(fetch).Links().Content()
-                    select TryParse.Uri(e, UriKind.Absolute) into e
-                    where e != null
-                       && (e.Scheme == Uri.UriSchemeHttp || e.Scheme == Uri.UriSchemeHttps)
-                       && !linkSet.Contains(e)
-                       && rootUrl.Host.Equals(e.Host, StringComparison.OrdinalIgnoreCase)
-                       && followPredicate(e)
-                    select e;
-
-                foreach (var e in lq.ToEnumerable())
-                {
-                    if (linkSet.Add(e))
-                        queue.Enqueue((level + 1).AsKeyTo(e));
-                }
-            }
-        }
     }
 
     static class UriExtensions
