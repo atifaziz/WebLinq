@@ -26,6 +26,8 @@ namespace WebLinq
     using System.Net;
     using System.Net.Http;
     using System.Reactive.Linq;
+    using System.Reactive.Threading.Tasks;
+    using System.Threading.Tasks;
     using Html;
     using Mannex.Collections.Generic;
     using Mannex.Collections.Specialized;
@@ -34,13 +36,12 @@ namespace WebLinq
     using TryParsers;
 
     #endregion
-
-
+    
     public static class HttpQuery
     {
         static readonly int MaximumAutomaticRedirections = WebRequest.CreateHttp("http://localhost/").MaximumAutomaticRedirections;
 
-        static HttpFetch<HttpContent> Send(IHttpClient<HttpConfig> http, HttpConfig config, int id, HttpMethod method, Uri url, HttpContent content = null, HttpOptions options = null)
+        static async Task<HttpFetch<HttpContent>> SendAsync(IHttpClient<HttpConfig> http, HttpConfig config, int id, HttpMethod method, Uri url, HttpContent content = null, HttpOptions options = null)
         {
             http = http.WithConfig(config);
 
@@ -50,7 +51,7 @@ namespace WebLinq
                     throw new Exception("The maximum number of redirection responses permitted has been exceeded.");
 
                 var result =
-                    HttpFetch(http, http.Config, method, url, content, options,
+                    await HttpFetchAsync(http, http.Config, method, url, content, options,
                         (cfg, rsp) => new
                         {
                             Config   = cfg,
@@ -66,7 +67,8 @@ namespace WebLinq
                             Url      = rl,
                             Content  = rc,
                             Response = default(HttpResponseMessage),
-                        });
+                        })
+                        .ConfigureAwait(false);
 
                 if (result.Response != null)
                     return result.Response.ToHttpFetch(id, http.WithConfig(result.Config));
@@ -80,7 +82,7 @@ namespace WebLinq
             }
         }
 
-        static T HttpFetch<T>(IHttpClient<HttpConfig> http, HttpConfig config,
+        static async Task<T> HttpFetchAsync<T>(IHttpClient<HttpConfig> http, HttpConfig config,
             HttpMethod method, Uri url, HttpContent content, HttpOptions options,
             Func<HttpConfig, HttpResponseMessage, T> responseSelector,
             Func<HttpConfig, HttpMethod, Uri, HttpContent, T> redirectionSelector)
@@ -92,7 +94,7 @@ namespace WebLinq
                 Content = content
             };
 
-            var response = http.Send(request, config, options);
+            var response = await http.SendAsync(request, config, options).ConfigureAwait(false);
             IEnumerable<string> cookies;
             if (response.Headers.TryGetValues("Set-Cookie", out cookies))
             {
@@ -174,7 +176,7 @@ namespace WebLinq
             http.Get(url, null);
 
         public static IObservable<HttpFetch<HttpContent>> Get(this IHttpClient<HttpConfig> http, Uri url, HttpOptions options) =>
-            Observable.Defer(() => Observable.Return(Send(http, http.Config, 0, HttpMethod.Get, url, options: options)));
+            Observable.Defer(() => SendAsync(http, http.Config, 0, HttpMethod.Get, url, options: options).ToObservable());
 
         public static IObservable<HttpFetch<HttpContent>> Post(this IHttpClient<HttpConfig> http, Uri url, NameValueCollection data) =>
             http.Post(url, new FormUrlEncodedContent(from i in Enumerable.Range(0, data.Count)
@@ -182,7 +184,7 @@ namespace WebLinq
                                                      select data.GetKey(i).AsKeyTo(v)));
 
         public static IObservable<HttpFetch<HttpContent>> Post(this IHttpClient<HttpConfig> http, Uri url, HttpContent content) =>
-            Observable.Defer(() => Observable.Return(Send(http, http.Config, 0, HttpMethod.Post, url, content)));
+            Observable.Defer(() => SendAsync(http, http.Config, 0, HttpMethod.Post, url, content).ToObservable());
 
         public static IObservable<HttpFetch<T>> WithTimeout<T>(this IObservable<HttpFetch<T>> query, TimeSpan duration) =>
             from e in query

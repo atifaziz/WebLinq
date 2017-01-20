@@ -38,7 +38,7 @@ namespace WebLinq
     {
         T Config { get; }
         IHttpClient<T> WithConfig(T config);
-        HttpResponseMessage Send(HttpRequestMessage request, T config, HttpOptions options);
+        Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, T config, HttpOptions options);
     }
 
     public class HttpClient : IHttpClient<HttpConfig>
@@ -56,10 +56,10 @@ namespace WebLinq
         public void Register(Action<Type, object> registrationHandler) =>
             registrationHandler(typeof(IHttpClient<HttpConfig>), this);
 
-        public virtual HttpResponseMessage Send(HttpRequestMessage request, HttpConfig config, HttpOptions options) =>
-            SendAsync(request, config ?? Config, options).Result;
+        public virtual Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpConfig config, HttpOptions options) =>
+            Send(request, config ?? Config, options);
 
-        static async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpConfig config, HttpOptions options)
+        static async Task<HttpResponseMessage> Send(HttpRequestMessage request, HttpConfig config, HttpOptions options)
         {
             var hwreq = WebRequest.CreateHttp(request.RequestUri);
 
