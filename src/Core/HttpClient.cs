@@ -94,7 +94,7 @@ namespace WebLinq
             }
             catch (WebException e) when (e.Status == WebExceptionStatus.ProtocolError)
             {
-                if (!options.ReturnErrorneousFetch)
+                if (options?.ReturnErrorneousFetch == false)
                     throw;
                 return await CreateResponse(hwreq, hwrsp = (HttpWebResponse)e.Response);
             }
