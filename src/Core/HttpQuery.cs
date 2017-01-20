@@ -196,14 +196,6 @@ namespace WebLinq
 
         public static readonly IHttpClient<HttpConfig> Http = new HttpClient(HttpConfig.Default);
 
-        public static IObservable<IHttpClient<HttpConfig>> HttpWithConfig(
-            Func<HttpConfig, HttpConfig> configurator) =>
-            Observable.Defer(() =>
-            {
-                IHttpClient<HttpConfig> http = new HttpClient(configurator(HttpConfig.Default));
-                return Observable.Return(http);
-            });
-
         public static IObservable<TResult> Content<TContent, TResult>(this IObservable<HttpFetch<TContent>> query, Func<IHttpClient<HttpConfig>, TContent, TResult> selector) =>
             from e in query select selector(e.Client, e.Content);
 

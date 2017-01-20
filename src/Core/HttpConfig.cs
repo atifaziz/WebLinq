@@ -43,31 +43,7 @@ namespace WebLinq
         IHttpUserAgentOption<HttpConfig>,
         IHttpCookies<HttpConfig>
     {
-        /* TODO remove
-        public static IHttpClientObservable<HttpConfig> Set(HttpConfig current,
-            bool? useDefaultCredentials = null,
-            IReadOnlyCollection<Cookie> cookies = null,
-            string userAgent = null,
-            TimeSpan? timeout = null) =>
-            new HttpClientObservable(SetCore(current, useDefaultCredentials, cookies, userAgent, timeout));
-        */
         public static readonly IEnumerable<Cookie> ZeroCookies = new Cookie[0];
-
-        static HttpConfig SetCore(HttpConfig initial, bool? useDefaultCredentials, IReadOnlyCollection<Cookie> cookies, string userAgent, TimeSpan? timeout)
-        {
-            var config = initial ?? Default;
-
-            if (useDefaultCredentials != null)
-                config = config.WithUseDefaultCredentials(useDefaultCredentials.Value);
-            if (cookies != null)
-                config = config.WithCookies(cookies);
-            if (userAgent != null)
-                config = config.WithUserAgent(userAgent);
-            if (timeout != null)
-                config = config.WithTimeout(timeout.Value);
-
-            return config;
-        }
 
         public TimeSpan Timeout                    { get; private set; }
         public bool UseDefaultCredentials          { get; private set; }
