@@ -38,7 +38,7 @@ namespace WebLinq
         }
     }
 
-    public /* TODO sealed */ partial class HttpConfig :
+    public sealed partial class HttpConfig :
         IHttpTimeoutOption<HttpConfig>,
         IHttpUserAgentOption<HttpConfig>,
         IHttpCookies<HttpConfig>
