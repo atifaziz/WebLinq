@@ -23,10 +23,6 @@ namespace WebLinq
     using System.Linq;
     using System.Net;
 
-    public interface IHttpTimeoutOption<out T> { T WithTimeout(TimeSpan duration); }
-    public interface IHttpUserAgentOption<out T> { T WithUserAgent(string ua); }
-    public interface IHttpCookies<out T> { T WithCookies(IReadOnlyCollection<Cookie> cookies); }
-
     partial class HttpConfig
     {
         public static readonly HttpConfig Default;
@@ -38,10 +34,7 @@ namespace WebLinq
         }
     }
 
-    public sealed partial class HttpConfig :
-        IHttpTimeoutOption<HttpConfig>,
-        IHttpUserAgentOption<HttpConfig>,
-        IHttpCookies<HttpConfig>
+    public sealed partial class HttpConfig
     {
         public static readonly IEnumerable<Cookie> ZeroCookies = new Cookie[0];
 
