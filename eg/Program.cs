@@ -21,18 +21,22 @@ namespace WebLinq.Samples
 
     static class Program
     {
-        public static void Main()
+        public static void Main(string[] args)
         {
-            var samples = new[]
-            {
-                new { Title = nameof(GoogleSearch)          , Query = GoogleSearch()           },
-                new { Title = nameof(QueenSongs)            , Query = QueenSongs()             },
-                new { Title = nameof(ScheduledTasksViaSpawn), Query = ScheduledTasksViaSpawn() },
-                new { Title = nameof(TopHackerNews)         , Query = TopHackerNews(100)       },
-            };
-
             var ruler1 = new string('=', Console.BufferWidth - 1);
             var ruler2 = new string('-', Console.BufferWidth - 1);
+
+            var samples =
+                from s in new[]
+                {
+                    new { Title = nameof(GoogleSearch)          , Query = GoogleSearch()           },
+                    new { Title = nameof(QueenSongs)            , Query = QueenSongs()             },
+                    new { Title = nameof(ScheduledTasksViaSpawn), Query = ScheduledTasksViaSpawn() },
+                    new { Title = nameof(TopHackerNews)         , Query = TopHackerNews(100)       },
+                }
+                where args.Length == 0
+                   || args.Any(a => s.Title.Equals(a, StringComparison.OrdinalIgnoreCase))
+                select s;
 
             foreach (var sample in samples)
             {
