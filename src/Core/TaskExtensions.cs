@@ -14,27 +14,24 @@
 //
 #endregion
 
-namespace WebLinq.Zip
+namespace WebLinq
 {
     using System;
-    using System.IO;
-    using System.Net.Http;
-    using System.Reactive.Linq;
+    using System.Runtime.CompilerServices;
     using System.Threading.Tasks;
 
-    public static class ZipQuery
+    static class TaskExtensions
     {
-        public static IObservable<HttpFetch<Zip>> DownloadZip(this IObservable<HttpFetch<HttpContent>> query) =>
-            from fetch in query
-            from path in DownloadZip(fetch.Content)
-            select fetch.WithContent(new Zip(path));
-
-        static async Task<string> DownloadZip(HttpContent content)
+        public static ConfiguredTaskAwaitable DontContinueOnCapturedContext(this Task task)
         {
-            var path = Path.GetTempFileName();
-            using (var output = File.Create(path))
-                await content.CopyToAsync(output).DontContinueOnCapturedContext();
-            return path;
+            if (task == null) throw new ArgumentNullException(nameof(task));
+            return task.ConfigureAwait(continueOnCapturedContext: false);
+        }
+
+        public static ConfiguredTaskAwaitable<T> DontContinueOnCapturedContext<T>(this Task<T> task)
+        {
+            if (task == null) throw new ArgumentNullException(nameof(task));
+            return task.ConfigureAwait(continueOnCapturedContext: false);
         }
     }
 }

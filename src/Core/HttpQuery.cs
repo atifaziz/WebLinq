@@ -67,7 +67,7 @@ namespace WebLinq
                             Content  = rc,
                             Response = default(HttpResponseMessage),
                         })
-                        .ConfigureAwait(false);
+                        .DontContinueOnCapturedContext();
 
                 if (result.Response != null)
                     return result.Response.ToHttpFetch(id, http.WithConfig(result.Config));
@@ -93,7 +93,9 @@ namespace WebLinq
                 Content = content
             };
 
-            var response = await http.SendAsync(request, config, options).ConfigureAwait(false);
+            var response = await http.SendAsync(request, config, options)
+                                     .DontContinueOnCapturedContext();
+
             IEnumerable<string> cookies;
             if (response.Headers.TryGetValues("Set-Cookie", out cookies))
             {

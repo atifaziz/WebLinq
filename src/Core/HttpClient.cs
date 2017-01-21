@@ -108,15 +108,15 @@ namespace WebLinq
                     // ReSharper disable once PossibleNullReferenceException
                     hwreq.ContentType = content.Headers.ContentType.ToString();
                     using (var s = hwreq.GetRequestStream())
-                        await content.CopyToAsync(s);
+                        await content.CopyToAsync(s).DontContinueOnCapturedContext();
                 }
-                return await CreateResponse(hwreq, hwrsp = (HttpWebResponse)hwreq.GetResponse());
+                return await CreateResponse(hwreq, hwrsp = (HttpWebResponse)hwreq.GetResponse()).DontContinueOnCapturedContext();
             }
             catch (WebException e) when (e.Status == WebExceptionStatus.ProtocolError)
             {
                 if (options?.ReturnErrorneousFetch == false)
                     throw;
-                return await CreateResponse(hwreq, hwrsp = (HttpWebResponse)e.Response);
+                return await CreateResponse(hwreq, hwrsp = (HttpWebResponse)e.Response).DontContinueOnCapturedContext();
             }
             finally
             {
@@ -130,7 +130,7 @@ namespace WebLinq
             using (var s = rsp.GetResponseStream())
             {
                 if (s != null)
-                    await s.CopyToAsync(ms);
+                    await s.CopyToAsync(ms).DontContinueOnCapturedContext();
 
             }
             ms.Position = 0;

@@ -122,6 +122,7 @@
     <Compile Include="Collections\ReadOnlyCollection.cs" />
     <Compile Include="Sys\Spawner.cs" />
     <Compile Include="Text\TextQuery.cs" />
+    <Compile Include="TaskExtensions.cs" />
     <Compile Include="Unit.cs" />
     <Compile Include="Xml\XmlQuery.cs" />
     <Compile Include="Xsv\XsvQuery.cs" />
