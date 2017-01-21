@@ -33,6 +33,7 @@ namespace WebLinq.Samples
                     new { Title = nameof(QueenSongs)            , Query = QueenSongs()             },
                     new { Title = nameof(ScheduledTasksViaSpawn), Query = ScheduledTasksViaSpawn() },
                     new { Title = nameof(TopHackerNews)         , Query = TopHackerNews(100)       },
+                    new { Title = nameof(MsdnBooksXmlSample)    , Query = MsdnBooksXmlSample()     },
                 }
                 where args.Length == 0
                    || args.Any(a => s.Title.Equals(a, StringComparison.OrdinalIgnoreCase))
@@ -178,5 +179,30 @@ namespace WebLinq.Samples
                 where e.Score > score
                 select e
             select e;
+
+        static IObservable<object> MsdnBooksXmlSample() =>
+
+            from html in
+                Http.Get(new Uri("https://msdn.microsoft.com/en-us/library/ms762271.aspx"))
+                    .Html()
+                    .Content()
+            select html.QuerySelector(".codeSnippetContainerCode").InnerText.TrimStart()
+            into xml
+            from book in ParseXml(xml).Descendants("book")
+            select new
+            {
+                Id            = (string)   book.Attribute("id"),
+                Title         = (string)   book.Element("title"),
+                Author        = (string)   book.Element("author"),
+                Genre         = (string)   book.Element("genre"),
+                Price         = (float)    book.Element("price"),
+                PublishedDate = (DateTime) book.Element("publish_date"),
+                Description   = ((string)  book.Element("description")).NormalizeWhitespace(),
+            };
+
+        static string NormalizeWhitespace(this string str) =>
+            string.IsNullOrEmpty(str)
+            ? str
+            : string.Join(" ", str.Split((char[])null, StringSplitOptions.RemoveEmptyEntries));
     }
 }
