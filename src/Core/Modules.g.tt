@@ -1,0 +1,55 @@
+<#@ template debug="false" hostspecific="false" language="C#" #>
+<#@ assembly name="System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL" #>
+<#@ import namespace="System.Globalization" #>
+<#@ import namespace="System.Linq" #>
+#region Copyright (c) 2016 Atif Aziz. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+#endregion
+
+namespace WebLinq.Modules
+{
+    using System;
+    using System.Collections.Generic;
+
+    partial class XmlModule
+    {
+<#
+        var nths = Enumerable.Range(1, 16).ToArray();
+        var alphas = nths.Select(x => (char) ('a' + (x - 1))).ToArray();
+
+        foreach (var i in Enumerable.Range(2, nths.Length - 1))
+        {
+            var ns =
+                from item in Enumerable.Range(1, i)
+                                       .Zip(nths, (n, nth) => new { N = n, Nth = nth })
+                select item.N.ToString(CultureInfo.InvariantCulture);
+            ns = ns.ToArray();
+#>
+        public static IEnumerable<TResult> Xml<<#= string.Join(",", from n in ns select $"TNode{n}, T{n}") #>, TResult>(string xml, string xpath, <#= string.Join(", ", from n in ns select $"string xpath{n}, Func<TNode{n}, T{n}> selector{n}") #>, Func<<#= string.Join(", ", from n in ns select "T" + n) #>, TResult> resultSelector)
+        {
+            if (resultSelector == null) throw new ArgumentNullException(nameof(resultSelector));
+            return
+                Xml(xml, xpath, <#= i #>,
+                    <#= string.Join(", ", from n in ns select $"xpath{n}, selector{n}") #>,<#= string.Join(",", from x in Enumerable.Range(1, 15 - i + 1) select @"
+                    null, default(Func<object, object>)") #><# if (i < 16) { #>,
+<# } #>
+<#          if (i < 16) { #>                    (<#= string.Join(", ", alphas) #>) =>
+                        resultSelector(<#= string.Join(", ", alphas.Take(i)) #>)<# } else { #>
+
+                resultSelector<# } #>);
+        }
+<#      } #>
+    }
+}

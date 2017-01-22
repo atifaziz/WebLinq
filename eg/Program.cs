@@ -79,15 +79,17 @@ namespace WebLinq.Samples
         static IObservable<object> ScheduledTasksViaSpawn() =>
 
             from xml in Spawn("schtasks", "/query /xml ONE").Delimited(Environment.NewLine)
-            let ns = XNamespace.Get("http://schemas.microsoft.com/windows/2004/02/mit/task")
-            from t in ParseXml(xml).Elements("Tasks").Elements(ns + "Task")
-            from e in t.Elements(ns + "Actions").Elements(ns + "Exec")
-            select new
-            {
-                Name      = ((XComment)t.PreviousNode).Value.Trim(),
-                Command   = (string)e.Element(ns + "Command"),
-                Arguments = (string)e.Element(ns + "Arguments"),
-            };
+            from e in Xml(xml, "/*/*[local-name()='Task']/*[local-name()='Actions']/*[local-name()='Exec']",
+                "./*[local-name()='Command']", (XElement e) => (string)e,
+                "./*[local-name()='Arguments']", (XElement e) => (string)e,
+                "../../*[local-name()='RegistrationInfo']/*[local-name()='URI']", (XElement e) => (string)e,
+                (cmd, args, name) => new
+                {
+                    Name = name,
+                    Command = cmd,
+                    Arguments = args,
+                })
+            select e;
 
         static IObservable<object> QueenSongs() =>
 

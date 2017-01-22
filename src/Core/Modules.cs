@@ -24,9 +24,11 @@ namespace WebLinq.Modules
     using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.Data;
+    using System.Linq;
     using System.Net.Http;
     using System.Reactive.Linq;
     using System.Xml.Linq;
+    using System.Xml.XPath;
     using Html;
     using Mannex.Collections.Generic;
     using Sys;
@@ -171,12 +173,120 @@ namespace WebLinq.Modules
             XsvQuery.XsvToDataTable(text, delimiter, quoted, columns);
     }
 
-    public static class XmlModule
+    public static partial class XmlModule
     {
         public static XDocument ParseXml(string xml) =>
             XDocument.Parse(xml, LoadOptions.None);
         public static XDocument ParseXml(string xml, LoadOption options) =>
             XDocument.Parse(xml, options);
+
+        public static IEnumerable<TResult> Xml<TNode, TResult>(string xml, string xpath, Func<TNode, TResult> resultSelector)
+        {
+            if (resultSelector == null) throw new ArgumentNullException(nameof(resultSelector));
+
+            return Xml(xml, xpath, 1,
+                        ".", resultSelector,
+                        null, default(Func<object, object>),
+                        null, default(Func<object, object>),
+                        null, default(Func<object, object>),
+                        null, default(Func<object, object>),
+                        null, default(Func<object, object>),
+                        null, default(Func<object, object>),
+                        null, default(Func<object, object>),
+                        null, default(Func<object, object>),
+                        null, default(Func<object, object>),
+                        null, default(Func<object, object>),
+                        null, default(Func<object, object>),
+                        null, default(Func<object, object>),
+                        null, default(Func<object, object>),
+                        null, default(Func<object, object>),
+                        null, default(Func<object, object>),
+                        (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p) => a);
+        }
+
+        static IEnumerable<TResult> Xml<TNode1,  T1,
+                                        TNode2,  T2,
+                                        TNode3,  T3,
+                                        TNode4,  T4,
+                                        TNode5,  T5,
+                                        TNode6,  T6,
+                                        TNode7,  T7,
+                                        TNode8,  T8,
+                                        TNode9,  T9,
+                                        TNode10, T10,
+                                        TNode11, T11,
+                                        TNode12, T12,
+                                        TNode13, T13,
+                                        TNode14, T14,
+                                        TNode15, T15,
+                                        TNode16, T16,
+                                        TResult>(
+            string xml,
+            string xpath,
+            int arity,
+            string xpath1,  Func<TNode1,  T1>  selector1,
+            string xpath2,  Func<TNode2,  T2>  selector2,
+            string xpath3,  Func<TNode3,  T3>  selector3,
+            string xpath4,  Func<TNode4,  T4>  selector4,
+            string xpath5,  Func<TNode5,  T5>  selector5,
+            string xpath6,  Func<TNode6,  T6>  selector6,
+            string xpath7,  Func<TNode7,  T7>  selector7,
+            string xpath8,  Func<TNode8,  T8>  selector8,
+            string xpath9,  Func<TNode9,  T9>  selector9,
+            string xpath10, Func<TNode10, T10> selector10,
+            string xpath11, Func<TNode11, T11> selector11,
+            string xpath12, Func<TNode12, T12> selector12,
+            string xpath13, Func<TNode13, T13> selector13,
+            string xpath14, Func<TNode14, T14> selector14,
+            string xpath15, Func<TNode15, T15> selector15,
+            string xpath16, Func<TNode16, T16> selector16,
+            Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, TResult> resultSelector)
+        {
+            if (xml == null) throw new ArgumentNullException(nameof(xml));
+            if (xpath == null) throw new ArgumentNullException(nameof(xpath));
+
+            if (arity >= 2 ) { if (xpath2  == null) throw new ArgumentNullException(nameof(xpath2 )); if (selector2  == null) throw new ArgumentNullException(nameof(selector2 )); }
+            if (arity >= 3 ) { if (xpath3  == null) throw new ArgumentNullException(nameof(xpath3 )); if (selector3  == null) throw new ArgumentNullException(nameof(selector3 )); }
+            if (arity >= 4 ) { if (xpath4  == null) throw new ArgumentNullException(nameof(xpath4 )); if (selector4  == null) throw new ArgumentNullException(nameof(selector4 )); }
+            if (arity >= 5 ) { if (xpath5  == null) throw new ArgumentNullException(nameof(xpath5 )); if (selector5  == null) throw new ArgumentNullException(nameof(selector5 )); }
+            if (arity >= 6 ) { if (xpath6  == null) throw new ArgumentNullException(nameof(xpath6 )); if (selector6  == null) throw new ArgumentNullException(nameof(selector6 )); }
+            if (arity >= 7 ) { if (xpath7  == null) throw new ArgumentNullException(nameof(xpath7 )); if (selector7  == null) throw new ArgumentNullException(nameof(selector7 )); }
+            if (arity >= 8 ) { if (xpath8  == null) throw new ArgumentNullException(nameof(xpath8 )); if (selector8  == null) throw new ArgumentNullException(nameof(selector8 )); }
+            if (arity >= 9 ) { if (xpath9  == null) throw new ArgumentNullException(nameof(xpath9 )); if (selector9  == null) throw new ArgumentNullException(nameof(selector9 )); }
+            if (arity >= 10) { if (xpath10 == null) throw new ArgumentNullException(nameof(xpath10)); if (selector10 == null) throw new ArgumentNullException(nameof(selector10)); }
+            if (arity >= 11) { if (xpath11 == null) throw new ArgumentNullException(nameof(xpath11)); if (selector11 == null) throw new ArgumentNullException(nameof(selector11)); }
+            if (arity >= 12) { if (xpath12 == null) throw new ArgumentNullException(nameof(xpath12)); if (selector12 == null) throw new ArgumentNullException(nameof(selector12)); }
+            if (arity >= 13) { if (xpath13 == null) throw new ArgumentNullException(nameof(xpath13)); if (selector13 == null) throw new ArgumentNullException(nameof(selector13)); }
+            if (arity >= 14) { if (xpath14 == null) throw new ArgumentNullException(nameof(xpath14)); if (selector14 == null) throw new ArgumentNullException(nameof(selector14)); }
+            if (arity >= 15) { if (xpath15 == null) throw new ArgumentNullException(nameof(xpath15)); if (selector15 == null) throw new ArgumentNullException(nameof(selector15)); }
+            if (arity >= 16) { if (xpath16 == null) throw new ArgumentNullException(nameof(xpath16)); if (selector16 == null) throw new ArgumentNullException(nameof(selector16)); }
+
+            return
+                from e in XDocument.Parse(xml).XPathSelectElements(xpath)
+                select
+                resultSelector(
+                    XPathEvaluate(e, xpath1, selector1),
+                    XPathEvaluate(e, xpath2, selector2),
+                    XPathEvaluate(e, xpath3, selector3),
+                    XPathEvaluate(e, xpath4, selector4),
+                    XPathEvaluate(e, xpath5, selector5),
+                    XPathEvaluate(e, xpath6, selector6),
+                    XPathEvaluate(e, xpath7, selector7),
+                    XPathEvaluate(e, xpath8, selector8),
+                    XPathEvaluate(e, xpath9, selector9),
+                    XPathEvaluate(e, xpath10, selector10),
+                    XPathEvaluate(e, xpath11, selector11),
+                    XPathEvaluate(e, xpath12, selector12),
+                    XPathEvaluate(e, xpath13, selector13),
+                    XPathEvaluate(e, xpath14, selector14),
+                    XPathEvaluate(e, xpath15, selector15),
+                    XPathEvaluate(e, xpath16, selector16));
+        }
+
+        static TResult XPathEvaluate<TNode, TResult>(this XNode e, string xpath, Func<TNode, TResult> selector) =>
+            selector != null && xpath != null
+            ? selector((TNode)((IEnumerable<object>)e.XPathEvaluate(xpath)).FirstOrDefault())
+            : default(TResult);
     }
 
     public static class SpawnModule

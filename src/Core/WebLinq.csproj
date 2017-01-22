@@ -125,6 +125,11 @@
     <Compile Include="TaskExtensions.cs" />
     <Compile Include="Unit.cs" />
     <Compile Include="Xml\XmlQuery.cs" />
+    <Compile Include="Modules.g.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Modules.g.tt</DependentUpon>
+    </Compile>
     <Compile Include="Xsv\XsvQuery.cs" />
     <Compile Include="Zip\ZipQuery.cs" />
     <Compile Include="Zip\Zip.cs" />
@@ -146,6 +151,12 @@
     <None Include="AL.licenseheader" />
     <None Include="WebLinq.nuspec" />
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Modules.g.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>Modules.g.cs</LastGenOutput>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
