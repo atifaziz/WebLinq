@@ -41,6 +41,33 @@ namespace WebLinq
         Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, T config, HttpOptions options);
     }
 
+    public static class HttpClientExtensions
+    {
+        public static IHttpClient<T> Mutable<T>(this IHttpClient<T> client) =>
+            new MutableHttpClient<T>(client);
+
+        sealed class MutableHttpClient<T> : IHttpClient<T>
+        {
+            readonly IHttpClient<T> _client;
+
+            public MutableHttpClient(IHttpClient<T> client)
+            {
+                _client = client;
+            }
+
+            public T Config { get; private set; }
+            public IHttpClient<T> WithConfig(T config)
+            {
+                Config = config;
+                return this;
+            }
+
+            public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, T config, HttpOptions options) =>
+                _client.WithConfig(Config).SendAsync(request, config, options);
+        }
+    }
+
+
     public class HttpClient : IHttpClient<HttpConfig>
     {
         public HttpConfig Config { get; }
