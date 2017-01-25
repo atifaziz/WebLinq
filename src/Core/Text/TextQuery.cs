@@ -31,5 +31,10 @@ namespace WebLinq.Text
             from fetch in query
             from text in fetch.Content.ReadAsStringAsync()
             select fetch.WithContent(text);
+
+        public static IObservable<HttpFetch<string>> Text(this IObservable<HttpFetch<HttpContent>> query, Encoding encoding) =>
+            from fetch in query
+            from bytes in fetch.Content.ReadAsByteArrayAsync()
+            select fetch.WithContent(encoding.GetString(bytes));
     }
 }
