@@ -100,6 +100,7 @@
     <Compile Include="Collections\Map.cs" />
     <Compile Include="DelegateExtensions.cs" />
     <Compile Include="ArrayList.cs" />
+    <Compile Include="Experimental\NVC.cs" />
     <Compile Include="Html\HtmlForm.cs" />
     <Compile Include="Html\HtmlFormControl.cs" />
     <Compile Include="Html\HtmlParser.cs" />
@@ -120,7 +121,7 @@
     <Compile Include="Mime\MimeMap.cs" />
     <Compile Include="HttpQuery.cs" />
     <Compile Include="Collections\ReadOnlyCollection.cs" />
-    <Compile Include="RW.cs" />
+    <Compile Include="Experimental\RW.cs" />
     <Compile Include="Sys\Spawner.cs" />
     <Compile Include="Text\TextQuery.cs" />
     <Compile Include="TaskExtensions.cs" />

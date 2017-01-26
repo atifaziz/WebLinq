@@ -14,43 +14,14 @@
 //
 #endregion
 
-namespace WebLinq
+namespace WebLinq.Experimental
 {
-    using System;
     using System.Collections.Specialized;
-    using System.Globalization;
     using System.Linq;
     using System.Reactive;
     using System.Text.RegularExpressions;
 
-    // ReSharper disable InconsistentNaming
-    // ReSharper disable PartialTypeWithSinglePart
-
-    sealed partial class RW<E, T>
-    {
-        readonly Func<E, T> _func;
-
-        public RW(Func<E, T> func) { _func = func; }
-        public T Run(E e) => _func(e);
-    }
-
-    static partial class RW
-    {
-        public static RW<E, T> Return<E, T>(Func<E, T> func) =>
-            new RW<E, T>(func);
-
-        public static RW<E, U> Bind<E, T, U>(this RW<E, T> io, Func<T, RW<E, U>> f) =>
-            Return((E e) => f(io.Run(e)).Run(e));
-
-        public static RW<E, U> Select<E, T, U>(this RW<E, T> io, Func<T, U> selector) =>
-            io.Bind(x => Return((E e) => selector(x)));
-
-        public static RW<E, V> SelectMany<E, T, U, V>(this RW<E, T> first, Func<T, RW<E, U>> secondSelector, Func<T, U, V> resultSelector) =>
-            first.Bind(x => secondSelector(x).Bind(y => Return((E _) => resultSelector(x, y))));
-
-        public static RW<E, int> Int32<E>(this RW<E, string> r) =>
-            from v in r select int.Parse(v, CultureInfo.InvariantCulture);
-    }
+    // ReSharper disable once InconsistentNaming
 
     static class NVC
     {
@@ -62,12 +33,12 @@ namespace WebLinq
 
         public static RW<NameValueCollection, string> GetPattern(string pattern) =>
             RW.Return((NameValueCollection c) =>
-                Enumerable
-                    .Range(0, c.Count)
-                    .Select(i => new { Index = i, Key = c.GetKey(i) })
-                    .Where(e => Regex.IsMatch(e.Key, pattern))
-                    .Select(e => c[e.Index])
-                    .FirstOrDefault());
+                          Enumerable
+                              .Range(0, c.Count)
+                              .Select(i => new { Index = i, Key = c.GetKey(i) })
+                              .Where(e => Regex.IsMatch(e.Key, pattern))
+                              .Select(e => c[e.Index])
+                              .FirstOrDefault());
 
         public static RW<NameValueCollection, string> Get(string name) =>
             RW.Return((NameValueCollection c) => c[name]);
