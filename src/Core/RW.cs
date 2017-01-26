@@ -48,7 +48,7 @@ namespace WebLinq
         public static RW<E, V> SelectMany<E, T, U, V>(this RW<E, T> first, Func<T, RW<E, U>> secondSelector, Func<T, U, V> resultSelector) =>
             first.Bind(x => secondSelector(x).Bind(y => Return((E _) => resultSelector(x, y))));
 
-        public static RW<E, int> Int<E>(this RW<E, string> r) =>
+        public static RW<E, int> Int32<E>(this RW<E, string> r) =>
             from v in r select int.Parse(v, CultureInfo.InvariantCulture);
     }
 
