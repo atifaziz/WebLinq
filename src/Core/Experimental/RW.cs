@@ -22,7 +22,7 @@ namespace WebLinq.Experimental
     // ReSharper disable InconsistentNaming
     // ReSharper disable PartialTypeWithSinglePart
 
-    sealed partial class RW<E, T>
+    public sealed class RW<E, T>
     {
         readonly Func<E, T> _func;
 
@@ -30,7 +30,7 @@ namespace WebLinq.Experimental
         public T Run(E e) => _func(e);
     }
 
-    static partial class RW
+    public static class RW
     {
         public static RW<E, T> Return<E, T>(Func<E, T> func) =>
             new RW<E, T>(func);

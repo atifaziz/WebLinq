@@ -23,7 +23,7 @@ namespace WebLinq.Experimental
 
     // ReSharper disable once InconsistentNaming
 
-    static class NVC
+    public static class NVC
     {
         public static RW<NameValueCollection, int> Count() =>
             RW.Return((NameValueCollection c) => c.Count);
