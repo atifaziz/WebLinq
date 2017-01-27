@@ -20,7 +20,6 @@ namespace WebLinq
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
@@ -127,7 +126,6 @@ namespace WebLinq
                 hwreq.Headers.Add(e.Key, e.Value);
             }
 
-            HttpWebResponse hwrsp = null;
             try
             {
                 if (content != null)
@@ -137,61 +135,57 @@ namespace WebLinq
                     using (var s = hwreq.GetRequestStream())
                         await content.CopyToAsync(s).DontContinueOnCapturedContext();
                 }
-                return await CreateResponse(hwreq, hwrsp = (HttpWebResponse) await hwreq.GetResponseAsync()).DontContinueOnCapturedContext();
+                return CreateResponse(hwreq, (HttpWebResponse) await hwreq.GetResponseAsync());
             }
             catch (WebException e) when (e.Status == WebExceptionStatus.ProtocolError)
             {
                 if (options?.ReturnErrorneousFetch == false)
                     throw;
-                return await CreateResponse(hwreq, hwrsp = (HttpWebResponse)e.Response).DontContinueOnCapturedContext();
-            }
-            finally
-            {
-                hwrsp?.Dispose();
+                return CreateResponse(hwreq, (HttpWebResponse) e.Response);
             }
         }
 
-        static async Task<HttpResponseMessage> CreateResponse(HttpWebRequest req, HttpWebResponse rsp)
+        static HttpResponseMessage CreateResponse(HttpWebRequest req, HttpWebResponse rsp)
         {
-            var ms = new MemoryStream();
-            using (var s = rsp.GetResponseStream())
+            try
             {
-                if (s != null)
-                    await s.CopyToAsync(ms).DontContinueOnCapturedContext();
-
-            }
-            ms.Position = 0;
-            var response = new HttpResponseMessage(rsp.StatusCode)
-            {
-                Version        = rsp.ProtocolVersion,
-                ReasonPhrase   = rsp.StatusDescription,
-                Content        = new StreamContent(ms),
-                RequestMessage = new HttpRequestMessage(ParseHttpMethod(req.Method), rsp.ResponseUri),
-            };
-
-            var headers =
-                from e in rsp.Headers.AsEnumerable()
-                group e by e.Key.StartsWith("Content-", StringComparison.OrdinalIgnoreCase)
-                        || e.Key.Equals("Expires", StringComparison.OrdinalIgnoreCase)
-                        || e.Key.Equals("Last-Modified", StringComparison.OrdinalIgnoreCase)
-                        || e.Key.Equals("Allow", StringComparison.OrdinalIgnoreCase) into g
-                from e in g
-                select new
+                var response = new HttpResponseMessage(rsp.StatusCode)
                 {
-                    Headers = g.Key
-                            ? (HttpHeaders) response.Content.Headers
-                            : response.Headers,
-                    e.Key,
-                    e.Value,
+                    Version        = rsp.ProtocolVersion,
+                    ReasonPhrase   = rsp.StatusDescription,
+                    Content        = new StreamContent(rsp.GetResponseStream()),
+                    RequestMessage = new HttpRequestMessage(ParseHttpMethod(req.Method), rsp.ResponseUri),
                 };
 
-            foreach (var e in headers)
-            {
-                if (!e.Headers.TryAddWithoutValidation(e.Key, e.Value))
-                    throw new Exception($"Invalid HTTP header: {e.Key}: {e.Value}");
-            }
+                var headers =
+                    from e in rsp.Headers.AsEnumerable()
+                    group e by e.Key.StartsWith("Content-", StringComparison.OrdinalIgnoreCase)
+                            || e.Key.Equals("Expires", StringComparison.OrdinalIgnoreCase)
+                            || e.Key.Equals("Last-Modified", StringComparison.OrdinalIgnoreCase)
+                            || e.Key.Equals("Allow", StringComparison.OrdinalIgnoreCase) into g
+                    from e in g
+                    select new
+                    {
+                        Headers = g.Key
+                                ? (HttpHeaders) response.Content.Headers
+                                : response.Headers,
+                        e.Key,
+                        e.Value,
+                    };
 
-            return response;
+                foreach (var e in headers)
+                {
+                    if (!e.Headers.TryAddWithoutValidation(e.Key, e.Value))
+                        throw new Exception($"Invalid HTTP header: {e.Key}: {e.Value}");
+                }
+
+                rsp = null; // ownership passed on to StreamContent
+                return response;
+            }
+            finally
+            {
+                rsp?.Dispose();
+            }
         }
 
         static HttpMethod ParseHttpMethod(string method) =>
