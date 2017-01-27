@@ -18,15 +18,14 @@ namespace WebLinq.Html
 {
     using System;
     using System.Data;
-    using System.Net.Http;
     using System.Net.Mime;
     using System.Reactive.Linq;
 
     public static class HtmlQuery
     {
-        public static IObservable<HttpFetch<ParsedHtml>> Html(this IObservable<HttpFetch<HttpContent>> query, IHtmlParser parser) =>
-            from fetch in query.Accept(MediaTypeNames.Text.Html)
-            select fetch.WithContent(parser.Parse(fetch.Content.ReadAsStringAsync().Result, fetch.RequestUrl));
+        public static IObservable<HttpFetch<ParsedHtml>> Html(this IHttpObservable query, IHtmlParser parser) =>
+            query.Accept(MediaTypeNames.Text.Html)
+                 .WithReader(async fetch => parser.Parse(await fetch.Content.ReadAsStringAsync(), fetch.RequestUrl));
 
         public static IObservable<HttpFetch<string>> Links(this IObservable<HttpFetch<ParsedHtml>> query) =>
             query.Links(null);

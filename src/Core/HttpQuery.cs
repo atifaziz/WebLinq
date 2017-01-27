@@ -35,7 +35,7 @@ namespace WebLinq
     using Mime;
 
     #endregion
-    
+
     public static class HttpQuery
     {
         static readonly int MaximumAutomaticRedirections = WebRequest.CreateHttp("http://localhost/").MaximumAutomaticRedirections;
@@ -163,29 +163,34 @@ namespace WebLinq
             return responseSelector(config, response);
         }
 
-        public static IObservable<HttpFetch<HttpContent>> Get(
-            this IObservable<HttpFetch<HttpContent>> query, Uri url) =>
+        public static IHttpObservable Get(this IHttpObservable query, Uri url) =>
             query.Get(url, null);
 
-        public static IObservable<HttpFetch<HttpContent>> Get(
-            this IObservable<HttpFetch<HttpContent>> query, Uri url, HttpOptions options) =>
-            from first in query
-            from second in first.Client.Get(url, options)
-            select second;
+        public static IHttpObservable Get(this IHttpObservable query, Uri url, HttpOptions options) =>
+            HttpObservable.Return(
+                from first in query
+                select first.Client.Get(url, options));
 
-        public static IObservable<HttpFetch<HttpContent>> Get(this IHttpClient<HttpConfig> http, Uri url) =>
+        public static IHttpObservable Get(this IHttpClient<HttpConfig> http, Uri url) =>
             http.Get(url, null);
 
-        public static IObservable<HttpFetch<HttpContent>> Get(this IHttpClient<HttpConfig> http, Uri url, HttpOptions options) =>
-            Observable.Defer(() => SendAsync(http, http.Config, 0, HttpMethod.Get, url, options: options).ToObservable());
+        public static IObservable<HttpFetch<string>> Text(this IHttpObservable query) =>
+            query.WithReader(f => f.Content.ReadAsStringAsync());
 
-        public static IObservable<HttpFetch<HttpContent>> Post(this IHttpClient<HttpConfig> http, Uri url, NameValueCollection data) =>
+        public static IHttpObservable Get(this IHttpClient<HttpConfig> http, Uri url, HttpOptions options) =>
+            HttpObservable.Return(
+                // TODO Use DeferAsync
+                Observable.Defer(() => SendAsync(http, http.Config, 0, HttpMethod.Get, url, options: options).ToObservable()));
+
+        public static IHttpObservable Post(this IHttpClient<HttpConfig> http, Uri url, NameValueCollection data) =>
             http.Post(url, new FormUrlEncodedContent(from i in Enumerable.Range(0, data.Count)
                                                      from v in data.GetValues(i)
                                                      select data.GetKey(i).AsKeyTo(v)));
 
-        public static IObservable<HttpFetch<HttpContent>> Post(this IHttpClient<HttpConfig> http, Uri url, HttpContent content) =>
-            Observable.Defer(() => SendAsync(http, http.Config, 0, HttpMethod.Post, url, content).ToObservable());
+        public static IHttpObservable Post(this IHttpClient<HttpConfig> http, Uri url, HttpContent content) =>
+            HttpObservable.Return(
+                // TODO Use DeferAsync
+                Observable.Defer(() => SendAsync(http, http.Config, 0, HttpMethod.Post, url, content).ToObservable()));
 
         public static IObservable<HttpFetch<T>> WithTimeout<T>(this IObservable<HttpFetch<T>> query, TimeSpan duration) =>
             from e in query
@@ -203,50 +208,52 @@ namespace WebLinq
         public static IObservable<T> Content<T>(this IObservable<HttpFetch<T>> query) =>
             from e in query select e.Content;
 
-        public static IObservable<HttpFetch<HttpContent>> Accept(this IObservable<HttpFetch<HttpContent>> query, params string[] mediaTypes) =>
+        public static IHttpObservable Accept(this IHttpObservable query, params string[] mediaTypes) =>
             (mediaTypes?.Length ?? 0) == 0
             ? query
             : query.Do(e =>
-            {
-                var headers = e.Content.Headers;
-                var actualMediaType = headers.ContentType?.MediaType;
-                if (actualMediaType == null)
-                {
-                    var contentDisposition = headers.ContentDisposition;
-                    var filename = contentDisposition?.FileName ?? contentDisposition?.FileNameStar;
-                    if (!string.IsNullOrEmpty(filename))
-                        actualMediaType = MimeMapping.FindMimeTypeFromFileName(filename);
-                    if (actualMediaType == null)
-                    {
-                        throw new Exception($"Content has unspecified type when acceptable types are: {string.Join(", ", mediaTypes)}");
-                    }
-                }
+              {
+                  var c = new StringContent(string.Empty) { Headers = { ContentType = null } };
+                  foreach (var h in e.ContentHeaders)
+                      c.Headers.Add(h.Key, h.Value);
+                  var headers = c.Headers;
+                  var actualMediaType = headers.ContentType?.MediaType;
+                  if (actualMediaType == null)
+                  {
+                      var contentDisposition = headers.ContentDisposition;
+                      var filename = contentDisposition?.FileName ?? contentDisposition?.FileNameStar;
+                      if (!string.IsNullOrEmpty(filename))
+                          actualMediaType = MimeMapping.FindMimeTypeFromFileName(filename);
+                      if (actualMediaType == null)
+                      {
+                          throw new Exception($"Content has unspecified type when acceptable types are: {string.Join(", ", mediaTypes)}");
+                      }
+                  }
 
-                Debug.Assert(mediaTypes != null);
-                if (mediaTypes.Any(mediaType => string.Equals(mediaType, actualMediaType, StringComparison.OrdinalIgnoreCase)))
-                    return;
+                  Debug.Assert(mediaTypes != null);
+                  if (mediaTypes.Any(mediaType => string.Equals(mediaType, actualMediaType, StringComparison.OrdinalIgnoreCase)))
+                      return;
 
-                throw new Exception($"Unexpected content of type \"{actualMediaType}\". Acceptable types are: {string.Join(", ", mediaTypes)}");
-            });
+                  throw new Exception($"Unexpected content of type \"{actualMediaType}\". Acceptable types are: {string.Join(", ", mediaTypes)}");
+              });
 
+        public static IHttpObservable Submit(this IObservable<HttpFetch<ParsedHtml>> query, string formSelector, NameValueCollection data) =>
+            HttpObservable.Return(
+                from html in query
+                select html.Client.Submit(html.Content, formSelector, data));
 
-        public static IObservable<HttpFetch<HttpContent>> Submit(this IObservable<HttpFetch<ParsedHtml>> query, string formSelector, NameValueCollection data) =>
-            from html in query
-            from next in html.Client.Submit(html.Content, formSelector, data)
-            select next;
+        public static IHttpObservable Submit(this IObservable<HttpFetch<ParsedHtml>> query, int formIndex, NameValueCollection data) =>
+            HttpObservable.Return(
+                from html in query
+                select html.Client.Submit(html.Content, formIndex, data));
 
-        public static IObservable<HttpFetch<HttpContent>> Submit(this IObservable<HttpFetch<ParsedHtml>> query, int formIndex, NameValueCollection data) =>
-            from html in query
-            from next in html.Client.Submit(html.Content, formIndex, data)
-            select next;
-
-        public static IObservable<HttpFetch<HttpContent>> Submit(this IHttpClient<HttpConfig> http, ParsedHtml html, string formSelector, NameValueCollection data) =>
+        public static IHttpObservable Submit(this IHttpClient<HttpConfig> http, ParsedHtml html, string formSelector, NameValueCollection data) =>
             Submit(http, html, formSelector, null, data);
 
-        public static IObservable<HttpFetch<HttpContent>> Submit(this IHttpClient<HttpConfig> http, ParsedHtml html, int formIndex, NameValueCollection data) =>
+        public static IHttpObservable Submit(this IHttpClient<HttpConfig> http, ParsedHtml html, int formIndex, NameValueCollection data) =>
             Submit(http, html, null, formIndex, data);
 
-        internal static IObservable<HttpFetch<HttpContent>> Submit(
+        internal static IHttpObservable Submit(
             IHttpClient<HttpConfig> http, ParsedHtml html,
             string formSelector, int? formIndex,
             NameValueCollection data)

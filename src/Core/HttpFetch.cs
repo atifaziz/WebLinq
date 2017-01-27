@@ -29,10 +29,11 @@ namespace WebLinq
                                              HttpStatusCode statusCode,
                                              string reasonPhrase,
                                              HttpHeaderCollection headers,
+                                             HttpHeaderCollection contentHeaders,
                                              Uri requestUrl,
                                              HttpHeaderCollection requestHeaders) =>
             new HttpFetch<T>(id, content, client,
-                             httpVersion, statusCode, reasonPhrase, headers,
+                             httpVersion, statusCode, reasonPhrase, headers, contentHeaders,
                              requestUrl, requestHeaders);
     }
 
@@ -48,6 +49,7 @@ namespace WebLinq
         public HttpStatusCode StatusCode           { get; }
         public string ReasonPhrase                 { get; }
         public HttpHeaderCollection Headers        { get; }
+        public HttpHeaderCollection ContentHeaders { get; }
         public Uri RequestUrl                      { get; }
         public HttpHeaderCollection RequestHeaders { get; }
 
@@ -58,6 +60,7 @@ namespace WebLinq
                          HttpStatusCode statusCode,
                          string reasonPhrase,
                          HttpHeaderCollection headers,
+                         HttpHeaderCollection contentHeaders,
                          Uri requestUrl,
                          HttpHeaderCollection requestHeaders)
         {
@@ -68,6 +71,7 @@ namespace WebLinq
             StatusCode     = statusCode;
             ReasonPhrase   = reasonPhrase;
             Headers        = headers;
+            ContentHeaders = contentHeaders;
             RequestUrl     = requestUrl;
             RequestHeaders = requestHeaders;
         }
@@ -87,12 +91,12 @@ namespace WebLinq
 
         public HttpFetch<TContent> WithContent<TContent>(TContent content) =>
             new HttpFetch<TContent>(Id, content, Client,
-                                    HttpVersion, StatusCode, ReasonPhrase, Headers,
+                                    HttpVersion, StatusCode, ReasonPhrase, Headers, ContentHeaders,
                                     RequestUrl, RequestHeaders);
 
         public HttpFetch<T> WithConfig(HttpConfig config) =>
             new HttpFetch<T>(Id, Content, Client.WithConfig(config),
-                             HttpVersion, StatusCode, ReasonPhrase, Headers,
+                             HttpVersion, StatusCode, ReasonPhrase, Headers, ContentHeaders,
                              RequestUrl, RequestHeaders);
     }
 }

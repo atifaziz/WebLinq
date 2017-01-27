@@ -29,6 +29,7 @@ namespace WebLinq
                                     response.Version,
                                     response.StatusCode, response.ReasonPhrase,
                                     HttpHeaderCollection.Empty.Set(response.Headers),
+                                    HttpHeaderCollection.Empty.Set(response.Content.Headers),
                                     request.RequestUri,
                                     HttpHeaderCollection.Empty.Set(request.Headers));
         }

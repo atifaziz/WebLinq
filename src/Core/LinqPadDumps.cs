@@ -40,6 +40,16 @@ namespace WebLinq
                           : e.Value
                 },
 
+            ContentHeaders =
+                from e in ContentHeaders
+                select new
+                {
+                    e.Key,
+                    Value = e.Value.Count == 1
+                          ? (object)e.Value.Single()
+                          : e.Value
+                },
+
             Content,
         };
     }

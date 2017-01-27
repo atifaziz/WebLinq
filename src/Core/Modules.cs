@@ -41,39 +41,39 @@ namespace WebLinq.Modules
     {
         public static IHttpClient<HttpConfig> Http => new HttpClient(HttpConfig.Default);
 
-        public static IObservable<HttpFetch<ParsedHtml>> Html(this IObservable<HttpFetch<HttpContent>> query) =>
+        public static IObservable<HttpFetch<ParsedHtml>> Html(this IHttpObservable query) =>
             query.Html(HtmlParser.Default);
 
-        public static IObservable<HttpFetch<HttpContent>> Submit(this IObservable<HttpFetch<HttpContent>> query, string formSelector, NameValueCollection data) =>
+        public static IHttpObservable Submit(this IHttpObservable query, string formSelector, NameValueCollection data) =>
             Submit(query, formSelector, null, data);
 
-        public static IObservable<HttpFetch<HttpContent>> Submit(this IObservable<HttpFetch<HttpContent>> query, int formIndex, NameValueCollection data) =>
+        public static IHttpObservable Submit(this IHttpObservable query, int formIndex, NameValueCollection data) =>
             Submit(query, null, formIndex, data);
 
-        static IObservable<HttpFetch<HttpContent>> Submit(IObservable<HttpFetch<HttpContent>> query, string formSelector, int? formIndex, NameValueCollection data) =>
-            from html in query.Html()
-            from fetch in HttpQuery.Submit(html.Client, html.Content, formSelector, formIndex, data)
-            select fetch;
+        static IHttpObservable Submit(IHttpObservable query, string formSelector, int? formIndex, NameValueCollection data) =>
+            HttpObservable.Return(
+                from html in query.Html()
+                select HttpQuery.Submit(html.Client, html.Content, formSelector, formIndex, data));
 
-        public static IObservable<HttpFetch<string>> Links(this IObservable<HttpFetch<HttpContent>> query) =>
+        public static IObservable<HttpFetch<string>> Links(this IHttpObservable query) =>
             query.Links(null);
 
-        public static IObservable<HttpFetch<T>> Links<T>(this IObservable<HttpFetch<HttpContent>> query, Func<string, HtmlObject, T> selector) =>
+        public static IObservable<HttpFetch<T>> Links<T>(this IHttpObservable query, Func<string, HtmlObject, T> selector) =>
             Links(query, null, selector);
 
-        public static IObservable<HttpFetch<string>> Links(this IObservable<HttpFetch<HttpContent>> query, Uri baseUrl) =>
+        public static IObservable<HttpFetch<string>> Links(this IHttpObservable query, Uri baseUrl) =>
             Links(query, baseUrl, (href, _) => href);
 
-        public static IObservable<HttpFetch<T>> Links<T>(this IObservable<HttpFetch<HttpContent>> query, Uri baseUrl, Func<string, HtmlObject, T> selector) =>
+        public static IObservable<HttpFetch<T>> Links<T>(this IHttpObservable query, Uri baseUrl, Func<string, HtmlObject, T> selector) =>
             query.Html().Links(baseUrl, selector);
 
-        public static IObservable<HttpFetch<HtmlObject>> Tables(this IObservable<HttpFetch<HttpContent>> query) =>
+        public static IObservable<HttpFetch<HtmlObject>> Tables(this IHttpObservable query) =>
             query.Html().Tables();
 
-        public static IObservable<HttpFetch<DataTable>> FormsAsDataTable(this IObservable<HttpFetch<HttpContent>> query) =>
+        public static IObservable<HttpFetch<DataTable>> FormsAsDataTable(this IHttpObservable query) =>
             query.Html().FormsAsDataTable();
 
-        public static IObservable<HttpFetch<HtmlForm>> Forms(this IObservable<HttpFetch<HttpContent>> query) =>
+        public static IObservable<HttpFetch<HtmlForm>> Forms(this IHttpObservable query) =>
             query.Html().Forms();
         public static IObservable<HttpFetch<HttpContent>> Crawl(Uri url) =>
             Crawl(url, int.MaxValue);
@@ -99,7 +99,7 @@ namespace WebLinq.Modules
                 var url = dequeued.Value;
                 var level = dequeued.Key;
                 // TODO retry intermittent errors?
-                var fetch = Http.Get(url, new HttpOptions {ReturnErrorneousFetch = true}).Single();
+                var fetch = Http.Get(url, new HttpOptions {ReturnErrorneousFetch = true}).Buffer().Single();
 
                 if (!fetch.IsSuccessStatusCode)
                     continue;
@@ -118,7 +118,7 @@ namespace WebLinq.Modules
                     continue;
 
                 var lq =
-                    from e in Observable.Return(fetch).Links().Content()
+                    from e in HttpObservable.Return(Observable.Return(fetch)).Links().Content()
                     select TryParse.Uri(e, UriKind.Absolute) into e
                     where e != null
                        && (e.Scheme == Uri.UriSchemeHttp || e.Scheme == Uri.UriSchemeHttps)
