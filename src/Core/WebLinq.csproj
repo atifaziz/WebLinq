@@ -95,10 +95,8 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>AssemblyInfo.g.tt</DependentUpon>
     </Compile>
-    <Compile Include="ComparerExtensions.cs" />
     <Compile Include="Collections\MapBase.cs" />
     <Compile Include="Collections\Map.cs" />
-    <Compile Include="DelegateExtensions.cs" />
     <Compile Include="ArrayList.cs" />
     <Compile Include="Html\HtmlForm.cs" />
     <Compile Include="Html\HtmlFormControl.cs" />
