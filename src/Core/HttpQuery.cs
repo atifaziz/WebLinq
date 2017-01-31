@@ -93,77 +93,86 @@ namespace WebLinq
                 Content = content
             };
 
-            var response = await http.SendAsync(request, config, options)
-                                     .DontContinueOnCapturedContext();
+            HttpResponseMessage response = null;
 
-            IEnumerable<string> cookies;
-            if (response.Headers.TryGetValues("Set-Cookie", out cookies))
+            try
             {
-                var cc = new CookieContainer();
-                foreach (var cookie in http.Config.Cookies ?? Enumerable.Empty<Cookie>())
-                    cc.Add(cookie);
-                foreach (var cookie in cookies)
+                response = await http.SendAsync(request, config, options)
+                    .DontContinueOnCapturedContext();
+
+                IEnumerable<string> cookies;
+                if (response.Headers.TryGetValues("Set-Cookie", out cookies))
                 {
-                    try { cc.SetCookies(url, cookie); }
-                    catch (CookieException) { /* ignore bad cookies */}
+                    var cc = new CookieContainer();
+                    foreach (var cookie in http.Config.Cookies ?? Enumerable.Empty<Cookie>())
+                        cc.Add(cookie);
+                    foreach (var cookie in cookies)
+                    {
+                        try { cc.SetCookies(url, cookie); }
+                        catch (CookieException) { /* ignore bad cookies */}
+                    }
+                    config = config.WithCookies(cc.GetCookies(url).Cast<Cookie>().ToArray());
                 }
-                config = config.WithCookies(cc.GetCookies(url).Cast<Cookie>().ToArray());
+
+                // Source:
+                // https://referencesource.microsoft.com/#System/net/System/Net/HttpWebRequest.cs,5669
+                //
+                // Check for Redirection
+                //
+                // Table View:
+                // Method            301             302             303             307
+                //    *                *               *             GET               *
+                // POST              GET             GET             GET            POST
+                //
+                // Put another way:
+                //  301 & 302  - All methods are redirected to the same method but POST. POST is redirected to a GET.
+                //  303 - All methods are redirected to GET
+                //  307 - All methods are redirected to the same method.
+                //
+
+                var sc = response.StatusCode;
+                if (sc == HttpStatusCode.Ambiguous || // 300
+                    sc == HttpStatusCode.Moved || // 301
+                    sc == HttpStatusCode.Redirect || // 302
+                    sc == HttpStatusCode.RedirectMethod || // 303
+                    sc == HttpStatusCode.RedirectKeepVerb) // 307
+                {
+                    var redirectionUrl = response.Headers.Location?.AsRelativeTo(response.RequestMessage.RequestUri);
+                    if (redirectionUrl == null)
+                    {
+                        // 300
+                        // If the server has a preferred choice of representation,
+                        // it SHOULD include the specific URI for that
+                        // representation in the Location field; user agents MAY
+                        // use the Location field value for automatic redirection.
+
+                        if (sc != HttpStatusCode.Ambiguous)
+                            throw new ProtocolViolationException("Server did not supply a URL for a redirection response.");
+                    }
+                    else
+                    {
+                        if (redirectionUrl.Scheme == "ws" || redirectionUrl.Scheme == "wss")
+                            throw new NotSupportedException($"Redirection to a WebSocket URL ({redirectionUrl}) is not supported.");
+
+                        if (redirectionUrl.Scheme != Uri.UriSchemeHttp && redirectionUrl.Scheme != Uri.UriSchemeHttps)
+                            throw new ProtocolViolationException(
+                                $"Server sent a redirection response where the redirection URL ({redirectionUrl}) scheme was neither HTTP nor HTTPS.");
+
+                        return sc == HttpStatusCode.RedirectMethod
+                            || method == HttpMethod.Post && (sc == HttpStatusCode.Moved || sc == HttpStatusCode.Redirect)
+                             ? redirectionSelector(config, HttpMethod.Get, redirectionUrl, null)
+                             : redirectionSelector(config, method, redirectionUrl, content);
+                    }
+                }
+
+                var result = responseSelector(config, response);
+                response = null; // disown
+                return result;
             }
-
-            // Source:
-            // https://referencesource.microsoft.com/#System/net/System/Net/HttpWebRequest.cs,5669
-            //
-            // Check for Redirection
-            //
-            // Table View:
-            // Method            301             302             303             307
-            //    *                *               *             GET               *
-            // POST              GET             GET             GET            POST
-            //
-            // Put another way:
-            //  301 & 302  - All methods are redirected to the same method but POST. POST is redirected to a GET.
-            //  303 - All methods are redirected to GET
-            //  307 - All methods are redirected to the same method.
-            //
-
-            var sc = response.StatusCode;
-            if (sc == HttpStatusCode.Ambiguous || // 300
-                sc == HttpStatusCode.Moved || // 301
-                sc == HttpStatusCode.Redirect || // 302
-                sc == HttpStatusCode.RedirectMethod || // 303
-                sc == HttpStatusCode.RedirectKeepVerb) // 307
+            finally
             {
-                var redirectionUrl = response.Headers.Location?.AsRelativeTo(response.RequestMessage.RequestUri);
-                if (redirectionUrl == null)
-                {
-                    // 300
-                    // If the server has a preferred choice of representation,
-                    // it SHOULD include the specific URI for that
-                    // representation in the Location field; user agents MAY
-                    // use the Location field value for automatic redirection.
-
-                    if (sc != HttpStatusCode.Ambiguous)
-                        throw new ProtocolViolationException("Server did not supply a URL for a redirection response.");
-                }
-                else
-                {
-                    if (redirectionUrl.Scheme == "ws" || redirectionUrl.Scheme == "wss")
-                        throw new NotSupportedException($"Redirection to a WebSocket URL ({redirectionUrl}) is not supported.");
-
-                    if (redirectionUrl.Scheme != Uri.UriSchemeHttp && redirectionUrl.Scheme != Uri.UriSchemeHttps)
-                        throw new ProtocolViolationException(
-                            $"Server sent a redirection response where the redirection URL ({redirectionUrl}) scheme was neither HTTP nor HTTPS.");
-
-                    return sc == HttpStatusCode.RedirectMethod
-                        || method == HttpMethod.Post && (sc == HttpStatusCode.Moved || sc == HttpStatusCode.Redirect)
-                         ? redirectionSelector(config, HttpMethod.Get, redirectionUrl, null)
-                         : redirectionSelector(config, method, redirectionUrl, content);
-                   
-                }
-
+                response?.Dispose();
             }
-
-            return responseSelector(config, response);
         }
 
         public static IHttpObservable Get(this IHttpObservable query, Uri url) =>
