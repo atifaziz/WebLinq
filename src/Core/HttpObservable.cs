@@ -62,7 +62,9 @@ namespace WebLinq
                       .Subscribe(observer);
 
             public IObservable<HttpFetch<T>> WithReader<T>(Func<HttpFetch<HttpContent>, Task<T>> reader) =>
-                _query.SelectMany(async f => f.WithContent(await reader(f).DontContinueOnCapturedContext()));
+                from f in _query
+                from c in reader(f)
+                select f.WithContent(c);
         }
     }
 }
