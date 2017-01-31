@@ -135,7 +135,7 @@ namespace WebLinq
                     using (var s = hwreq.GetRequestStream())
                         await content.CopyToAsync(s).DontContinueOnCapturedContext();
                 }
-                return CreateResponse(hwreq, (HttpWebResponse) await hwreq.GetResponseAsync());
+                return CreateResponse(hwreq, (HttpWebResponse) await hwreq.GetResponseAsync().DontContinueOnCapturedContext());
             }
             catch (WebException e) when (e.Status == WebExceptionStatus.ProtocolError)
             {
