@@ -103,7 +103,10 @@ namespace WebLinq
                 foreach (var cookie in http.Config.Cookies ?? Enumerable.Empty<Cookie>())
                     cc.Add(cookie);
                 foreach (var cookie in cookies)
-                    cc.SetCookies(url, cookie);
+                {
+                    try { cc.SetCookies(url, cookie); }
+                    catch (CookieException) { /* ignore bad cookies */}
+                }
                 config = config.WithCookies(cc.GetCookies(url).Cast<Cookie>().ToArray());
             }
 
