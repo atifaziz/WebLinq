@@ -216,6 +216,16 @@ namespace WebLinq
                 // TODO Use DeferAsync
                 Observable.Defer(() => SendAsync(http, http.Config, 0, HttpMethod.Get, url, options: options).ToObservable()));
 
+        public static IHttpObservable Post(this IHttpObservable query, Uri url, NameValueCollection data) =>
+            HttpObservable.Return(
+                from f in query
+                select f.Client.Post(url, data));
+
+        public static IHttpObservable Post(this IHttpObservable query, Uri url, HttpContent content) =>
+            HttpObservable.Return(
+                from f in query
+                select f.Client.Post(url, content));
+
         public static IHttpObservable Post(this IHttpClient<HttpConfig> http, Uri url, NameValueCollection data) =>
             http.Post(url, new FormUrlEncodedContent(from i in Enumerable.Range(0, data.Count)
                                                      from v in data.GetValues(i)
