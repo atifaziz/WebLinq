@@ -100,18 +100,40 @@ namespace WebLinq
                 response = await http.SendAsync(request, config, options)
                     .DontContinueOnCapturedContext();
 
-                IEnumerable<string> cookies;
-                if (response.Headers.TryGetValues("Set-Cookie", out cookies))
+                IEnumerable<string> setCookies;
+                if (response.Headers.TryGetValues("Set-Cookie", out setCookies))
                 {
                     var cc = new CookieContainer();
-                    foreach (var cookie in http.Config.Cookies ?? Enumerable.Empty<Cookie>())
-                        cc.Add(cookie);
-                    foreach (var cookie in cookies)
+                    foreach (var cookie in setCookies)
                     {
                         try { cc.SetCookies(url, cookie); }
                         catch (CookieException) { /* ignore bad cookies */}
                     }
-                    config = config.WithCookies(cc.GetCookies(url).Cast<Cookie>().ToArray());
+
+                    var mergedCookies =
+                        from cookies in new[]
+                        {
+                            http.Config.Cookies ?? Enumerable.Empty<Cookie>(),
+                            cc.GetCookies(url).Cast<Cookie>(),
+                        }
+                        from c in cookies
+                        //
+                        // According to RFC 6265[1], "cookies for a given host
+                        // are shared across all the ports on that host" so
+                        // don't take Cookie.Port into account when grouping.
+                        // It is also assumed that Cookie.Domain
+                        //
+                        // [1] https://tools.ietf.org/html/rfc6265#section-1
+                        //
+                        group c by new
+                        {
+                            c.Name,
+                            Domain = c.Domain.ToLowerInvariant(),
+                            c.Path
+                        } into g
+                        select g.OrderByDescending(e => e.TimeStamp).First();
+
+                    config = config.WithCookies(mergedCookies.ToArray());
                 }
 
                 // Source:
