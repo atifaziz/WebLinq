@@ -45,15 +45,21 @@ namespace WebLinq.Modules
             query.Html(HtmlParser.Default);
 
         public static IHttpObservable Submit(this IHttpObservable query, string formSelector, NameValueCollection data) =>
-            Submit(query, formSelector, null, data);
+            Submit(query, formSelector, null, null, data);
 
         public static IHttpObservable Submit(this IHttpObservable query, int formIndex, NameValueCollection data) =>
-            Submit(query, null, formIndex, data);
+            Submit(query, null, formIndex, null, data);
 
-        static IHttpObservable Submit(IHttpObservable query, string formSelector, int? formIndex, NameValueCollection data) =>
+        public static IHttpObservable SubmitTo(this IHttpObservable query, Uri url, string formSelector, NameValueCollection data) =>
+            Submit(query, formSelector, null, url, data);
+
+        public static IHttpObservable SubmitTo(this IHttpObservable query, Uri url, int formIndex, NameValueCollection data) =>
+            Submit(query, null, formIndex, url, data);
+
+        static IHttpObservable Submit(IHttpObservable query, string formSelector, int? formIndex, Uri url, NameValueCollection data) =>
             HttpObservable.Return(
                 from html in query.Html()
-                select HttpQuery.Submit(html.Client, html.Content, formSelector, formIndex, data));
+                select HttpQuery.Submit(html.Client, html.Content, formSelector, formIndex, url, data));
 
         public static IObservable<HttpFetch<string>> Links(this IHttpObservable query) =>
             query.Links(null);

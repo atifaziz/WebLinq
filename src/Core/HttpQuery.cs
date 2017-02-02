@@ -283,24 +283,37 @@ namespace WebLinq
               });
 
         public static IHttpObservable Submit(this IObservable<HttpFetch<ParsedHtml>> query, string formSelector, NameValueCollection data) =>
-            HttpObservable.Return(
-                from html in query
-                select html.Client.Submit(html.Content, formSelector, data));
+            Submit(query, formSelector, null, null, data);
 
         public static IHttpObservable Submit(this IObservable<HttpFetch<ParsedHtml>> query, int formIndex, NameValueCollection data) =>
+            Submit(query, null, formIndex, null, data);
+
+        public static IHttpObservable SubmitTo(this IObservable<HttpFetch<ParsedHtml>> query, Uri url, string formSelector, NameValueCollection data) =>
+            Submit(query, formSelector, null, url, data);
+
+        public static IHttpObservable SubmitTo(this IObservable<HttpFetch<ParsedHtml>> query, Uri url, int formIndex, NameValueCollection data) =>
+            Submit(query, null, formIndex, url, data);
+
+        static IHttpObservable Submit(IObservable<HttpFetch<ParsedHtml>> query, string formSelector, int? formIndex, Uri url, NameValueCollection data) =>
             HttpObservable.Return(
                 from html in query
-                select html.Client.Submit(html.Content, formIndex, data));
+                select Submit(html.Client, html.Content, formSelector, formIndex, url, data));
 
         public static IHttpObservable Submit(this IHttpClient<HttpConfig> http, ParsedHtml html, string formSelector, NameValueCollection data) =>
-            Submit(http, html, formSelector, null, data);
+            Submit(http, html, formSelector, null, null, data);
 
         public static IHttpObservable Submit(this IHttpClient<HttpConfig> http, ParsedHtml html, int formIndex, NameValueCollection data) =>
-            Submit(http, html, null, formIndex, data);
+            Submit(http, html, null, formIndex, null, data);
 
-        internal static IHttpObservable Submit(
-            IHttpClient<HttpConfig> http, ParsedHtml html,
-            string formSelector, int? formIndex,
+        public static IHttpObservable SubmitTo(this IHttpClient<HttpConfig> http, Uri url, ParsedHtml html, string formSelector, NameValueCollection data) =>
+            Submit(http, html, formSelector, null, url, data);
+
+        public static IHttpObservable SubmitTo(this IHttpClient<HttpConfig> http, Uri url, ParsedHtml html, int formIndex, NameValueCollection data) =>
+            Submit(http, html, null, formIndex, url, data);
+
+        internal static IHttpObservable Submit(IHttpClient<HttpConfig> http,
+            ParsedHtml html,
+            string formSelector, int? formIndex, Uri actionUrl,
             NameValueCollection data)
         {
             var forms =
@@ -334,8 +347,8 @@ namespace WebLinq
             }
 
             return form.Method == HtmlFormMethod.Post
-                 ? http.Post(form.Action, form.Data)
-                 : http.Get(new UriBuilder(form.Action) { Query = form.Data.ToW3FormEncoded() }.Uri);
+                 ? http.Post(actionUrl ?? form.Action, form.Data)
+                 : http.Get(new UriBuilder(actionUrl ?? form.Action) { Query = form.Data.ToW3FormEncoded() }.Uri);
         }
 
         public static IObservable<HttpFetch<T>> ExceptStatusCode<T>(this IObservable<HttpFetch<T>> query, params HttpStatusCode[] statusCodes) =>
