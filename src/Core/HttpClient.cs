@@ -66,23 +66,27 @@ namespace WebLinq
         }
     }
 
+    public static class HttpClient
+    {
+        public static IHttpClient<HttpConfig> Default = new DefaultHttpClient(HttpConfig.Default);
+    }
 
-    public class HttpClient : IHttpClient<HttpConfig>
+    sealed class DefaultHttpClient : IHttpClient<HttpConfig>
     {
         public HttpConfig Config { get; }
 
-        public HttpClient(HttpConfig config)
+        public DefaultHttpClient(HttpConfig config)
         {
             Config = config;
         }
 
         public IHttpClient<HttpConfig> WithConfig(HttpConfig config) =>
-            new HttpClient(config);
+            new DefaultHttpClient(config);
 
         public void Register(Action<Type, object> registrationHandler) =>
             registrationHandler(typeof(IHttpClient<HttpConfig>), this);
 
-        public virtual Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpConfig config, HttpOptions options) =>
+        public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpConfig config, HttpOptions options) =>
             Send(request, config ?? Config, options);
 
         static async Task<HttpResponseMessage> Send(HttpRequestMessage request, HttpConfig config, HttpOptions options)
