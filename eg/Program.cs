@@ -4,6 +4,7 @@ namespace WebLinq.Samples
 
     using System;
     using System.Collections.Specialized;
+    using System.Data;
     using System.Linq;
     using System.Text.RegularExpressions;
     using System.Reactive.Linq;
@@ -13,6 +14,7 @@ namespace WebLinq.Samples
     using TryParsers;
     using Html;
     using Modules;
+    using Xsv;
     using static Modules.HttpModule;
     using static Modules.SpawnModule;
     using static Modules.XmlModule;
@@ -34,6 +36,7 @@ namespace WebLinq.Samples
                     new { Title = nameof(ScheduledTasksViaSpawn), Query = ScheduledTasksViaSpawn() },
                     new { Title = nameof(TopHackerNews)         , Query = TopHackerNews(100)       },
                     new { Title = nameof(MsdnBooksXmlSample)    , Query = MsdnBooksXmlSample()     },
+                    new { Title = nameof(MockarooCsv)           , Query = MockarooCsv()            },
                 }
                 where args.Length == 0
                    || args.Any(a => s.Title.Equals(a, StringComparison.OrdinalIgnoreCase))
@@ -204,5 +207,38 @@ namespace WebLinq.Samples
             string.IsNullOrEmpty(str)
             ? str
             : string.Join(" ", str.Split((char[])null, StringSplitOptions.RemoveEmptyEntries));
+
+        static IObservable<object> MockarooCsv() =>
+
+            from cols in Observable.Return(new
+            {
+                Id        = new DataColumn("id", typeof(int)),
+                FirstName = new DataColumn("first_name"),
+                LastName  = new DataColumn("last_name"),
+                Email     = new DataColumn("email"),
+                Gender    = new DataColumn("gender"),
+                IpAddress = new DataColumn("ip_address"),
+            })
+
+            from t in Http.Get(new Uri("https://www.mockaroo.com/"))
+                          .SubmitTo(new Uri("https://www.mockaroo.com/schemas/download"), "#schema_form", new NameValueCollection
+                          {
+                              ["preview"]             = "false",
+                              ["schema[file_format]"] = "csv",
+                          })
+                          .Accept("text/csv")
+                          .CsvToDataTable(cols.Id, cols.FirstName, cols.LastName, cols.Gender, cols.Email, cols.IpAddress)
+                          .Content()
+
+            from row in t.AsEnumerable()
+            select new
+            {
+                Id        = row[cols.Id       ],
+                FirstName = row[cols.FirstName],
+                LastName  = row[cols.LastName ],
+                Email     = row[cols.Email    ],
+                Gender    = row[cols.Gender   ],
+                IpAddress = row[cols.IpAddress],
+            };
     }
 }
