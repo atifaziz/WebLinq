@@ -99,6 +99,9 @@ namespace WebLinq
             hwreq.UseDefaultCredentials = config.UseDefaultCredentials;
             hwreq.AllowAutoRedirect     = false;
 
+            if (config.IgnoreInvalidServerCertificate)
+                hwreq.ServerCertificateValidationCallback = delegate { return true; };
+
             if (config.Cookies?.Any() == true)
             {
                 CookieContainer cookies;

@@ -30,7 +30,7 @@ namespace WebLinq
         static HttpConfig()
         {
             var req = WebRequest.CreateHttp("http://localhost/");
-            Default = new HttpConfig(TimeSpan.FromMilliseconds(req.Timeout), req.UseDefaultCredentials, req.Credentials, req.UserAgent, null);
+            Default = new HttpConfig(TimeSpan.FromMilliseconds(req.Timeout), req.UseDefaultCredentials, req.Credentials, req.UserAgent, null, false);
         }
     }
 
@@ -43,18 +43,20 @@ namespace WebLinq
         public ICredentials Credentials            { get; private set; }
         public string UserAgent                    { get; private set; }
         public IReadOnlyCollection<Cookie> Cookies { get; private set; }
+        public bool IgnoreInvalidServerCertificate { get; private set; }
 
-        public HttpConfig(TimeSpan timeout, bool useDefaultCredentials, ICredentials credentials, string userAgent, IReadOnlyCollection<Cookie> cookies)
+        public HttpConfig(TimeSpan timeout, bool useDefaultCredentials, ICredentials credentials, string userAgent, IReadOnlyCollection<Cookie> cookies, bool ignoreInvalidServerCertificate)
         {
             Timeout     = timeout;
             UserAgent   = userAgent;
             Cookies     = cookies;
             Credentials = credentials;
             UseDefaultCredentials = useDefaultCredentials;
+            IgnoreInvalidServerCertificate = ignoreInvalidServerCertificate;
         }
 
         HttpConfig(HttpConfig other) :
-            this(other.Timeout, other.UseDefaultCredentials, other.Credentials, other.UserAgent, other.Cookies) { }
+            this(other.Timeout, other.UseDefaultCredentials, other.Credentials, other.UserAgent, other.Cookies, other.IgnoreInvalidServerCertificate) { }
 
         public HttpConfig WithTimeout(TimeSpan value) =>
             Timeout == value ? this : new HttpConfig(this) { Timeout = value };
@@ -75,5 +77,10 @@ namespace WebLinq
             ReferenceEquals(Cookies, value) || Cookies?.SequenceEqual(value ?? ZeroCookies) == true
             ? this
             : new HttpConfig(this) { Cookies = value };
+
+        public HttpConfig WithIgnoreInvalidServerCertificate(bool value) =>
+            IgnoreInvalidServerCertificate == value
+            ? this
+            : new HttpConfig(this) { IgnoreInvalidServerCertificate = value };
     }
 }
