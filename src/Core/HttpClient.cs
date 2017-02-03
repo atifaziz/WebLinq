@@ -69,6 +69,31 @@ namespace WebLinq
     public static class HttpClient
     {
         public static IHttpClient<HttpConfig> Default = new DefaultHttpClient(HttpConfig.Default);
+
+        public static IHttpClient<HttpConfig> Wrap(this IHttpClient<HttpConfig> client,
+            Func<Func<HttpRequestMessage, HttpConfig, HttpOptions, Task<HttpResponseMessage>>, HttpRequestMessage, HttpConfig, HttpOptions, Task<HttpResponseMessage>> send) =>
+            new DelegatingHttpClient(client, send);
+
+        sealed class DelegatingHttpClient : IHttpClient<HttpConfig>
+        {
+            readonly IHttpClient<HttpConfig> _client;
+            readonly Func<Func<HttpRequestMessage, HttpConfig, HttpOptions, Task<HttpResponseMessage>>, HttpRequestMessage, HttpConfig, HttpOptions, Task<HttpResponseMessage>> _send;
+
+            public DelegatingHttpClient(IHttpClient<HttpConfig> client,
+                Func<Func<HttpRequestMessage, HttpConfig, HttpOptions, Task<HttpResponseMessage>>, HttpRequestMessage, HttpConfig, HttpOptions, Task<HttpResponseMessage>> send)
+            {
+                _client = client;
+                _send = send ?? ((super, request, config, options) => super(request, config, options));
+            }
+
+            public HttpConfig Config => _client.Config;
+
+            public IHttpClient<HttpConfig> WithConfig(HttpConfig config) =>
+                new DelegatingHttpClient(_client.WithConfig(config), _send);
+
+            public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpConfig config, HttpOptions options) =>
+                _send(_client.SendAsync, request, config, options);
+        }
     }
 
     sealed class DefaultHttpClient : IHttpClient<HttpConfig>
