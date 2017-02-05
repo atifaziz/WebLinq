@@ -108,6 +108,7 @@
     <Compile Include="Html\HtmlInputType.cs" />
     <Compile Include="Html\HtmlQuery.cs" />
     <Compile Include="HttpObservable.cs" />
+    <Compile Include="HttpOptions.cs" />
     <Compile Include="Modules.cs" />
     <Compile Include="HttpConfig.cs" />
     <Compile Include="HttpHeaderCollection.cs" />

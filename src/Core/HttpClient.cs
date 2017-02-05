@@ -28,16 +28,11 @@ namespace WebLinq
     using Mannex.Collections.Generic;
     using Mannex.Collections.Specialized;
 
-    public sealed class HttpOptions
-    {
-        public bool ReturnErrorneousFetch { get; set; }
-    }
-
     public interface IHttpClient<T>
     {
         T Config { get; }
         IHttpClient<T> WithConfig(T config);
-        Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, T config, HttpOptions options);
+        Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, T config);
     }
 
     public static class HttpClientExtensions
@@ -61,8 +56,8 @@ namespace WebLinq
                 return this;
             }
 
-            public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, T config, HttpOptions options) =>
-                _client.WithConfig(Config).SendAsync(request, config, options);
+            public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, T config) =>
+                _client.WithConfig(Config).SendAsync(request, config);
         }
     }
 
@@ -71,19 +66,19 @@ namespace WebLinq
         public static IHttpClient<HttpConfig> Default = new DefaultHttpClient(HttpConfig.Default);
 
         public static IHttpClient<HttpConfig> Wrap(this IHttpClient<HttpConfig> client,
-            Func<Func<HttpRequestMessage, HttpConfig, HttpOptions, Task<HttpResponseMessage>>, HttpRequestMessage, HttpConfig, HttpOptions, Task<HttpResponseMessage>> send) =>
+            Func<Func<HttpRequestMessage, HttpConfig, Task<HttpResponseMessage>>, HttpRequestMessage, HttpConfig, Task<HttpResponseMessage>> send) =>
             new DelegatingHttpClient(client, send);
 
         sealed class DelegatingHttpClient : IHttpClient<HttpConfig>
         {
             readonly IHttpClient<HttpConfig> _client;
-            readonly Func<Func<HttpRequestMessage, HttpConfig, HttpOptions, Task<HttpResponseMessage>>, HttpRequestMessage, HttpConfig, HttpOptions, Task<HttpResponseMessage>> _send;
+            readonly Func<Func<HttpRequestMessage, HttpConfig, Task<HttpResponseMessage>>, HttpRequestMessage, HttpConfig, Task<HttpResponseMessage>> _send;
 
             public DelegatingHttpClient(IHttpClient<HttpConfig> client,
-                Func<Func<HttpRequestMessage, HttpConfig, HttpOptions, Task<HttpResponseMessage>>, HttpRequestMessage, HttpConfig, HttpOptions, Task<HttpResponseMessage>> send)
+                Func<Func<HttpRequestMessage, HttpConfig, Task<HttpResponseMessage>>, HttpRequestMessage, HttpConfig, Task<HttpResponseMessage>> send)
             {
                 _client = client;
-                _send = send ?? ((super, request, config, options) => super(request, config, options));
+                _send = send ?? ((super, request, config) => super(request, config));
             }
 
             public HttpConfig Config => _client.Config;
@@ -91,8 +86,8 @@ namespace WebLinq
             public IHttpClient<HttpConfig> WithConfig(HttpConfig config) =>
                 new DelegatingHttpClient(_client.WithConfig(config), _send);
 
-            public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpConfig config, HttpOptions options) =>
-                _send(_client.SendAsync, request, config, options);
+            public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpConfig config) =>
+                _send(_client.SendAsync, request, config);
         }
     }
 
@@ -111,10 +106,10 @@ namespace WebLinq
         public void Register(Action<Type, object> registrationHandler) =>
             registrationHandler(typeof(IHttpClient<HttpConfig>), this);
 
-        public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpConfig config, HttpOptions options) =>
-            Send(request, config ?? Config, options);
+        public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpConfig config) =>
+            Send(request, config ?? Config);
 
-        static async Task<HttpResponseMessage> Send(HttpRequestMessage request, HttpConfig config, HttpOptions options)
+        static async Task<HttpResponseMessage> Send(HttpRequestMessage request, HttpConfig config)
         {
             var hwreq = WebRequest.CreateHttp(request.RequestUri);
 
@@ -171,8 +166,6 @@ namespace WebLinq
             }
             catch (WebException e) when (e.Status == WebExceptionStatus.ProtocolError)
             {
-                if ((options?.ReturnErrorneousFetch ?? false) == false)
-                    throw;
                 return CreateResponse(hwreq, (HttpWebResponse) e.Response);
             }
         }

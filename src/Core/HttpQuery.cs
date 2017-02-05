@@ -97,8 +97,11 @@ namespace WebLinq
 
             try
             {
-                response = await http.SendAsync(request, config, options)
+                response = await http.SendAsync(request, config)
                     .DontContinueOnCapturedContext();
+
+                if (!options.ReturnErrorneousFetch)
+                    response.EnsureSuccessStatusCode();
 
                 IEnumerable<string> setCookies;
                 if (response.Headers.TryGetValues("Set-Cookie", out setCookies))
@@ -198,21 +201,15 @@ namespace WebLinq
         }
 
         public static IHttpObservable Get(this IHttpObservable query, Uri url) =>
-            query.Get(url, null);
-
-        public static IHttpObservable Get(this IHttpObservable query, Uri url, HttpOptions options) =>
             HttpObservable.Return(
                 from first in query
-                select first.Client.Get(url, options));
-
-        public static IHttpObservable Get(this IHttpClient<HttpConfig> http, Uri url) =>
-            http.Get(url, null);
+                select first.Client.Get(url));
 
         public static IObservable<HttpFetch<string>> Text(this IHttpObservable query) =>
             query.WithReader(f => f.Content.ReadAsStringAsync());
 
-        public static IHttpObservable Get(this IHttpClient<HttpConfig> http, Uri url, HttpOptions options) =>
-            HttpObservable.Return(
+        public static IHttpObservable Get(this IHttpClient<HttpConfig> http, Uri url) =>
+            HttpObservable.Return(options =>
                 // TODO Use DeferAsync
                 Observable.Defer(() => SendAsync(http, http.Config, 0, HttpMethod.Get, url, options: options).ToObservable()));
 
@@ -232,9 +229,9 @@ namespace WebLinq
                                                      select data.GetKey(i).AsKeyTo(v)));
 
         public static IHttpObservable Post(this IHttpClient<HttpConfig> http, Uri url, HttpContent content) =>
-            HttpObservable.Return(
+            HttpObservable.Return(options =>
                 // TODO Use DeferAsync
-                Observable.Defer(() => SendAsync(http, http.Config, 0, HttpMethod.Post, url, content).ToObservable()));
+                Observable.Defer(() => SendAsync(http, http.Config, 0, HttpMethod.Post, url, content, options).ToObservable()));
 
         public static IObservable<HttpFetch<T>> WithTimeout<T>(this IObservable<HttpFetch<T>> query, TimeSpan duration) =>
             from e in query

@@ -105,7 +105,7 @@ namespace WebLinq.Modules
                 var url = dequeued.Value;
                 var level = dequeued.Key;
                 // TODO retry intermittent errors?
-                var fetch = Http.Get(url, new HttpOptions {ReturnErrorneousFetch = true}).Buffer().Single();
+                var fetch = Http.Get(url).WithOptions(HttpOptions.Default.WithReturnErrorneousFetch(true)).Buffer().Single();
 
                 if (!fetch.IsSuccessStatusCode)
                     continue;
@@ -124,7 +124,7 @@ namespace WebLinq.Modules
                     continue;
 
                 var lq =
-                    from e in HttpObservable.Return(Observable.Return(fetch)).Links().Content()
+                    from e in HttpObservable.Return(_ => Observable.Return(fetch)).Links().Content()
                     select TryParse.Uri(e, UriKind.Absolute) into e
                     where e != null
                        && (e.Scheme == Uri.UriSchemeHttp || e.Scheme == Uri.UriSchemeHttps)

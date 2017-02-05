@@ -24,11 +24,16 @@ namespace WebLinq
 
     public interface IHttpObservable : IObservable<HttpFetch<Unit>>
     {
+        HttpOptions Options { get; }
+        IHttpObservable WithOptions(HttpOptions options);
         IObservable<HttpFetch<T>> WithReader<T>(Func<HttpFetch<HttpContent>, Task<T>> reader);
     }
 
     public static class HttpObservable
     {
+        public static IHttpObservable ReturnErrorneousFetch(this IHttpObservable query) =>
+            query.WithOptions(query.Options.WithReturnErrorneousFetch(true));
+
         public static IObservable<HttpFetch<HttpContent>> Buffer(this IHttpObservable query) =>
             query.WithReader(async f =>
             {
@@ -37,32 +42,43 @@ namespace WebLinq
             });
 
         public static IHttpObservable Do(this IHttpObservable query, Action<HttpFetch<HttpContent>> action) =>
-            Return(query.WithReader(f => {action(f); return Task.FromResult(f.Content); }));
+            Return(query.Options, options => query.WithOptions(options).WithReader(f => { action(f); return Task.FromResult(f.Content); }));
 
-        internal static IHttpObservable Return(IObservable<HttpFetch<HttpContent>> query) =>
-            new Impl(query);
+        internal static IHttpObservable Return(Func<HttpOptions, IObservable<HttpFetch<HttpContent>>> query) =>
+            Return(HttpOptions.Default, query);
 
-        public static IHttpObservable Return(IObservable<IHttpObservable> query) =>
-            Return(from q in query
-                   from e in q.WithReader(f => Task.FromResult(f.Content))
-                   select e);
+        internal static IHttpObservable Return(HttpOptions options, Func<HttpOptions, IObservable<HttpFetch<HttpContent>>> query) =>
+            new Impl(query, options);
+
+        internal static IHttpObservable Return(IObservable<IHttpObservable> query) =>
+            Return(options =>
+                from q in query
+                from e in q.WithOptions(options).WithReader(f => Task.FromResult(f.Content))
+                select e);
 
         sealed class Impl : IHttpObservable
         {
-            readonly IObservable<HttpFetch<HttpContent>> _query;
+            readonly Func<HttpOptions, IObservable<HttpFetch<HttpContent>>> _query;
 
-            public Impl(IObservable<HttpFetch<HttpContent>> query)
+            public Impl(Func<HttpOptions, IObservable<HttpFetch<HttpContent>>> query, HttpOptions options)
             {
                 _query = query;
+                Options = options;
             }
 
             public IDisposable Subscribe(IObserver<HttpFetch<Unit>> observer) =>
-                _query.Do(f => f.Content.Dispose())
-                      .Select(f => f.WithContent(new Unit()))
-                      .Subscribe(observer);
+                _query(Options)
+                    .Do(f => f.Content.Dispose())
+                    .Select(f => f.WithContent(new Unit()))
+                    .Subscribe(observer);
+
+            public HttpOptions Options { get; }
+
+            public IHttpObservable WithOptions(HttpOptions options) =>
+                new Impl(_query, options);
 
             public IObservable<HttpFetch<T>> WithReader<T>(Func<HttpFetch<HttpContent>, Task<T>> reader) =>
-                from f in _query
+                from f in _query(Options)
                 from c in reader(f)
                 select f.WithContent(c);
         }
