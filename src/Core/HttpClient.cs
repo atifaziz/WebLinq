@@ -115,9 +115,12 @@ namespace WebLinq
 
             hwreq.Method                = request.Method.Method;
             hwreq.Timeout               = (int)config.Timeout.TotalMilliseconds;
-            hwreq.Credentials           = config.Credentials;
-            hwreq.UseDefaultCredentials = config.UseDefaultCredentials;
             hwreq.AllowAutoRedirect     = false;
+
+            if (config.Credentials != null)
+                hwreq.Credentials = config.Credentials;
+            else
+                hwreq.UseDefaultCredentials = config.UseDefaultCredentials;
 
             if (config.IgnoreInvalidServerCertificate)
                 hwreq.ServerCertificateValidationCallback = delegate { return true; };
