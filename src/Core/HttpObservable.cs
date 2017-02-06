@@ -25,12 +25,26 @@ namespace WebLinq
     public interface IHttpObservable : IObservable<HttpFetch<Unit>>
     {
         HttpOptions Options { get; }
+        Func<HttpConfig, HttpConfig> Configurer { get; }
         IHttpObservable WithOptions(HttpOptions options);
+        IHttpObservable WithHttpConfigurer(Func<HttpConfig, HttpConfig> configurer);
         IObservable<HttpFetch<T>> WithReader<T>(Func<HttpFetch<HttpContent>, Task<T>> reader);
     }
 
     public static class HttpObservable
     {
+        public static IHttpObservable AppendHttpConfigurer(this IHttpObservable query, Func<HttpConfig, HttpConfig> f) =>
+            query.WithHttpConfigurer(config => f(query.Configurer(config)));
+
+        public static IHttpClient<HttpConfig> WithTimeout(this IHttpClient<HttpConfig> client, TimeSpan duration) =>
+            client.WithConfig(client.Config.WithTimeout(duration));
+
+        public static IHttpObservable WithRequestTimeout(this IHttpObservable query, TimeSpan duration) =>
+            query.AppendHttpConfigurer(config => config.WithTimeout(duration));
+
+        public static IHttpObservable WithRequestUserAgent(this IHttpObservable query, string ua) =>
+            query.AppendHttpConfigurer(config => config.WithUserAgent(ua));
+
         public static IHttpObservable ReturnErrorneousFetch(this IHttpObservable query) =>
             query.WithOptions(query.Options.WithReturnErrorneousFetch(true));
 
@@ -60,10 +74,11 @@ namespace WebLinq
         {
             readonly Func<HttpOptions, IObservable<HttpFetch<HttpContent>>> _query;
 
-            public Impl(Func<HttpOptions, IObservable<HttpFetch<HttpContent>>> query, HttpOptions options)
+            public Impl(Func<HttpOptions, IObservable<HttpFetch<HttpContent>>> query, HttpOptions options, Func<HttpConfig, HttpConfig> configurer = null)
             {
                 _query = query;
                 Options = options;
+                Configurer = configurer ?? (_ => _);
             }
 
             public IDisposable Subscribe(IObserver<HttpFetch<Unit>> observer) =>
@@ -75,12 +90,17 @@ namespace WebLinq
             public HttpOptions Options { get; }
 
             public IHttpObservable WithOptions(HttpOptions options) =>
-                new Impl(_query, options);
+                new Impl(_query, options, Configurer);
 
             public IObservable<HttpFetch<T>> WithReader<T>(Func<HttpFetch<HttpContent>, Task<T>> reader) =>
                 from f in _query(Options)
                 from c in reader(f)
                 select f.WithContent(c);
+
+            public Func<HttpConfig, HttpConfig> Configurer { get; }
+
+            public IHttpObservable WithHttpConfigurer(Func<HttpConfig, HttpConfig> value) =>
+                Configurer == value ? this : new Impl(_query, Options, config => Configurer(config));
         }
     }
 }
