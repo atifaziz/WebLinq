@@ -100,9 +100,6 @@ namespace WebLinq
                 response = await http.SendAsync(request, config)
                     .DontContinueOnCapturedContext();
 
-                if (!options.ReturnErrorneousFetch)
-                    response.EnsureSuccessStatusCode();
-
                 IEnumerable<string> setCookies;
                 if (response.Headers.TryGetValues("Set-Cookie", out setCookies))
                 {
@@ -189,6 +186,9 @@ namespace WebLinq
                              : redirectionSelector(config, method, redirectionUrl, content);
                     }
                 }
+
+                if (!options.ReturnErrorneousFetch)
+                    response.EnsureSuccessStatusCode();
 
                 var result = responseSelector(config, response);
                 response = null; // disown
