@@ -21,9 +21,9 @@ namespace WebLinq.Samples
 
     #endregion
 
-    static class Program
+    partial class Program
     {
-        public static void Main(string[] args)
+        static void Wain(string[] args)
         {
             var ruler1 = new string('=', Console.BufferWidth - 1);
             var ruler2 = new string('-', Console.BufferWidth - 1);
