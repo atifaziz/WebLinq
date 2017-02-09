@@ -40,6 +40,7 @@ namespace WebLinq.Samples
                     new { Title = nameof(MockarooCsv)           , Query = MockarooCsv()            },
                     new { Title = nameof(TeapotError)           , Query = TeapotError()            },
                     new { Title = nameof(BasicAuth)             , Query = BasicAuth()              },
+                    new { Title = nameof(AutoRedirection)       , Query = AutoRedirection()        },
                 }
                 where args.Length == 0
                    || args.Any(a => s.Title.Equals(a, StringComparison.OrdinalIgnoreCase))
@@ -263,5 +264,10 @@ namespace WebLinq.Samples
                 First  = new { fst.StatusCode, fst.ReasonPhrase },
                 Second = new { snd.StatusCode, snd.ReasonPhrase },
             };
+
+        static IObservable<object> AutoRedirection() =>
+
+            from e in Http.Get(new Uri("http://httpbin.org/redirect-to?url=" + Uri.EscapeDataString("http://example.com/")))
+            select e.RequestUrl;
     }
 }
