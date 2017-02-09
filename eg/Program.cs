@@ -37,6 +37,7 @@ namespace WebLinq.Samples
                     new { Title = nameof(TopHackerNews)         , Query = TopHackerNews(100)       },
                     new { Title = nameof(MsdnBooksXmlSample)    , Query = MsdnBooksXmlSample()     },
                     new { Title = nameof(MockarooCsv)           , Query = MockarooCsv()            },
+                    new { Title = nameof(TeapotError)           , Query = TeapotError()            },
                 }
                 where args.Length == 0
                    || args.Any(a => s.Title.Equals(a, StringComparison.OrdinalIgnoreCase))
@@ -240,5 +241,11 @@ namespace WebLinq.Samples
                 Gender    = row[cols.Gender   ],
                 IpAddress = row[cols.IpAddress],
             };
+
+        static IObservable<object> TeapotError() =>
+
+            from e in Http.Get(new Uri("http://httpbin.org/status/418"))
+                          .ReturnErrorneousFetch()
+            select new { e.StatusCode, e.ReasonPhrase };
     }
 }
