@@ -6,6 +6,7 @@ namespace WebLinq.Samples
     using System.Collections.Specialized;
     using System.Data;
     using System.Linq;
+    using System.Net;
     using System.Text.RegularExpressions;
     using System.Reactive.Linq;
     using System.Web;
@@ -38,6 +39,7 @@ namespace WebLinq.Samples
                     new { Title = nameof(MsdnBooksXmlSample)    , Query = MsdnBooksXmlSample()     },
                     new { Title = nameof(MockarooCsv)           , Query = MockarooCsv()            },
                     new { Title = nameof(TeapotError)           , Query = TeapotError()            },
+                    new { Title = nameof(BasicAuth)             , Query = BasicAuth()              },
                 }
                 where args.Length == 0
                    || args.Any(a => s.Title.Equals(a, StringComparison.OrdinalIgnoreCase))
@@ -247,5 +249,19 @@ namespace WebLinq.Samples
             from e in Http.Get(new Uri("http://httpbin.org/status/418"))
                           .ReturnErrorneousFetch()
             select new { e.StatusCode, e.ReasonPhrase };
+
+        static readonly Uri HttpbinBasicAuthUrl = new Uri("http://httpbin.org/basic-auth/user/passwd");
+
+        static IObservable<object> BasicAuth() =>
+
+            from fst in Http.Get(HttpbinBasicAuthUrl)
+                            .ReturnErrorneousFetch()
+            from snd in fst.Client.WithConfig(fst.Client.Config.WithCredentials(new NetworkCredential("user", "passwd")))
+                       .Get(HttpbinBasicAuthUrl)
+            select new
+            {
+                First  = new { fst.StatusCode, fst.ReasonPhrase },
+                Second = new { snd.StatusCode, snd.ReasonPhrase },
+            };
     }
 }
