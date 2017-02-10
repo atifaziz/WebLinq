@@ -41,6 +41,7 @@ namespace WebLinq.Samples
                     new { Title = nameof(TeapotError)           , Query = TeapotError()            },
                     new { Title = nameof(BasicAuth)             , Query = BasicAuth()              },
                     new { Title = nameof(AutoRedirection)       , Query = AutoRedirection()        },
+                    new { Title = nameof(FormPost)              , Query = FormPost()               },
                 }
                 where args.Length == 0
                    || args.Any(a => s.Title.Equals(a, StringComparison.OrdinalIgnoreCase))
@@ -269,5 +270,12 @@ namespace WebLinq.Samples
 
             from e in Http.Get(new Uri("http://httpbin.org/redirect-to?url=" + Uri.EscapeDataString("http://example.com/")))
             select e.RequestUrl;
+
+        static IObservable<object> FormPost() =>
+
+            Http.Get(new Uri("http://httpbin.org/forms/post"))
+                .Submit(null, new NameValueCollection {})
+                .Text()
+                .Content();
     }
 }
