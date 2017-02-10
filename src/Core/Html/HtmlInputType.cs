@@ -34,7 +34,7 @@ namespace WebLinq.Html
         Hidden  , // Hidden             An arbitrary string
         Text    , // Text               Text with no line breaks
         // TODO Search  , // Search             Text with no line breaks
-        // TODO Tel     , // Telephone          Text with no line breaks
+        Tel     , // Telephone          Text with no line breaks
         // TODO Url     , // URL                An absolute URL
         Email   , // E-mail             An e-mail address or list of e-mail addresses
         Password, // Password           Text with no line breaks (sensitive information)
@@ -60,6 +60,7 @@ namespace WebLinq.Html
 
         public static readonly HtmlInputType Text     = new HtmlInputType(KnownHtmlInputType.Text    , "text");
         public static readonly HtmlInputType Email    = new HtmlInputType(KnownHtmlInputType.Email   , "email");
+        public static readonly HtmlInputType Tel      = new HtmlInputType(KnownHtmlInputType.Tel     , "tel");
         public static readonly HtmlInputType Number   = new HtmlInputType(KnownHtmlInputType.Number  , "number");
         public static readonly HtmlInputType Date     = new HtmlInputType(KnownHtmlInputType.Date    , "date");
         public static readonly HtmlInputType Password = new HtmlInputType(KnownHtmlInputType.Password, "password");
