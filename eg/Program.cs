@@ -274,7 +274,17 @@ namespace WebLinq.Samples
         static IObservable<object> FormPost() =>
 
             Http.Get(new Uri("http://httpbin.org/forms/post"))
-                .Submit(null, new NameValueCollection {})
+                .Submit(null, new NameValueCollection
+                {
+                    { "custname" , "John Doe"            },
+                    { "custtel"  , "+99 99 9999 9999"    },
+                    { "custemail", "johndoe@example.com" },
+                    { "size"     , "small"               },
+                    { "topping"  , "cheese"              },
+                    { "topping"  , "mushroom"            },
+                    { "topping"  , "onion"               },
+                    { "delivery" , "19:30"               },
+                })
                 .Text()
                 .Content();
     }
