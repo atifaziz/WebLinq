@@ -24,6 +24,10 @@ namespace WebLinq.Zip
 
     public static class ZipQuery
     {
+        public static IObservable<HttpFetch<Zip>> DownloadZip(this IHttpObservable query) =>
+            from fetch in query.WithReader(async f => await DownloadZip(f.Content))
+            select fetch.WithContent(new Zip(fetch.Content));
+
         public static IObservable<HttpFetch<Zip>> DownloadZip(this IObservable<HttpFetch<HttpContent>> query) =>
             from fetch in query
             from path in DownloadZip(fetch.Content)
