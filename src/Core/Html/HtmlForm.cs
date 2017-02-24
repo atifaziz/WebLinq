@@ -130,21 +130,20 @@ namespace WebLinq.Html
                 {
                     throw new Exception($"Unexpected type of form field (\"{field.InputType}\").");
                 }
-                // TODO checkboxes handling in form data set
-                // TODO radio buttons handling in form data set
+
+                // TODO select first of multiple checked in a radio button group
                 // TODO multiple values handling in form data set
                 // TODO multiple select with one or more selected options
 
-                var valueElement = field.IsSelect
-                                 ? field.Element.QuerySelector("option[selected]")
-                                   ?? field.Element.QuerySelector("option")
-                                 : field.Element;
-
-                var value = valueElement?.GetAttributeValue("value") ?? string.Empty;
+                var value = field.IsSelect
+                          ? (field.Element.QuerySelector("option[selected]") ?? field.Element.QuerySelector("option"))?.GetAttributeValue("value") ?? string.Empty
+                          : field.InputType == HtmlInputType.Radio || field.InputType == HtmlInputType.Checkbox
+                          ? field.Element.HasAttribute("checked") ? "on" : null
+                          : field.Element.GetAttributeValue("value") ?? string.Empty;
 
                 all?.Add(field.Name, value);
 
-                if (field.IsDisabled)
+                if (field.IsDisabled || value == null)
                     continue;
 
                 var bucket = field.InputType == HtmlInputType.Submit
