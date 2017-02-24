@@ -29,5 +29,20 @@ namespace WebLinq.Html
 
         public static ParsedHtml Parse(this IHtmlParser parser, string html) =>
             parser.Parse(html, null);
+
+        public static IHtmlParser Wrap(this IHtmlParser parser, Func<IHtmlParser, string, Uri, ParsedHtml> impl) =>
+            new DelegatingHtmlParser((html, baseUrl) => impl(parser, html, baseUrl));
+
+        sealed class DelegatingHtmlParser : IHtmlParser
+        {
+            readonly Func<string, Uri, ParsedHtml> _parser;
+
+            public DelegatingHtmlParser(Func<string, Uri, ParsedHtml> parser)
+            {
+                _parser = parser;
+            }
+
+            public ParsedHtml Parse(string html, Uri baseUrl) => _parser(html, baseUrl);
+        }
     }
 }
