@@ -24,7 +24,7 @@ namespace WebLinq
     {
         public static HttpFetch<T> Create<T>(int id,
                                              T content,
-                                             IHttpClient<HttpConfig> client,
+                                             IHttpClient client,
                                              Version httpVersion,
                                              HttpStatusCode statusCode,
                                              string reasonPhrase,
@@ -44,7 +44,7 @@ namespace WebLinq
 
         public int Id                              { get; }
         public T Content                           { get; private set; }
-        public IHttpClient<HttpConfig> Client      { get; }
+        public IHttpClient Client                  { get; }
         public Version HttpVersion                 { get; }
         public HttpStatusCode StatusCode           { get; }
         public string ReasonPhrase                 { get; }
@@ -55,7 +55,7 @@ namespace WebLinq
 
         public HttpFetch(int id,
                          T content,
-                         IHttpClient<HttpConfig> client,
+                         IHttpClient client,
                          Version httpVersion,
                          HttpStatusCode statusCode,
                          string reasonPhrase,

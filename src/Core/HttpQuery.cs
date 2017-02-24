@@ -40,7 +40,7 @@ namespace WebLinq
     {
         static readonly int MaximumAutomaticRedirections = WebRequest.CreateHttp("http://localhost/").MaximumAutomaticRedirections;
 
-        static async Task<HttpFetch<HttpContent>> SendAsync(IHttpClient<HttpConfig> http, HttpConfig config, int id, HttpMethod method, Uri url, HttpContent content = null, HttpOptions options = null)
+        static async Task<HttpFetch<HttpContent>> SendAsync(IHttpClient http, HttpConfig config, int id, HttpMethod method, Uri url, HttpContent content = null, HttpOptions options = null)
         {
             http = http.WithConfig(config);
 
@@ -81,7 +81,7 @@ namespace WebLinq
             }
         }
 
-        static async Task<T> HttpFetchAsync<T>(IHttpClient<HttpConfig> http, HttpConfig config,
+        static async Task<T> HttpFetchAsync<T>(IHttpClient http, HttpConfig config,
             HttpMethod method, Uri url, HttpContent content, HttpOptions options,
             Func<HttpConfig, HttpResponseMessage, T> responseSelector,
             Func<HttpConfig, HttpMethod, Uri, HttpContent, T> redirectionSelector)
@@ -208,7 +208,7 @@ namespace WebLinq
         public static IObservable<HttpFetch<string>> Text(this IHttpObservable query) =>
             query.WithReader(f => f.Content.ReadAsStringAsync());
 
-        public static IHttpObservable Get(this IHttpClient<HttpConfig> http, Uri url) =>
+        public static IHttpObservable Get(this IHttpClient http, Uri url) =>
             HttpObservable.Return(options =>
                 // TODO Use DeferAsync
                 Observable.Defer(() => SendAsync(http, http.Config, 0, HttpMethod.Get, url, options: options).ToObservable()));
@@ -223,12 +223,12 @@ namespace WebLinq
                 from f in query
                 select f.Client.Post(url, content));
 
-        public static IHttpObservable Post(this IHttpClient<HttpConfig> http, Uri url, NameValueCollection data) =>
+        public static IHttpObservable Post(this IHttpClient http, Uri url, NameValueCollection data) =>
             http.Post(url, new FormUrlEncodedContent(from i in Enumerable.Range(0, data.Count)
                                                      from v in data.GetValues(i)
                                                      select data.GetKey(i).AsKeyTo(v)));
 
-        public static IHttpObservable Post(this IHttpClient<HttpConfig> http, Uri url, HttpContent content) =>
+        public static IHttpObservable Post(this IHttpClient http, Uri url, HttpContent content) =>
             HttpObservable.Return(options =>
                 // TODO Use DeferAsync
                 Observable.Defer(() => SendAsync(http, http.Config, 0, HttpMethod.Post, url, content, options).ToObservable()));
@@ -242,9 +242,9 @@ namespace WebLinq
             select e.WithConfig(e.Client.Config.WithUserAgent(ua));
 
         [Obsolete("Use HttpClient.Default instead.")]
-        public static readonly IHttpClient<HttpConfig> Http = HttpClient.Default;
+        public static readonly IHttpClient Http = HttpClient.Default;
 
-        public static IObservable<TResult> Content<TContent, TResult>(this IObservable<HttpFetch<TContent>> query, Func<IHttpClient<HttpConfig>, TContent, TResult> selector) =>
+        public static IObservable<TResult> Content<TContent, TResult>(this IObservable<HttpFetch<TContent>> query, Func<IHttpClient, TContent, TResult> selector) =>
             from e in query select selector(e.Client, e.Content);
 
         public static IObservable<T> Content<T>(this IObservable<HttpFetch<T>> query) =>
@@ -296,19 +296,19 @@ namespace WebLinq
                 from html in query
                 select Submit(html.Client, html.Content, formSelector, formIndex, url, data));
 
-        public static IHttpObservable Submit(this IHttpClient<HttpConfig> http, ParsedHtml html, string formSelector, NameValueCollection data) =>
+        public static IHttpObservable Submit(this IHttpClient http, ParsedHtml html, string formSelector, NameValueCollection data) =>
             Submit(http, html, formSelector, null, null, data);
 
-        public static IHttpObservable Submit(this IHttpClient<HttpConfig> http, ParsedHtml html, int formIndex, NameValueCollection data) =>
+        public static IHttpObservable Submit(this IHttpClient http, ParsedHtml html, int formIndex, NameValueCollection data) =>
             Submit(http, html, null, formIndex, null, data);
 
-        public static IHttpObservable SubmitTo(this IHttpClient<HttpConfig> http, Uri url, ParsedHtml html, string formSelector, NameValueCollection data) =>
+        public static IHttpObservable SubmitTo(this IHttpClient http, Uri url, ParsedHtml html, string formSelector, NameValueCollection data) =>
             Submit(http, html, formSelector, null, url, data);
 
-        public static IHttpObservable SubmitTo(this IHttpClient<HttpConfig> http, Uri url, ParsedHtml html, int formIndex, NameValueCollection data) =>
+        public static IHttpObservable SubmitTo(this IHttpClient http, Uri url, ParsedHtml html, int formIndex, NameValueCollection data) =>
             Submit(http, html, null, formIndex, url, data);
 
-        internal static IHttpObservable Submit(IHttpClient<HttpConfig> http,
+        internal static IHttpObservable Submit(IHttpClient http,
             ParsedHtml html,
             string formSelector, int? formIndex, Uri actionUrl,
             NameValueCollection data)

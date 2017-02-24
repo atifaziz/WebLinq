@@ -39,7 +39,7 @@ namespace WebLinq.Modules
 
     public static class HttpModule
     {
-        public static IHttpClient<HttpConfig> Http => HttpClient.Default;
+        public static IHttpClient Http => HttpClient.Default;
 
         public static IObservable<HttpFetch<ParsedHtml>> Html(this IHttpObservable query) =>
             query.Html(HtmlParser.Default);

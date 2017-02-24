@@ -28,53 +28,53 @@ namespace WebLinq
     using Mannex.Collections.Generic;
     using Mannex.Collections.Specialized;
 
-    public interface IHttpClient<T>
+    public interface IHttpClient
     {
-        T Config { get; }
-        IHttpClient<T> WithConfig(T config);
-        Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, T config);
+        HttpConfig Config { get; }
+        IHttpClient WithConfig(HttpConfig config);
+        Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpConfig config);
     }
 
     public static class HttpClientExtensions
     {
-        public static IHttpClient<T> Mutable<T>(this IHttpClient<T> client) =>
-            new MutableHttpClient<T>(client);
+        public static IHttpClient Mutable<T>(this IHttpClient client) =>
+            new MutableHttpClient(client);
 
-        sealed class MutableHttpClient<T> : IHttpClient<T>
+        sealed class MutableHttpClient : IHttpClient
         {
-            readonly IHttpClient<T> _client;
+            readonly IHttpClient _client;
 
-            public MutableHttpClient(IHttpClient<T> client)
+            public MutableHttpClient(IHttpClient client)
             {
                 _client = client;
             }
 
-            public T Config { get; private set; }
-            public IHttpClient<T> WithConfig(T config)
+            public HttpConfig Config { get; private set; }
+            public IHttpClient WithConfig(HttpConfig config)
             {
                 Config = config;
                 return this;
             }
 
-            public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, T config) =>
+            public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpConfig config) =>
                 _client.WithConfig(Config).SendAsync(request, config);
         }
     }
 
     public static class HttpClient
     {
-        public static IHttpClient<HttpConfig> Default = new DefaultHttpClient(HttpConfig.Default);
+        public static IHttpClient Default = new DefaultHttpClient(HttpConfig.Default);
 
-        public static IHttpClient<HttpConfig> Wrap(this IHttpClient<HttpConfig> client,
+        public static IHttpClient Wrap(this IHttpClient client,
             Func<Func<HttpRequestMessage, HttpConfig, Task<HttpResponseMessage>>, HttpRequestMessage, HttpConfig, Task<HttpResponseMessage>> send) =>
             new DelegatingHttpClient(client, send);
 
-        sealed class DelegatingHttpClient : IHttpClient<HttpConfig>
+        sealed class DelegatingHttpClient : IHttpClient
         {
-            readonly IHttpClient<HttpConfig> _client;
+            readonly IHttpClient _client;
             readonly Func<Func<HttpRequestMessage, HttpConfig, Task<HttpResponseMessage>>, HttpRequestMessage, HttpConfig, Task<HttpResponseMessage>> _send;
 
-            public DelegatingHttpClient(IHttpClient<HttpConfig> client,
+            public DelegatingHttpClient(IHttpClient client,
                 Func<Func<HttpRequestMessage, HttpConfig, Task<HttpResponseMessage>>, HttpRequestMessage, HttpConfig, Task<HttpResponseMessage>> send)
             {
                 _client = client;
@@ -83,7 +83,7 @@ namespace WebLinq
 
             public HttpConfig Config => _client.Config;
 
-            public IHttpClient<HttpConfig> WithConfig(HttpConfig config) =>
+            public IHttpClient WithConfig(HttpConfig config) =>
                 new DelegatingHttpClient(_client.WithConfig(config), _send);
 
             public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpConfig config) =>
@@ -91,7 +91,7 @@ namespace WebLinq
         }
     }
 
-    sealed class DefaultHttpClient : IHttpClient<HttpConfig>
+    sealed class DefaultHttpClient : IHttpClient
     {
         public HttpConfig Config { get; }
 
@@ -100,11 +100,11 @@ namespace WebLinq
             Config = config;
         }
 
-        public IHttpClient<HttpConfig> WithConfig(HttpConfig config) =>
+        public IHttpClient WithConfig(HttpConfig config) =>
             new DefaultHttpClient(config);
 
         public void Register(Action<Type, object> registrationHandler) =>
-            registrationHandler(typeof(IHttpClient<HttpConfig>), this);
+            registrationHandler(typeof(IHttpClient), this);
 
         public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpConfig config) =>
             Send(request, config ?? Config);

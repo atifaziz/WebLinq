@@ -21,7 +21,7 @@ namespace WebLinq
 
     static class SysNetHttpExtensions
     {
-        public static HttpFetch<HttpContent> ToHttpFetch(this HttpResponseMessage response, int id, IHttpClient<HttpConfig> http)
+        public static HttpFetch<HttpContent> ToHttpFetch(this HttpResponseMessage response, int id, IHttpClient http)
         {
             if (response == null) throw new ArgumentNullException(nameof(response));
             var request = response.RequestMessage;
