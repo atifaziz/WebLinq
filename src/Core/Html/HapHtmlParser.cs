@@ -85,7 +85,7 @@ namespace WebLinq.Html
                     from a in Node.Attributes select a.Name;
 
                 public override bool HasAttribute(string name) =>
-                    GetAttributeValue(name) == null;
+                    GetAttributeValue(name) != null;
 
                 public override HtmlString GetAttributeSourceValue(string name) =>
                     HtmlString.FromEncoded(Node.GetAttributeValue(name, null));
