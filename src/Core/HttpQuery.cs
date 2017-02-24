@@ -241,9 +241,6 @@ namespace WebLinq
             from e in query
             select e.WithConfig(e.Client.Config.WithUserAgent(ua));
 
-        [Obsolete("Use HttpClient.Default instead.")]
-        public static readonly IHttpClient Http = HttpClient.Default;
-
         public static IObservable<TResult> Content<TContent, TResult>(this IObservable<HttpFetch<TContent>> query, Func<IHttpClient, TContent, TResult> selector) =>
             from e in query select selector(e.Client, e.Content);
 
