@@ -137,6 +137,7 @@ namespace WebLinq.Html
 
                 var valueElement = field.IsSelect
                                  ? field.Element.QuerySelector("option[selected]")
+                                   ?? field.Element.QuerySelector("option")
                                  : field.Element;
 
                 var value = valueElement?.GetAttributeValue("value") ?? string.Empty;
