@@ -209,9 +209,9 @@ namespace WebLinq
             query.WithReader(f => f.Content.ReadAsStringAsync());
 
         public static IHttpObservable Get(this IHttpClient http, Uri url) =>
-            HttpObservable.Return(options =>
+            HttpObservable.Return(ho =>
                 // TODO Use DeferAsync
-                Observable.Defer(() => SendAsync(http, http.Config, 0, HttpMethod.Get, url, options: options).ToObservable()));
+                Observable.Defer(() => SendAsync(http, ho.Configurer(http.Config), 0, HttpMethod.Get, url, options: ho.Options).ToObservable().Select(f => f.WithConfig(http.Config))));
 
         public static IHttpObservable Post(this IHttpObservable query, Uri url, NameValueCollection data) =>
             HttpObservable.Return(
@@ -229,9 +229,9 @@ namespace WebLinq
                                                      select data.GetKey(i).AsKeyTo(v)));
 
         public static IHttpObservable Post(this IHttpClient http, Uri url, HttpContent content) =>
-            HttpObservable.Return(options =>
+            HttpObservable.Return(ho =>
                 // TODO Use DeferAsync
-                Observable.Defer(() => SendAsync(http, http.Config, 0, HttpMethod.Post, url, content, options).ToObservable()));
+                Observable.Defer(() => SendAsync(http, ho.Configurer(http.Config), 0, HttpMethod.Post, url, content, ho.Options).ToObservable()));
 
         public static IObservable<HttpFetch<T>> WithTimeout<T>(this IObservable<HttpFetch<T>> query, TimeSpan duration) =>
             from e in query

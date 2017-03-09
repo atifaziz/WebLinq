@@ -30,7 +30,7 @@ namespace WebLinq
         static HttpConfig()
         {
             var req = WebRequest.CreateHttp("http://localhost/");
-            Default = new HttpConfig(TimeSpan.FromMilliseconds(req.Timeout), req.UseDefaultCredentials, req.Credentials, req.UserAgent, null, false);
+            Default = new HttpConfig(HttpHeaderCollection.Empty, TimeSpan.FromMilliseconds(req.Timeout), req.UseDefaultCredentials, req.Credentials, req.UserAgent, null, false);
         }
     }
 
@@ -38,6 +38,7 @@ namespace WebLinq
     {
         public static readonly IEnumerable<Cookie> ZeroCookies = new Cookie[0];
 
+        public HttpHeaderCollection Headers        { get; private set; }
         public TimeSpan Timeout                    { get; private set; }
         public bool UseDefaultCredentials          { get; private set; }
         public ICredentials Credentials            { get; private set; }
@@ -45,8 +46,9 @@ namespace WebLinq
         public IReadOnlyCollection<Cookie> Cookies { get; private set; }
         public bool IgnoreInvalidServerCertificate { get; private set; }
 
-        public HttpConfig(TimeSpan timeout, bool useDefaultCredentials, ICredentials credentials, string userAgent, IReadOnlyCollection<Cookie> cookies, bool ignoreInvalidServerCertificate)
+        public HttpConfig(HttpHeaderCollection headers, TimeSpan timeout, bool useDefaultCredentials, ICredentials credentials, string userAgent, IReadOnlyCollection<Cookie> cookies, bool ignoreInvalidServerCertificate)
         {
+            Headers     = headers;
             Timeout     = timeout;
             UserAgent   = userAgent;
             Cookies     = cookies;
@@ -56,7 +58,13 @@ namespace WebLinq
         }
 
         HttpConfig(HttpConfig other) :
-            this(other.Timeout, other.UseDefaultCredentials, other.Credentials, other.UserAgent, other.Cookies, other.IgnoreInvalidServerCertificate) { }
+            this(other.Headers, other.Timeout, other.UseDefaultCredentials, other.Credentials, other.UserAgent, other.Cookies, other.IgnoreInvalidServerCertificate) { }
+
+        public HttpConfig WithHeader(string name, string value) =>
+            WithHeaders(Headers.Set(name, value));
+
+        public HttpConfig WithHeaders(HttpHeaderCollection value) =>
+            Headers == value ? this : new HttpConfig(this) { Headers = value };
 
         public HttpConfig WithTimeout(TimeSpan value) =>
             Timeout == value ? this : new HttpConfig(this) { Timeout = value };

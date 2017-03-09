@@ -37,6 +37,9 @@ namespace WebLinq
 
     public static class HttpClientExtensions
     {
+        public static IHttpClient SetHeader(this IHttpClient client, string name, string value) =>
+            client.WithConfig(client.Config.WithHeader(name, value));
+
         public static IHttpClient Mutable<T>(this IHttpClient client) =>
             new MutableHttpClient(client);
 
@@ -146,6 +149,9 @@ namespace WebLinq
 
             var content = request.Content;
             foreach (var e in from e in request.Headers.Concat(content?.Headers ?? Enumerable.Empty<KeyValuePair<string, IEnumerable<string>>>())
+                                                       .Concat(from e in config.Headers select e.Key.AsKeyTo(e.Value.AsEnumerable()))
+                                                       .ToLookup(e => e.Key, e => e.Value)
+                                                       .Select(g => g.Key.AsKeyTo(g.First()))
                               where !e.Key.Equals("Content-Type", StringComparison.OrdinalIgnoreCase)
                                  && !e.Key.Equals("User-Agent", StringComparison.OrdinalIgnoreCase)
                                  && !e.Key.Equals("Referer", StringComparison.OrdinalIgnoreCase)
