@@ -211,7 +211,10 @@ namespace WebLinq
         public static IHttpObservable Get(this IHttpClient http, Uri url) =>
             HttpObservable.Return(ho =>
                 // TODO Use DeferAsync
-                Observable.Defer(() => SendAsync(http, ho.Configurer(http.Config), 0, HttpMethod.Get, url, options: ho.Options).ToObservable().Select(f => f.WithConfig(http.Config))));
+                Observable.Defer(() =>
+                    SendAsync(http, ho.Configurer(http.Config), 0, HttpMethod.Get, url, options: ho.Options)
+                        .ToObservable()
+                        .Select(f => f.WithConfig(http.Config.WithCookies(f.Client.Config.Cookies)))));
 
         public static IHttpObservable Post(this IHttpObservable query, Uri url, NameValueCollection data) =>
             HttpObservable.Return(
@@ -231,7 +234,10 @@ namespace WebLinq
         public static IHttpObservable Post(this IHttpClient http, Uri url, HttpContent content) =>
             HttpObservable.Return(ho =>
                 // TODO Use DeferAsync
-                Observable.Defer(() => SendAsync(http, ho.Configurer(http.Config), 0, HttpMethod.Post, url, content, ho.Options).ToObservable()));
+                Observable.Defer(() =>
+                    SendAsync(http, ho.Configurer(http.Config), 0, HttpMethod.Post, url, content, ho.Options)
+                        .ToObservable()
+                        .Select(f => f.WithConfig(http.Config.WithCookies(f.Client.Config.Cookies)))));
 
         public static IObservable<HttpFetch<T>> WithTimeout<T>(this IObservable<HttpFetch<T>> query, TimeSpan duration) =>
             from e in query
