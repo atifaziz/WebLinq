@@ -26,6 +26,11 @@ namespace WebLinq.Text
         public static IObservable<string> Delimited<T>(this IObservable<T> query, string delimiter) =>
             query.Aggregate(new StringBuilder(), (sb, e) => sb.Append(e), sb => sb.ToString());
 
+        public static IObservable<HttpFetch<string>> Text(this IHttpObservable query) =>
+            query.WithReader(f => f.Content.ReadAsStringAsync());
+
+        public static IObservable<HttpFetch<string>> Text(this IHttpObservable query, Encoding encoding) =>
+            query.WithReader(async f => encoding.GetString(await f.Content.ReadAsByteArrayAsync()));
 
         public static IObservable<HttpFetch<string>> Text(this IObservable<HttpFetch<HttpContent>> query) =>
             from fetch in query
