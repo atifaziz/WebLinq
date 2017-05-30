@@ -21,7 +21,7 @@ namespace WebLinq.Xml
     using System.Reactive.Linq;
     using System.Xml.Linq;
 
-    public static class XmlQuery
+    public static class XmlModule
     {
         public static IObservable<XDocument> Xml(HttpContent content) =>
             Xml(content, LoadOptions.None);

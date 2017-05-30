@@ -106,10 +106,10 @@
     <Compile Include="Html\HtmlObject.cs" />
     <Compile Include="Html\HapHtmlParser.cs" />
     <Compile Include="Html\HtmlInputType.cs" />
-    <Compile Include="Html\HtmlQuery.cs" />
-    <Compile Include="HttpObservable.cs" />
+    <Compile Include="Html\HtmlModule.cs" />
+    <Compile Include="HttpQuery.cs" />
     <Compile Include="HttpOptions.cs" />
-    <Compile Include="Modules.cs" />
+    <Compile Include="DefaultModules.cs" />
     <Compile Include="HttpConfig.cs" />
     <Compile Include="HttpHeaderCollection.cs" />
     <Compile Include="HttpFetch.cs" />
@@ -118,14 +118,14 @@
     <Compile Include="LinqPadDumps.cs" />
     <Compile Include="ParsedValue.cs" />
     <Compile Include="Mime\MimeMap.cs" />
-    <Compile Include="HttpQuery.cs" />
+    <Compile Include="HttpModule.cs" />
     <Compile Include="Collections\ReadOnlyCollection.cs" />
     <Compile Include="Sys\Spawner.cs" />
-    <Compile Include="Text\TextQuery.cs" />
+    <Compile Include="Text\TextModule.cs" />
     <Compile Include="TaskExtensions.cs" />
-    <Compile Include="Xml\XmlQuery.cs" />
-    <Compile Include="Xsv\XsvQuery.cs" />
-    <Compile Include="Zip\ZipQuery.cs" />
+    <Compile Include="Xml\XmlModules.cs" />
+    <Compile Include="Xsv\XsvModule.cs" />
+    <Compile Include="Zip\ZipModule.cs" />
     <Compile Include="Zip\Zip.cs" />
     <Compile Include="Mapper.cs" />
   </ItemGroup>

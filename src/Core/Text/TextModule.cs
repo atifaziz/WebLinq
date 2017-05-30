@@ -21,7 +21,7 @@ namespace WebLinq.Text
     using System.Reactive.Linq;
     using System.Text;
 
-    public static class TextQuery
+    public static class TextModule
     {
         public static IObservable<string> Delimited<T>(this IObservable<T> query, string delimiter) =>
             query.Aggregate(new StringBuilder(), (sb, e) => sb.Append(e), sb => sb.ToString());

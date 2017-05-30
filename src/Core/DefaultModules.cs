@@ -16,7 +16,7 @@
 
 #endregion
 
-namespace WebLinq.Modules
+namespace WebLinq.DefaultModules
 {
     #region Imports
 
@@ -41,45 +41,45 @@ namespace WebLinq.Modules
     {
         public static IHttpClient Http => HttpClient.Default;
 
-        public static IObservable<HttpFetch<ParsedHtml>> Html(this IHttpObservable query) =>
+        public static IObservable<HttpFetch<ParsedHtml>> Html(this HttpQuery query) =>
             query.Html(HtmlParser.Default);
 
-        public static IHttpObservable Submit(this IHttpObservable query, string formSelector, NameValueCollection data) =>
+        public static HttpQuery Submit(this HttpQuery query, string formSelector, NameValueCollection data) =>
             Submit(query, formSelector, null, null, data);
 
-        public static IHttpObservable Submit(this IHttpObservable query, int formIndex, NameValueCollection data) =>
+        public static HttpQuery Submit(this HttpQuery query, int formIndex, NameValueCollection data) =>
             Submit(query, null, formIndex, null, data);
 
-        public static IHttpObservable SubmitTo(this IHttpObservable query, Uri url, string formSelector, NameValueCollection data) =>
+        public static HttpQuery SubmitTo(this HttpQuery query, Uri url, string formSelector, NameValueCollection data) =>
             Submit(query, formSelector, null, url, data);
 
-        public static IHttpObservable SubmitTo(this IHttpObservable query, Uri url, int formIndex, NameValueCollection data) =>
+        public static HttpQuery SubmitTo(this HttpQuery query, Uri url, int formIndex, NameValueCollection data) =>
             Submit(query, null, formIndex, url, data);
 
-        static IHttpObservable Submit(IHttpObservable query, string formSelector, int? formIndex, Uri url, NameValueCollection data) =>
-            HttpObservable.Return(
+        static HttpQuery Submit(HttpQuery query, string formSelector, int? formIndex, Uri url, NameValueCollection data) =>
+            HttpQuery.Return(
                 from html in query.Html()
-                select HttpQuery.Submit(html.Client, html.Content, formSelector, formIndex, url, data));
+                select WebLinq.HttpModule.Submit(html.Client, html.Content, formSelector, formIndex, url, data));
 
-        public static IObservable<HttpFetch<string>> Links(this IHttpObservable query) =>
+        public static IObservable<HttpFetch<string>> Links(this HttpQuery query) =>
             query.Links(null);
 
-        public static IObservable<HttpFetch<T>> Links<T>(this IHttpObservable query, Func<string, HtmlObject, T> selector) =>
+        public static IObservable<HttpFetch<T>> Links<T>(this HttpQuery query, Func<string, HtmlObject, T> selector) =>
             Links(query, null, selector);
 
-        public static IObservable<HttpFetch<string>> Links(this IHttpObservable query, Uri baseUrl) =>
+        public static IObservable<HttpFetch<string>> Links(this HttpQuery query, Uri baseUrl) =>
             Links(query, baseUrl, (href, _) => href);
 
-        public static IObservable<HttpFetch<T>> Links<T>(this IHttpObservable query, Uri baseUrl, Func<string, HtmlObject, T> selector) =>
+        public static IObservable<HttpFetch<T>> Links<T>(this HttpQuery query, Uri baseUrl, Func<string, HtmlObject, T> selector) =>
             query.Html().Links(baseUrl, selector);
 
-        public static IObservable<HttpFetch<HtmlObject>> Tables(this IHttpObservable query) =>
+        public static IObservable<HttpFetch<HtmlObject>> Tables(this HttpQuery query) =>
             query.Html().Tables();
 
-        public static IObservable<HttpFetch<DataTable>> FormsAsDataTable(this IHttpObservable query) =>
+        public static IObservable<HttpFetch<DataTable>> FormsAsDataTable(this HttpQuery query) =>
             query.Html().FormsAsDataTable();
 
-        public static IObservable<HttpFetch<HtmlForm>> Forms(this IHttpObservable query) =>
+        public static IObservable<HttpFetch<HtmlForm>> Forms(this HttpQuery query) =>
             query.Html().Forms();
         public static IObservable<HttpFetch<HttpContent>> Crawl(Uri url) =>
             Crawl(url, int.MaxValue);
@@ -124,7 +124,7 @@ namespace WebLinq.Modules
                     continue;
 
                 var lq =
-                    from e in HttpObservable.Return(_ => Observable.Return(fetch)).Links().Content()
+                    from e in HttpQuery.Return(_ => Observable.Return(fetch)).Links().Content()
                     select TryParse.Uri(e, UriKind.Absolute) into e
                     where e != null
                        && (e.Scheme == Uri.UriSchemeHttp || e.Scheme == Uri.UriSchemeHttps)
@@ -174,7 +174,7 @@ namespace WebLinq.Modules
             XsvToDataTable(text, ",", true, columns);
 
         public static IObservable<DataTable> XsvToDataTable(string text, string delimiter, bool quoted, params DataColumn[] columns) =>
-            XsvQuery.XsvToDataTable(text, delimiter, quoted, columns);
+            Xsv.XsvModule.XsvToDataTable(text, delimiter, quoted, columns);
     }
 
     public static class XmlModule

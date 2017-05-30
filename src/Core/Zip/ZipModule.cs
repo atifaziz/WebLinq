@@ -22,7 +22,7 @@ namespace WebLinq.Zip
     using System.Reactive.Linq;
     using System.Threading.Tasks;
 
-    public static class ZipQuery
+    public static class ZipModule
     {
         public static IObservable<HttpFetch<Zip>> DownloadZip(this IObservable<HttpFetch<HttpContent>> query) =>
             from fetch in query

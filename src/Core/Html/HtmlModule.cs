@@ -21,9 +21,9 @@ namespace WebLinq.Html
     using System.Net.Mime;
     using System.Reactive.Linq;
 
-    public static class HtmlQuery
+    public static class HtmlModule
     {
-        public static IObservable<HttpFetch<ParsedHtml>> Html(this IHttpObservable query, IHtmlParser parser) =>
+        public static IObservable<HttpFetch<ParsedHtml>> Html(this HttpQuery query, IHtmlParser parser) =>
             query.Accept(MediaTypeNames.Text.Html)
                  .WithReader(async fetch => parser.Parse(await fetch.Content.ReadAsStringAsync(), fetch.RequestUrl));
 

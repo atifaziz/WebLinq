@@ -14,11 +14,12 @@ namespace WebLinq.Samples
     using Text;
     using TryParsers;
     using Html;
-    using Modules;
+    using DefaultModules;
     using Xsv;
-    using static Modules.HttpModule;
-    using static Modules.SpawnModule;
-    using static Modules.XmlModule;
+    using WebLinq;
+    using static DefaultModules.HttpModule;
+    using static DefaultModules.SpawnModule;
+    using static DefaultModules.XmlModule;
 
     #endregion
 
