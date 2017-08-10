@@ -47,7 +47,7 @@ namespace WebLinq
             ParseInt32(source, styles, null);
 
         public static ParsedValue<string, int> ParseInt32(this string source, NumberStyles styles, IFormatProvider provider) =>
-            ParsedValue.Create(source, int.Parse(source, CultureInfo.InvariantCulture));
+            ParsedValue.Create(source, int.Parse(source, styles, CultureInfo.InvariantCulture));
 
         public static ParsedValue<string, double> ParseDouble(this string source) =>
             ParseDouble(source, null);
