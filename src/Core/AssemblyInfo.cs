@@ -15,22 +15,7 @@
 #endregion
 
 using System;
-using System.Reflection;
 using System.Runtime.InteropServices;
-
-[assembly: AssemblyTitle("WebLinq")]
-[assembly: AssemblyDescription("LINQ to Web")]
-[assembly: AssemblyCompany("N/A")]
-[assembly: AssemblyProduct("WebLINQ")]
-[assembly: AssemblyCopyright("Copyright \u00a9 2016 Atif Aziz. All rights reserved.")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
-
-#if DEBUG
-[assembly: AssemblyConfiguration("DEBUG")]
-#else
-[assembly: AssemblyConfiguration("RELEASE")]
-#endif
 
 [assembly: ComVisible(false)]
 [assembly: CLSCompliant(true)]
