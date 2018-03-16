@@ -25,6 +25,7 @@ namespace WebLinq
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Reactive;
     using System.Reactive.Linq;
     using System.Reactive.Threading.Tasks;
     using System.Threading.Tasks;
@@ -317,6 +318,27 @@ namespace WebLinq
             string formSelector, int? formIndex, Uri actionUrl,
             NameValueCollection data)
         {
+            var reader = NameValueCollectionReader.Return(Unit.Default);
+
+            if (data != null)
+            {
+                foreach (var e in data.AsEnumerable())
+                {
+                    reader = reader.Do(form => form.Remove(e.Key));
+                    if (e.Value.Length == 1 && e.Value[0] == null)
+                        continue;
+                    reader = e.Value.Aggregate(reader, (current, value) => current.Do(form => form.Add(e.Key, value)));
+                }
+            }
+
+            return Submit(http, html, formSelector, formIndex, actionUrl, reader);
+        }
+
+        internal static IHttpObservable Submit<T>(IHttpClient http,
+            ParsedHtml html,
+            string formSelector, int? formIndex, Uri actionUrl,
+            Reader<NameValueCollection, T> reader)
+        {
             var forms =
                 from f in formIndex == null
                           ? html.QueryFormSelectorAll(formSelector)
@@ -335,17 +357,7 @@ namespace WebLinq
             if (form == null)
                 throw new Exception("No HTML form for submit.");
 
-            if (data != null)
-            {
-                foreach (var e in data.AsEnumerable())
-                {
-                    form.Data.Remove(e.Key);
-                    if (e.Value.Length == 1 && e.Value[0] == null)
-                        continue;
-                    foreach (var value in e.Value)
-                        form.Data.Add(e.Key, value);
-                }
-            }
+            reader(form.Data);
 
             return form.Method == HtmlFormMethod.Post
                  ? http.Post(actionUrl ?? form.Action, form.Data)
