@@ -20,11 +20,16 @@ namespace WebLinq.Text
     using System.Net.Http;
     using System.Reactive.Linq;
     using System.Text;
+    using Mannex.Collections.Generic;
 
     public static class TextQuery
     {
         public static IObservable<string> Delimited<T>(this IObservable<T> query, string delimiter) =>
-            query.Aggregate(new StringBuilder(), (sb, e) => sb.Append(e), sb => sb.ToString());
+            query.Select((e, i) => i.AsKeyTo(e))
+                 .Aggregate(
+                    new StringBuilder(),
+                    (sb, e) => sb.Append(e.Key > 0 ? delimiter : null).Append(e.Value),
+                    sb => sb.ToString());
 
         public static IObservable<HttpFetch<string>> Text(this IHttpObservable query) =>
             query.WithReader(f => f.Content.ReadAsStringAsync());
