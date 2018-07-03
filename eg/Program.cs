@@ -12,7 +12,6 @@ namespace WebLinq.Samples
     using System.Web;
     using System.Xml.Linq;
     using Text;
-    using TryParsers;
     using Html;
     using Modules;
     using Xsv;
@@ -69,7 +68,7 @@ namespace WebLinq.Samples
                                                                                .GetAttributeValue("href"));
                                return curr.Client.Get(new Uri(next)).Html();
                            })
-                           .TakeWhile(h => (TryParse.Int32(HttpUtility.ParseQueryString(h.Content.BaseUrl.Query)["start"]) ?? 1) < 30)
+                           .TakeWhile(h => (int.TryParse(HttpUtility.ParseQueryString(h.Content.BaseUrl.Query)["start"], out var n) ? n : 1) < 30)
             select sr.Content into sr
             from r in sr.QuerySelectorAll(".g")
             select new
@@ -117,7 +116,7 @@ namespace WebLinq.Samples
             {
                 e.Http,
                 e.Title,
-                Url = TryParse.Uri(e.Href, UriKind.Absolute),
+                Url = Uri.TryCreate(e.Href, UriKind.Absolute, out var url) ? url : null,
             }
             into e
             where !string.IsNullOrEmpty(e.Title) && e.Url != null

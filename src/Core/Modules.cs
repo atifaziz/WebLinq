@@ -30,7 +30,6 @@ namespace WebLinq.Modules
     using Html;
     using Mannex.Collections.Generic;
     using Sys;
-    using TryParsers;
     using Xsv;
     using HttpClient = HttpClient;
     using LoadOption = System.Xml.Linq.LoadOptions;
@@ -125,7 +124,7 @@ namespace WebLinq.Modules
 
                 var lq =
                     from e in HttpObservable.Return(_ => Observable.Return(fetch)).Links().Content()
-                    select TryParse.Uri(e, UriKind.Absolute) into e
+                    select Uri.TryCreate(e, UriKind.Absolute, out url) ? url : null into e
                     where e != null
                        && (e.Scheme == Uri.UriSchemeHttp || e.Scheme == Uri.UriSchemeHttps)
                        && !linkSet.Contains(e)
