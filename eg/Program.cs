@@ -26,8 +26,9 @@ namespace WebLinq.Samples
     {
         static void Wain(string[] args)
         {
-            var ruler1 = new string('=', Console.BufferWidth - 1);
-            var ruler2 = new string('-', Console.BufferWidth - 1);
+            var rulerWidth = (Console.BufferWidth > 0 ? Console.BufferWidth : 80) - 1;
+            var ruler1 = new string('=', rulerWidth);
+            var ruler2 = new string('-', rulerWidth);
 
             var samples =
                 from s in new[]
