@@ -194,7 +194,7 @@ namespace WebLinq.Samples
                 Http.Get(new Uri("https://msdn.microsoft.com/en-us/library/ms762271.aspx"))
                     .Html()
                     .Content()
-            select html.QuerySelector(".codeSnippetContainerCode").InnerText.TrimStart()
+            select html.QuerySelector("#main pre code.lang-xml").InnerText.TrimStart()
             into xml
             from book in ParseXml(xml).Descendants("book")
             select new
