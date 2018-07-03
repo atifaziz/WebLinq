@@ -154,7 +154,7 @@ namespace WebLinq.Samples
             {
                 Album    = album.Title,
                 Title    = tds[his.Title],
-                Author   = his.Writers >= 0 ? tds[his.Writers] : null,
+                Author   = his.Writers >= 0 ? tds[his.Writers].Trim() : null,
                 Duration = tds[his.Length],
             };
 
