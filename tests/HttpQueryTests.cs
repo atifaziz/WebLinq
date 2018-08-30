@@ -60,6 +60,46 @@ namespace WebLinq.Tests
         }
 
         [Test]
+        public async Task WithHeaderGetRequestSetHeaderTest()
+        {
+            var http = new TestHttpClient(HttpConfig.Default.WithHeader("name1","value1"),
+                new HttpResponseMessage()
+                {
+                    Content = new ByteArrayContent(new byte[0]),
+                });
+
+            var result = await http.SetHeader("name2", "value2").Get(new Uri("https://www.example.com"));
+            var request = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, c.Headers });
+
+            Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com")));
+
+            Assert.That(http.Config.Headers.Single().Key, Is.EqualTo("name1"));
+            Assert.That(http.Config.Headers.Single().Value.Single(), Is.EqualTo("value1"));
+            Assert.That(request.Headers.Keys, Is.EquivalentTo(new[] { "name1", "name2" }));
+            Assert.That(request.Headers.Values.Select(v => v.Single()), Is.EquivalentTo(new[] { "value1","value2"}));
+        }
+
+        [Test]
+        public async Task GetRequestsSetSameHeaderTest()
+        {
+            var http = new TestHttpClient(HttpConfig.Default.WithHeader("foo", "bar"),
+                new HttpResponseMessage()
+                {
+                    Content = new ByteArrayContent(new byte[0]),
+                });
+
+            var result = await http.SetHeader("foo", "bar").Get(new Uri("https://www.example.com"));
+            var request = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, c.Headers });
+
+            Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com")));
+
+            Assert.That(request.Headers.Single().Key, Is.EqualTo("foo"));
+            Assert.That(request.Headers.Single().Value.Single(), Is.EqualTo("bar"));
+        }
+
+        [Test]
         public async Task ChainedGetRequests()
         {
             var http = new TestHttpClient(HttpConfig.Default,
@@ -117,6 +157,34 @@ namespace WebLinq.Tests
             Assert.That(request2.Headers.Values.Select(v => v.Single()), Is.EquivalentTo(new[] { "v1", "v2" }));
         }
 
+        [Test]
+        public async Task SeparateRequestsWithDifferentHeaders()
+        {
+            var http = new TestHttpClient(
+                new HttpResponseMessage()
+                {
+                    Content = new ByteArrayContent(new byte[0]),
+                },
+                new HttpResponseMessage()
+                {
+                    Content = new ByteArrayContent(new byte[0]),
+                });
+
+            var result1 = await http.SetHeader("h1", "v1").Get(new Uri("https://www.example.com"));
+            var result2 = await http.SetHeader("h2", "v2").Get(new Uri("https://www.example.com/page"));
+
+            var request1 = ((TestHttpClient)result1.Client).DequeueRequest((m, c) => new { Message = m, c.Headers });
+            var request2 = ((TestHttpClient)result2.Client).DequeueRequest((m, c) => new { Message = m, c.Headers });
+
+            Assert.That(request1.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com")));
+            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/page")));
+
+            Assert.That(request1.Headers.Single().Key, Is.EqualTo("h1"));
+            Assert.That(request2.Headers.Single().Key, Is.EqualTo("h2"));
+            Assert.That(request1.Headers.Single().Value.Single(), Is.EqualTo("v1"));
+            Assert.That(request2.Headers.Single().Value.Single(), Is.EqualTo("v2"));
         }
 
         [Test]
