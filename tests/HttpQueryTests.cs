@@ -13,6 +13,7 @@ using System.Reactive.Threading;
 using System.Collections.Specialized;
 using Mannex.Collections.Generic;
 using System.Net;
+using static WebLinq.Modules.HttpModule;
 
 namespace WebLinq.Tests
 {
@@ -392,6 +393,179 @@ namespace WebLinq.Tests
             Assert.That(await request.Message.Content.ReadAsStringAsync(), Is.EqualTo("foo%26bar=baz"));
         }
 
+        [Test]
+        public async Task SubmitDefaultMethodIsGetTest()
+        {
+            var action = "/action_page.php";
+            var http = new TestHttpClient(
+                new HttpResponseMessage()
+                {
+                    Content = new StringContent("<!DOCTYPE html>" +
+                                                 "<html>" +
+                                                 "<body>" +
+                                                 "<h2> HTML Forms </h2>" +
+                                                 "<form action=\"" + action + "\">" +
+                                                 "  First name:<br>" +
+                                                 "  <input type=\"text\" name=\"firstname\" value=\"Mickey\" >" +
+                                                 "  <br >" +
+                                                 "  Last name:<br>" +
+                                                 "  <input type=\"text\" name=\"lastname\" value=\"Mouse\" >" +
+                                                 "  <br><br>" +
+                                                 "  <input type=\"submit\" value=\"Submit\" >" +
+                                                 "</form>" +
+                                                 "</body>" +
+                                                 "</html>", Encoding.UTF8, "text/html"),
+                },
+                new HttpResponseMessage()
+                {
+                    Content = new ByteArrayContent(new byte[0]),
+                });
+            var data = new NameValueCollection()
+            {
+                ["firstname"] = "Mickey",
+                ["lastname"] = "Mouse"
+            };
+
+            var result = await http.Get(new Uri("https://www.example.com"))
+                                   .Submit(0, data);
+
+            var request1 = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
+            var request2 = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
+
+            Assert.That(request1.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com")));
+            Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com" + action + "?firstname=Mickey&lastname=Mouse")));
+        }
+
+
+        [Test]
+        public async Task SubmitPostTest()
+        {
+            var action = "/action_page.php";
+            var http = new TestHttpClient(
+                new HttpResponseMessage()
+                {
+                    Content = new StringContent("<!DOCTYPE html>" +
+                                                 "<html>" +
+                                                 "<body>" +
+                                                 "<h2> HTML Forms </h2>" +
+                                                 "<form method='post' action=\"" + action + "\">" +
+                                                 "  First name:<br>" +
+                                                 "  <input type=\"text\" name=\"firstname\" value=\"Mickey\" >" +
+                                                 "  <br >" +
+                                                 "  Last name:<br>" +
+                                                 "  <input type=\"text\" name=\"lastname\" value=\"Mouse\" >" +
+                                                 "  <br><br>" +
+                                                 "  <input type=\"submit\" value=\"Submit\" >" +
+                                                 "</form>" +
+                                                 "</body>" +
+                                                 "</html>", Encoding.UTF8, "text/html"),
+                },
+                new HttpResponseMessage()
+                {
+                    Content = new ByteArrayContent(new byte[0]),
+                });
+            var data = new NameValueCollection()
+            {
+                ["firstname"] = "Mickey",
+                ["lastname"] = "Mouse"
+            };
+
+            var result = await http.Get(new Uri("https://www.example.com"))
+                                   .Submit(0, data);
+
+            var request1 = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
+            var request2 = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
+
+            Assert.That(request1.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com")));
+            Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Post));
+            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com" + action)));
+            Assert.That(await request2.Message.Content.ReadAsStringAsync(), Is.EqualTo("firstname=Mickey&lastname=Mouse"));
+        }
+
+        [Test]
+        public async Task SubmitToTest()
+        {
+            var action = "/action_page.php";
+            var html = "<!DOCTYPE html>" +
+                                                 "<html>" +
+                                                 "<body>" +
+                                                 "<h2> HTML Forms </h2>" +
+                                                 "<form action=\"" + action + "\">" +
+                                                 "  First name:<br>" +
+                                                 "  <input type=\"text\" name=\"firstname\" value=\"Mickey\" >" +
+                                                 "  <br >" +
+                                                 "  Last name:<br>" +
+                                                 "  <input type=\"text\" name=\"lastname\" value=\"Mouse\" >" +
+                                                 "  <br><br>" +
+                                                 "  <input type=\"submit\" value=\"Submit\" >" +
+                                                 "</form>" +
+                                                 "</body>" +
+                                                 "</html>";
+            var http = new TestHttpClient(
+                new HttpResponseMessage()
+                {
+                    Content = new ByteArrayContent(new byte[0]),
+                });
+            var data = new NameValueCollection()
+            {
+                ["firstname"] = "Mickey",
+                ["lastname"] = "Mouse"
+            };
+            var result = await http.SubmitTo(new Uri("https://www.example.org"), 
+                Html.HtmlParser.Default.Parse(html, new Uri("https://www.example.com")), 
+                0,
+                data);
+            var request = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
+
+            Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.org" + "?firstname=Mickey&lastname=Mouse")));
+            Assert.That(request.Message.Headers, Is.Empty);
+        }
+
+        [Test]
+        public async Task SubmitToPostRequestTest()
+        {
+            var action = "/action_page.php";
+            var html = "<!DOCTYPE html>" +
+                       "<html>" +
+                       "<body>" +
+                       "<h2> HTML Forms </h2>" +
+                       "<form method='post' action=\"" + action + "\">" +
+                       "  First name:<br>" +
+                       "  <input type=\"text\" name=\"firstname\" value=\"Mickey\" >" +
+                       "  <br >" +
+                       "  Last name:<br>" +
+                       "  <input type=\"text\" name=\"lastname\" value=\"Mouse\" >" +
+                       "  <br><br>" +
+                       "  <input type=\"submit\" value=\"Submit\" >" +
+                       "</form>" +
+                       "</body>" +
+                       "</html>";
+
+            var http = new TestHttpClient(
+                new HttpResponseMessage()
+                {
+                    Content = new ByteArrayContent(new byte[0]),
+                });
+            var data = new NameValueCollection()
+            {
+                ["firstname"] = "Mickey",
+                ["lastname"] = "Mouse"
+            };
+            var result = await http.SubmitTo(new Uri("https://www.example.org"),
+                Html.HtmlParser.Default.Parse(html, new Uri("https://www.example.com")), 
+                0,
+                data);
+            var request = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
+
+            Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Post));
+            Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.org")));
+            Assert.That(request.Message.Content.Headers.GetValues("Content-Type").Single(), Is.EqualTo("application/x-www-form-urlencoded"));
+            Assert.That(await request.Message.Content.ReadAsStringAsync(), Is.EqualTo("firstname=Mickey&lastname=Mouse"));
+        }
     }
 
     public class TestHttpClient : IHttpClient
