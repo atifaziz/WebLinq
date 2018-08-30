@@ -274,6 +274,31 @@ namespace WebLinq.Tests
             Assert.That(request.Config.Cookies.Single(), Is.EqualTo(new Cookie("name", "value")));
         }
 
+        [Test]
+        public async Task ChainedGetRequestsWithCookie()
+        {
+            var http = new TestHttpClient(HttpConfig.Default.WithCookies(new[] { new Cookie("name", "value") }),
+                new HttpResponseMessage()
+                {
+                    Content = new ByteArrayContent(new byte[0]),
+                },
+                new HttpResponseMessage()
+                {
+                    Content = new ByteArrayContent(new byte[0]),
+                });
+
+            var result = await http.Get(new Uri("https://www.example.com"))
+                                   .Get(new Uri("https://www.example.com/page"));
+
+            var request1 = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
+            var request2 = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
+
+            Assert.That(request1.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com")));
+            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/page")));
+            Assert.That(request1.Config.Cookies.Single(), Is.EqualTo(new Cookie("name", "value")));
+            Assert.That(request2.Config.Cookies.Single(), Is.EqualTo(new Cookie("name", "value")));
         }
 
         [Test]
@@ -287,6 +312,27 @@ namespace WebLinq.Tests
 
             var data = new NameValueCollection() { ["name"] = "value" };
             
+            var result = await http.Post(new Uri("https://www.example.com"), data);
+            var request = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
+
+            Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Post));
+            Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com")));
+
+            Assert.That(request.Config.Headers, Is.Empty);
+            Assert.That(await request.Message.Content.ReadAsStringAsync(), Is.EqualTo("name=value"));
+        }
+
+        [Test]
+        public async Task PostRequestWithCookie()
+        {
+            var http = new TestHttpClient(HttpConfig.Default.WithCookies(new[] { new Cookie("name", "value") }),
+                new HttpResponseMessage()
+                {
+                    Content = new ByteArrayContent(new byte[0]),
+                });
+
+            var data = new NameValueCollection() { ["name"] = "value" };
+
             var result = await http.Post(new Uri("https://www.example.com"), data);
             var request = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
 
