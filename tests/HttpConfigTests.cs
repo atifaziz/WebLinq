@@ -32,6 +32,53 @@ namespace WebLinq.Tests
     [TestFixture]
     public class HttpConfigTests
     {
+        enum Configuration
+        {
+            Headers,
+            Timeout,
+            UseDefaultCredentials,
+            Credentials,
+            UserAgent,
+            Cookies,
+            IgnoreInvalidServerCertificate,
+        }
+
+        private void AssertConfigurationsExcept(HttpConfig config1, HttpConfig config2, Configuration e)
+        {
+            if (e != Configuration.Headers)
+            {
+                Assert.That(config1.Headers, Is.EqualTo(config2.Headers));
+            }
+
+            if (e != Configuration.Timeout)
+            {
+                Assert.That(config1.Timeout, Is.EqualTo((config2.Timeout)));
+            }
+
+            if (e != Configuration.UseDefaultCredentials)
+            {
+                Assert.That(config1.UseDefaultCredentials, Is.EqualTo(config2.UseDefaultCredentials));
+            }
+
+            if (e != Configuration.Credentials)
+            {
+                Assert.That(config1.Credentials, Is.SameAs(config2.Credentials));
+            }
+
+            if (e != Configuration.UserAgent)
+                Assert.That(config1.UserAgent, Is.EqualTo(config2.UserAgent));
+
+            if (e != Configuration.Cookies)
+            {
+                Assert.That(config1.Cookies, Is.EqualTo(config2.Cookies));
+            }   
+
+            if (e != Configuration.IgnoreInvalidServerCertificate)
+            {
+                Assert.That(config1.IgnoreInvalidServerCertificate, Is.EqualTo(config2.IgnoreInvalidServerCertificate));
+            }
+        }
+
         [Test]
         public void DefaultConfigHasNoHeaders()
         {
@@ -54,14 +101,9 @@ namespace WebLinq.Tests
         public void WithHeaderTest()
         {
             HttpConfig config = HttpConfig.Default.WithHeader("name", "value");
-            Assert.That(config.Headers, Is.EquivalentTo(new HttpHeaderCollection().Set("name", "value")));
+            Assert.That(config.Headers, Is.EqualTo(new HttpHeaderCollection().Set("name", "value")));
 
-            Assert.That(config.Timeout, Is.EqualTo((HttpConfig.Default.Timeout)));
-            Assert.That(config.UseDefaultCredentials, Is.EqualTo(HttpConfig.Default.UseDefaultCredentials));
-            Assert.That(config.Credentials, Is.SameAs(HttpConfig.Default.Credentials));
-            Assert.That(config.UserAgent, Is.EqualTo(HttpConfig.Default.UserAgent));
-            Assert.That(config.Cookies, Is.EqualTo(HttpConfig.Default.Cookies));
-            Assert.That(config.IgnoreInvalidServerCertificate, Is.EqualTo(HttpConfig.Default.IgnoreInvalidServerCertificate));
+            AssertConfigurationsExcept(config, HttpConfig.Default, Configuration.Headers);
         }
 
         [Test]
@@ -69,31 +111,21 @@ namespace WebLinq.Tests
         {            
             HttpConfig config = HttpConfig.Default.WithHeaders(new HttpHeaderCollection().Set("name1", "value1")
                                                                                          .Set("name2", "value2"));
-            Assert.That(config.Headers, Is.EquivalentTo(new HttpHeaderCollection().Set("name1", "value1")
-                                                                                  .Set("name2", "value2")));
+            Assert.That(config.Headers, Is.EqualTo(new HttpHeaderCollection().Set("name1", "value1")
+                                                                             .Set("name2", "value2")));
 
-
-            Assert.That(config.Timeout, Is.EqualTo((HttpConfig.Default.Timeout)));
-            Assert.That(config.UseDefaultCredentials, Is.EqualTo(HttpConfig.Default.UseDefaultCredentials));
-            Assert.That(config.Credentials, Is.SameAs(HttpConfig.Default.Credentials));
-            Assert.That(config.UserAgent, Is.EqualTo(HttpConfig.Default.UserAgent));
-            Assert.That(config.Cookies, Is.EqualTo(HttpConfig.Default.Cookies));
-            Assert.That(config.IgnoreInvalidServerCertificate, Is.EqualTo(HttpConfig.Default.IgnoreInvalidServerCertificate));
+            AssertConfigurationsExcept(config, HttpConfig.Default, Configuration.Headers);
         }
 
         [Test]
         public void WithHeaderEqualsWithHeaders()
         {
-            HttpConfig config = HttpConfig.Default.WithHeader("name", "value");
+            HttpConfig config1 = HttpConfig.Default.WithHeader("name", "value");
             HttpConfig config2 = HttpConfig.Default.WithHeaders(new HttpHeaderCollection().Set("name", "value"));
-            Assert.That(config.Headers, Is.EquivalentTo(config2.Headers));
+            Assert.That(config1.Headers, Is.EqualTo(config2.Headers));
 
-            Assert.That(config.Timeout, Is.EqualTo(config2.Timeout));
-            Assert.That(config.UseDefaultCredentials, Is.EqualTo(config2.UseDefaultCredentials));
-            Assert.That(config.Credentials, Is.SameAs(config2.Credentials));
-            Assert.That(config.UserAgent, Is.EqualTo(config2.UserAgent));
-            Assert.That(config.Cookies, Is.EqualTo(config2.Cookies));
-            Assert.That(config.IgnoreInvalidServerCertificate, Is.EqualTo(config2.IgnoreInvalidServerCertificate));
+            AssertConfigurationsExcept(config1, config2, Configuration.Headers);
+            AssertConfigurationsExcept(config1, HttpConfig.Default, Configuration.Headers);
         }
 
         [Test]
@@ -102,12 +134,7 @@ namespace WebLinq.Tests
             HttpConfig config = HttpConfig.Default.WithTimeout(new TimeSpan(0, 1, 0));
             Assert.That(config.Timeout, Is.EqualTo(new TimeSpan(0, 1, 0)));
 
-            Assert.That(config.Headers, Is.EquivalentTo(HttpConfig.Default.Headers));
-            Assert.That(config.UseDefaultCredentials, Is.EqualTo(HttpConfig.Default.UseDefaultCredentials));
-            Assert.That(config.Credentials, Is.SameAs(HttpConfig.Default.Credentials));
-            Assert.That(config.UserAgent, Is.EqualTo(HttpConfig.Default.UserAgent));
-            Assert.That(config.Cookies, Is.EqualTo(HttpConfig.Default.Cookies));
-            Assert.That(config.IgnoreInvalidServerCertificate, Is.EqualTo(HttpConfig.Default.IgnoreInvalidServerCertificate));
+            AssertConfigurationsExcept(config, HttpConfig.Default, Configuration.Timeout);
         }
 
         [Test]
@@ -116,12 +143,7 @@ namespace WebLinq.Tests
             HttpConfig config = HttpConfig.Default.WithUserAgent("Spider/1.0");
             Assert.That(config.UserAgent, Is.EqualTo("Spider/1.0"));
 
-            Assert.That(config.Headers, Is.EquivalentTo(HttpConfig.Default.Headers));
-            Assert.That(config.Timeout, Is.EqualTo((HttpConfig.Default.Timeout)));
-            Assert.That(config.UseDefaultCredentials, Is.EqualTo(HttpConfig.Default.UseDefaultCredentials));
-            Assert.That(config.Credentials, Is.SameAs(HttpConfig.Default.Credentials));
-            Assert.That(config.Cookies, Is.EqualTo(HttpConfig.Default.Cookies));
-            Assert.That(config.IgnoreInvalidServerCertificate, Is.EqualTo(HttpConfig.Default.IgnoreInvalidServerCertificate));
+            AssertConfigurationsExcept(config, HttpConfig.Default, Configuration.UserAgent);
         }
 
         [Test]
@@ -131,12 +153,7 @@ namespace WebLinq.Tests
             HttpConfig config = HttpConfig.Default.WithCredentials(credentials);
             Assert.That(config.Credentials, Is.SameAs(credentials));
 
-            Assert.That(config.Headers, Is.EquivalentTo(HttpConfig.Default.Headers));
-            Assert.That(config.Timeout, Is.EqualTo((HttpConfig.Default.Timeout)));
-            Assert.That(config.UseDefaultCredentials, Is.EqualTo(HttpConfig.Default.UseDefaultCredentials));
-            Assert.That(config.UserAgent, Is.EqualTo(HttpConfig.Default.UserAgent));
-            Assert.That(config.Cookies, Is.EqualTo(HttpConfig.Default.Cookies));
-            Assert.That(config.IgnoreInvalidServerCertificate, Is.EqualTo(HttpConfig.Default.IgnoreInvalidServerCertificate));
+            AssertConfigurationsExcept(config, HttpConfig.Default, Configuration.Credentials);
         }
 
         [Test]
@@ -146,12 +163,7 @@ namespace WebLinq.Tests
             Assert.That(config.UseDefaultCredentials, Is.EqualTo(true));
             Assert.That(config.Credentials, Is.EqualTo(HttpConfig.Default.Credentials));
 
-            Assert.That(config.Headers, Is.EquivalentTo(HttpConfig.Default.Headers));
-            Assert.That(config.Timeout, Is.EqualTo((HttpConfig.Default.Timeout)));
-            Assert.That(config.Credentials, Is.SameAs(HttpConfig.Default.Credentials));
-            Assert.That(config.UserAgent, Is.EqualTo(HttpConfig.Default.UserAgent));
-            Assert.That(config.Cookies, Is.EqualTo(HttpConfig.Default.Cookies));
-            Assert.That(config.IgnoreInvalidServerCertificate, Is.EqualTo(HttpConfig.Default.IgnoreInvalidServerCertificate));
+            AssertConfigurationsExcept(config, HttpConfig.Default, Configuration.UseDefaultCredentials);
         }
 
         [Test]
@@ -160,12 +172,7 @@ namespace WebLinq.Tests
             HttpConfig config = HttpConfig.Default.WithCookies(new[] { new Cookie("name", "value") });
             Assert.That(config.Cookies, Is.EquivalentTo(new[] { new Cookie("name", "value") }));
 
-            Assert.That(config.Headers, Is.EquivalentTo(HttpConfig.Default.Headers));
-            Assert.That(config.Timeout, Is.EqualTo((HttpConfig.Default.Timeout)));
-            Assert.That(config.Credentials, Is.SameAs(HttpConfig.Default.Credentials));
-            Assert.That(config.UseDefaultCredentials, Is.EqualTo(HttpConfig.Default.UseDefaultCredentials));
-            Assert.That(config.UserAgent, Is.EqualTo(HttpConfig.Default.UserAgent));
-            Assert.That(config.IgnoreInvalidServerCertificate, Is.EqualTo(HttpConfig.Default.IgnoreInvalidServerCertificate));
+            AssertConfigurationsExcept(config, HttpConfig.Default, Configuration.Cookies);
         }
 
         [Test]
@@ -173,13 +180,8 @@ namespace WebLinq.Tests
         {
             HttpConfig config = HttpConfig.Default.WithIgnoreInvalidServerCertificate(true);
             Assert.That(config.IgnoreInvalidServerCertificate, Is.True);
-  
-            Assert.That(config.Headers, Is.EquivalentTo(HttpConfig.Default.Headers));
-            Assert.That(config.Timeout, Is.EqualTo((HttpConfig.Default.Timeout)));
-            Assert.That(config.Credentials, Is.SameAs(HttpConfig.Default.Credentials));
-            Assert.That(config.UseDefaultCredentials, Is.EqualTo(HttpConfig.Default.UseDefaultCredentials));
-            Assert.That(config.UserAgent, Is.EqualTo(HttpConfig.Default.UserAgent));
-            Assert.That(config.Cookies, Is.EqualTo(HttpConfig.Default.Cookies));
+
+            AssertConfigurationsExcept(config, HttpConfig.Default, Configuration.IgnoreInvalidServerCertificate);
         }
     }
 }
