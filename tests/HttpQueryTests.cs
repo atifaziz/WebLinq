@@ -88,7 +88,7 @@ namespace WebLinq.Tests
         [Test]
         public async Task ChainedRequestsWithDifferentHeaders()
         {
-            var http = new TestHttpClient(HttpConfig.Default.WithHeader("h1","v1"),
+            var http = new TestHttpClient(
                 new HttpResponseMessage()
                 {
                     Content = new ByteArrayContent(new byte[0]),
@@ -98,9 +98,9 @@ namespace WebLinq.Tests
                     Content = new ByteArrayContent(new byte[0]),
                 });
 
-            var result = await http.SetHeader("h2", "v2")
+            var result = await http.SetHeader("h1", "v1")
                                    .Get(new Uri("https://www.example.com"))
-                                   .SetHeader("h3", "v3")
+                                   .SetHeader("h2", "v2")
                                    .Get(new Uri("https://www.example.com/page"));
 
             var request1 = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, c.Headers });
@@ -111,14 +111,12 @@ namespace WebLinq.Tests
             Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com")));
             Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/page")));
 
-            Assert.That(http.Config.Headers.Single().Key, Is.EqualTo("h1"));
-            Assert.That(http.Config.Headers.Single().Value.Single(), Is.EqualTo("v1"));
-            Assert.That(request1.Headers.Count, Is.EqualTo(2));
-            Assert.That(request2.Headers.Count, Is.EqualTo(3));
-            Assert.That(request1.Headers.Keys, Is.EquivalentTo(new[] { "h1", "h2"}));
-            Assert.That(request2.Headers.Keys, Is.EquivalentTo(new[] { "h1", "h2", "h3" }));
-            Assert.That(request1.Headers.Keys, Is.EquivalentTo(new[] { "v1", "v2" }));
-            Assert.That(request2.Headers.Keys, Is.EquivalentTo(new[] { "v1", "v2", "v3" }));
+            Assert.That(request1.Headers.Single().Key, Is.EqualTo("h1"));
+            Assert.That(request2.Headers.Keys, Is.EquivalentTo(new[] { "h1", "h2" }));
+            Assert.That(request1.Headers.Single().Value.Single(), Is.EqualTo("v1"));
+            Assert.That(request2.Headers.Values.Select(v => v.Single()), Is.EquivalentTo(new[] { "v1", "v2" }));
+        }
+
         }
 
         [Test]
@@ -205,7 +203,9 @@ namespace WebLinq.Tests
 
             Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Get));
             Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com")));
-            Assert.That(request.Config.Cookies, Is.EquivalentTo(new[] { new Cookie("name", "value") }));
+            Assert.That(request.Config.Cookies.Single(), Is.EqualTo(new Cookie("name", "value")));
+        }
+
         }
 
         [Test]
