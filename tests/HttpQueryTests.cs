@@ -20,6 +20,34 @@ namespace WebLinq.Tests
     public class HttpQueryTests
     {
         [Test]
+        public async Task AcceptTest()
+        {
+            var http = new TestHttpClient(
+                new HttpResponseMessage
+                {
+                    Content = new StringContent(string.Empty, Encoding.UTF8, "text/html")
+                });
+
+            var result = await http.Get(new Uri("https://www.example.com")).Accept("text/html");
+            var request = ((TestHttpClient)result.Client).DequeueRequestMessage();
+
+            Assert.That(request.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request.RequestUri, Is.EqualTo(new Uri("https://www.example.com")));
+        }
+
+        [Test]
+        public async Task AcceptThrowsExceptionWithWrongType()
+        {
+            var http = new TestHttpClient(
+                new HttpResponseMessage
+                {
+                    Content = new StringContent("foo", Encoding.UTF8, "text/csv")
+                });
+
+            Assert.Throws<System.Exception>(() => http.Get(new Uri("https://www.example.com")).Accept("text/html").GetAwaiter().GetResult());
+        }
+
+        [Test]
         public async Task GetRequestTest()
         {
             var http = new TestHttpClient(
