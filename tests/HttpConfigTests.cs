@@ -18,6 +18,7 @@ namespace WebLinq.Tests
 {
     using NUnit.Framework;
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Net;
     using MoreLinq;
@@ -65,7 +66,7 @@ namespace WebLinq.Tests
             Assert.That(entry.Third.Key, Is.EqualTo("name3"));
             Assert.That(entry.Third.Value.Single(), Is.EqualTo("value3"));
 
-            AssertConfigurationsEqual(config, HttpConfig.Default, ExceptMember.Headers);
+            AssertDefaultConfigEqual(config, ConfigAssertion.All.Except(ConfigAssertion.Headers));
         }
 
         [Test]
@@ -79,7 +80,7 @@ namespace WebLinq.Tests
             var config = HttpConfig.Default.WithHeaders(headers);
 
             Assert.That(config.Headers, Is.SameAs(headers));
-            AssertConfigurationsEqual(config, HttpConfig.Default, ExceptMember.Headers);
+            AssertDefaultConfigEqual(config, ConfigAssertion.All.Except(ConfigAssertion.Headers));
         }
 
         [Test]
@@ -88,7 +89,7 @@ namespace WebLinq.Tests
             var config = HttpConfig.Default.WithTimeout(new TimeSpan(0, 1, 0));
 
             Assert.That(config.Timeout, Is.EqualTo(new TimeSpan(0, 1, 0)));
-            AssertConfigurationsEqual(config, HttpConfig.Default, ExceptMember.Timeout);
+            AssertDefaultConfigEqual(config, ConfigAssertion.All.Except(ConfigAssertion.Timeout));
         }
 
         [Test]
@@ -97,7 +98,7 @@ namespace WebLinq.Tests
             var config = HttpConfig.Default.WithUserAgent("Spider/1.0");
 
             Assert.That(config.UserAgent, Is.EqualTo("Spider/1.0"));
-            AssertConfigurationsEqual(config, HttpConfig.Default, ExceptMember.UserAgent);
+            AssertDefaultConfigEqual(config, ConfigAssertion.All.Except(ConfigAssertion.UserAgent));
         }
 
         [Test]
@@ -107,7 +108,7 @@ namespace WebLinq.Tests
             var config = HttpConfig.Default.WithCredentials(credentials);
 
             Assert.That(config.Credentials, Is.SameAs(credentials));
-            AssertConfigurationsEqual(config, HttpConfig.Default, ExceptMember.Credentials);
+            AssertDefaultConfigEqual(config, ConfigAssertion.All.Except(ConfigAssertion.Credentials));
         }
 
         [Test]
@@ -117,7 +118,7 @@ namespace WebLinq.Tests
 
             Assert.That(config.UseDefaultCredentials, Is.True);
             Assert.That(config.Credentials, Is.EqualTo(HttpConfig.Default.Credentials));
-            AssertConfigurationsEqual(config, HttpConfig.Default, ExceptMember.UseDefaultCredentials);
+            AssertDefaultConfigEqual(config, ConfigAssertion.All.Except(ConfigAssertion.UseDefaultCredentials));
         }
 
         [Test]
@@ -127,7 +128,7 @@ namespace WebLinq.Tests
             var config = HttpConfig.Default.WithCookies(cookies);
 
             Assert.That(config.Cookies, Is.SameAs(cookies));
-            AssertConfigurationsEqual(config, HttpConfig.Default, ExceptMember.Cookies);
+            AssertDefaultConfigEqual(config, ConfigAssertion.All.Except(ConfigAssertion.Cookies));
         }
 
         [Test]
@@ -136,42 +137,35 @@ namespace WebLinq.Tests
             var config = HttpConfig.Default.WithIgnoreInvalidServerCertificate(true);
 
             Assert.That(config.IgnoreInvalidServerCertificate, Is.True);
-            AssertConfigurationsEqual(config, HttpConfig.Default, ExceptMember.IgnoreInvalidServerCertificate);
+            AssertDefaultConfigEqual(config, ConfigAssertion.All.Except(ConfigAssertion.IgnoreInvalidServerCertificate));
         }
 
-        enum ExceptMember
+        static class ConfigAssertion
         {
-            Headers,
-            Timeout,
-            UseDefaultCredentials,
-            Credentials,
-            UserAgent,
-            Cookies,
-            IgnoreInvalidServerCertificate,
+            public static readonly Action<HttpConfig, HttpConfig> Headers                        = (actual, expected) => Assert.That(actual.Headers, Is.EqualTo(expected.Headers));
+            public static readonly Action<HttpConfig, HttpConfig> Timeout                        = (actual, expected) => Assert.That(actual.Timeout, Is.EqualTo(expected.Timeout));
+            public static readonly Action<HttpConfig, HttpConfig> UseDefaultCredentials          = (actual, expected) => Assert.That(actual.UseDefaultCredentials, Is.EqualTo(expected.UseDefaultCredentials));
+            public static readonly Action<HttpConfig, HttpConfig> Credentials                    = (actual, expected) => Assert.That(actual.Credentials, Is.SameAs(expected.Credentials));
+            public static readonly Action<HttpConfig, HttpConfig> UserAgent                      = (actual, expected) => Assert.That(actual.UserAgent, Is.EqualTo(expected.UserAgent));
+            public static readonly Action<HttpConfig, HttpConfig> Cookies                        = (actual, expected) => Assert.That(actual.Cookies, Is.SameAs(expected.Cookies));
+            public static readonly Action<HttpConfig, HttpConfig> IgnoreInvalidServerCertificate = (actual, expected) => Assert.That(actual.IgnoreInvalidServerCertificate, Is.EqualTo(expected.IgnoreInvalidServerCertificate));
+
+            public static IEnumerable<Action<HttpConfig, HttpConfig>> All
+            {
+                get
+                {
+                    yield return Headers;
+                    yield return Timeout;
+                    yield return UseDefaultCredentials;
+                    yield return Credentials;
+                    yield return UserAgent;
+                    yield return Cookies;
+                    yield return IgnoreInvalidServerCertificate;
+                }
+            }
         }
 
-        static void AssertConfigurationsEqual(HttpConfig actual, HttpConfig expected, ExceptMember e)
-        {
-            if (e != ExceptMember.Headers)
-                Assert.That(actual.Headers, Is.EqualTo(expected.Headers));
-
-            if (e != ExceptMember.Timeout)
-                Assert.That(actual.Timeout, Is.EqualTo(expected.Timeout));
-
-            if (e != ExceptMember.UseDefaultCredentials)
-                Assert.That(actual.UseDefaultCredentials, Is.EqualTo(expected.UseDefaultCredentials));
-
-            if (e != ExceptMember.Credentials)
-                Assert.That(actual.Credentials, Is.SameAs(expected.Credentials));
-
-            if (e != ExceptMember.UserAgent)
-                Assert.That(actual.UserAgent, Is.EqualTo(expected.UserAgent));
-
-            if (e != ExceptMember.Cookies)
-                Assert.That(actual.Cookies, Is.SameAs(expected.Cookies));
-
-            if (e != ExceptMember.IgnoreInvalidServerCertificate)
-                Assert.That(actual.IgnoreInvalidServerCertificate, Is.EqualTo(expected.IgnoreInvalidServerCertificate));
-        }
+        public static void AssertDefaultConfigEqual(HttpConfig config, IEnumerable<Action<HttpConfig, HttpConfig>> assertions) =>
+            assertions.ForEach(a => a(HttpConfig.Default, config));
     }
 }

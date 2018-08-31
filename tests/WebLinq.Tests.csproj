@@ -63,6 +63,7 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Extensions.cs" />
     <Compile Include="HttpConfigTests.cs" />
     <Compile Include="HttpQueryTests.cs" />
   </ItemGroup>
