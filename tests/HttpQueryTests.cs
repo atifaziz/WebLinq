@@ -401,7 +401,7 @@
             Assert.That(request2.Config, Is.SameAs(HttpConfig.Default));
         }
 
-        [Test]
+        [Test, Ignore("https://github.com/weblinq/WebLinq/issues/18")]
         public async Task ChainedRequestsWithDifferentHeaders()
         {
             var http = new TestHttpClient(
