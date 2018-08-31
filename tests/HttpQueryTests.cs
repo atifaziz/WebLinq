@@ -60,6 +60,160 @@ namespace WebLinq.Tests
         }
 
         [Test]
+        public void NotFoundFetchThrowsException()
+        {
+            var http = new TestHttpClient(
+                new HttpResponseMessage()
+                {
+                    StatusCode = HttpStatusCode.NotFound,
+                    Content = new ByteArrayContent(new byte[0]),
+                });
+
+            Assert.Throws<HttpRequestException>(() => http.Get(new Uri("https://www.example.com")).GetAwaiter().GetResult());
+        }
+
+        [Test]
+        public async Task NotFoundFetchReturnErroneousFetchTest()
+        {
+            var http = new TestHttpClient(
+                new HttpResponseMessage()
+                {
+                    StatusCode = HttpStatusCode.NotFound,
+                    Content = new ByteArrayContent(new byte[0]),
+                });
+
+            var result = await http.Get(new Uri("https://www.example.com"))
+                                   .ReturnErrorneousFetch();
+            var request = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
+
+            Assert.That(result.RequestUrl, Is.EqualTo(new Uri("https://www.example.com")));
+            Assert.That(result.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+        }
+
+        [Test]
+        public void NotImplementedErroneousFetchThrowsException()
+        {
+            var http = new TestHttpClient(
+                new HttpResponseMessage()
+                {
+                    StatusCode = HttpStatusCode.NotImplemented,
+                    Content = new ByteArrayContent(new byte[0]),
+                });
+
+            Assert.Throws<HttpRequestException>(() => http.Get(new Uri("https://www.example.com")).GetAwaiter().GetResult());
+        }
+
+        [Test]
+        public async Task NotImplementedFetchReturnErroneousFetchTest()
+        {
+            var http = new TestHttpClient(
+                new HttpResponseMessage()
+                {
+                    StatusCode = HttpStatusCode.NotImplemented,
+                    Content = new ByteArrayContent(new byte[0]),
+                });
+
+            var result = await http.Get(new Uri("https://www.example.com"))
+                                   .ReturnErrorneousFetch();
+            var request = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
+
+            Assert.That(result.RequestUrl, Is.EqualTo(new Uri("https://www.example.com")));
+            Assert.That(result.StatusCode, Is.EqualTo(HttpStatusCode.NotImplemented));
+        }
+
+        [Test]
+        public void BadGatewayFetchThrowsException()
+        {
+            var http = new TestHttpClient(
+                new HttpResponseMessage()
+                {
+                    StatusCode = HttpStatusCode.BadGateway,
+                    Content = new ByteArrayContent(new byte[0]),
+                });
+
+            Assert.Throws<HttpRequestException>(() => http.Get(new Uri("https://www.example.com")).GetAwaiter().GetResult());
+        }
+
+        [Test]
+        public async Task BadGatewayFetchReturnErroneousFetchTest()
+        {
+            var http = new TestHttpClient(
+                new HttpResponseMessage()
+                {
+                    StatusCode = HttpStatusCode.BadGateway,
+                    Content = new ByteArrayContent(new byte[0]),
+                });
+
+            var result = await http.Get(new Uri("https://www.example.com"))
+                                   .ReturnErrorneousFetch();
+            var request = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
+
+            Assert.That(result.RequestUrl, Is.EqualTo(new Uri("https://www.example.com")));
+            Assert.That(result.StatusCode, Is.EqualTo(HttpStatusCode.BadGateway));
+        }
+
+        [Test]
+        public void GatewayTimeoutFetchThrowsException()
+        {
+            var http = new TestHttpClient(
+                new HttpResponseMessage()
+                {
+                    StatusCode = HttpStatusCode.GatewayTimeout,
+                    Content = new ByteArrayContent(new byte[0]),
+                });
+
+            Assert.Throws<HttpRequestException>(() => http.Get(new Uri("https://www.example.com")).GetAwaiter().GetResult());
+        }
+
+        [Test]
+        public async Task GatewayTimeoutFetchReturnErroneousFetchTest()
+        {
+            var http = new TestHttpClient(
+                new HttpResponseMessage()
+                {
+                    StatusCode = HttpStatusCode.GatewayTimeout,
+                    Content = new ByteArrayContent(new byte[0]),
+                });
+
+            var result = await http.Get(new Uri("https://www.example.com"))
+                                   .ReturnErrorneousFetch();
+            var request = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
+
+            Assert.That(result.RequestUrl, Is.EqualTo(new Uri("https://www.example.com")));
+            Assert.That(result.StatusCode, Is.EqualTo(HttpStatusCode.GatewayTimeout));
+        }
+
+        [Test]
+        public void ForbiddenFetchThrowsException()
+        {
+            var http = new TestHttpClient(
+                new HttpResponseMessage()
+                {
+                    StatusCode = HttpStatusCode.Forbidden,
+                    Content = new ByteArrayContent(new byte[0]),
+                });
+
+            Assert.Throws<HttpRequestException>(() => http.Get(new Uri("https://www.example.com")).GetAwaiter().GetResult());
+        }
+
+        [Test]
+        public async Task ForbiddenFetchReturnErroneousFetchTest()
+        {
+            var http = new TestHttpClient(
+                new HttpResponseMessage()
+                {
+                    StatusCode = HttpStatusCode.Forbidden,
+                    Content = new ByteArrayContent(new byte[0]),
+                });
+
+            var result = await http.Get(new Uri("https://www.example.com"))
+                                   .ReturnErrorneousFetch();
+            var request = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
+
+            Assert.That(result.RequestUrl, Is.EqualTo(new Uri("https://www.example.com")));
+            Assert.That(result.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
+        }
+
         [Test]
         public async Task SetCookieHeaderTest()
         {
