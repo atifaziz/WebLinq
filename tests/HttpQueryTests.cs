@@ -64,7 +64,7 @@
         public async Task GetRequestSetHeaderTest()
         {
             var http = new TestHttpClient(HttpConfig.Default.WithHeaders(HttpHeaderCollection.Empty),
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Content = new ByteArrayContent(new byte[0]),
                 });
@@ -84,7 +84,7 @@
         public void NotFoundFetchThrowsException()
         {
             var http = new TestHttpClient(
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     StatusCode = HttpStatusCode.NotFound,
                     Content = new ByteArrayContent(new byte[0]),
@@ -97,7 +97,7 @@
         public async Task NotFoundFetchReturnErroneousFetchTest()
         {
             var http = new TestHttpClient(
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     StatusCode = HttpStatusCode.NotFound,
                     Content = new ByteArrayContent(new byte[0]),
@@ -115,7 +115,7 @@
         public void NotImplementedErroneousFetchThrowsException()
         {
             var http = new TestHttpClient(
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     StatusCode = HttpStatusCode.NotImplemented,
                     Content = new ByteArrayContent(new byte[0]),
@@ -128,7 +128,7 @@
         public async Task NotImplementedFetchReturnErroneousFetchTest()
         {
             var http = new TestHttpClient(
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     StatusCode = HttpStatusCode.NotImplemented,
                     Content = new ByteArrayContent(new byte[0]),
@@ -146,7 +146,7 @@
         public void BadGatewayFetchThrowsException()
         {
             var http = new TestHttpClient(
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     StatusCode = HttpStatusCode.BadGateway,
                     Content = new ByteArrayContent(new byte[0]),
@@ -159,7 +159,7 @@
         public async Task BadGatewayFetchReturnErroneousFetchTest()
         {
             var http = new TestHttpClient(
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     StatusCode = HttpStatusCode.BadGateway,
                     Content = new ByteArrayContent(new byte[0]),
@@ -177,7 +177,7 @@
         public void GatewayTimeoutFetchThrowsException()
         {
             var http = new TestHttpClient(
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     StatusCode = HttpStatusCode.GatewayTimeout,
                     Content = new ByteArrayContent(new byte[0]),
@@ -190,7 +190,7 @@
         public async Task GatewayTimeoutFetchReturnErroneousFetchTest()
         {
             var http = new TestHttpClient(
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     StatusCode = HttpStatusCode.GatewayTimeout,
                     Content = new ByteArrayContent(new byte[0]),
@@ -208,7 +208,7 @@
         public void ForbiddenFetchThrowsException()
         {
             var http = new TestHttpClient(
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     StatusCode = HttpStatusCode.Forbidden,
                     Content = new ByteArrayContent(new byte[0]),
@@ -221,7 +221,7 @@
         public async Task ForbiddenFetchReturnErroneousFetchTest()
         {
             var http = new TestHttpClient(
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     StatusCode = HttpStatusCode.Forbidden,
                     Content = new ByteArrayContent(new byte[0]),
@@ -239,7 +239,7 @@
         public async Task SetCookieHeaderTest()
         {
             var http = new TestHttpClient(
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Headers =
                     {
@@ -247,7 +247,7 @@
                     },
                     Content = new ByteArrayContent(new byte[0]),
                 },
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Content = new ByteArrayContent(new byte[0]),
                 });
@@ -271,7 +271,7 @@
         public async Task SameCookiesDifferentDomainsKeptInConfiguration()
         {
             var http = new TestHttpClient(
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Headers =
                     {
@@ -279,7 +279,7 @@
                     },
                     Content = new ByteArrayContent(new byte[0]),
                 },
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Headers =
                     {
@@ -307,7 +307,7 @@
         public async Task CookiesKeptInSubdomainWhenSpecified()
         {
             var http = new TestHttpClient(
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Headers =
                     {
@@ -315,7 +315,7 @@
                     },
                     Content = new ByteArrayContent(new byte[0]),
                 },
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Content = new ByteArrayContent(new byte[0]),
                 });
@@ -336,7 +336,7 @@
         public async Task WithHeaderGetRequestSetHeaderTest()
         {
             var http = new TestHttpClient(HttpConfig.Default.WithHeader("name1","value1"),
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Content = new ByteArrayContent(new byte[0]),
                 });
@@ -357,7 +357,7 @@
         public async Task GetRequestsSetSameHeaderTest()
         {
             var http = new TestHttpClient(HttpConfig.Default.WithHeader("foo", "bar"),
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Content = new ByteArrayContent(new byte[0]),
                 });
@@ -376,11 +376,11 @@
         public async Task ChainedGetRequests()
         {
             var http = new TestHttpClient(HttpConfig.Default,
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Content = new ByteArrayContent(new byte[0]),
                 },
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Content = new ByteArrayContent(new byte[0]),
                 });
@@ -402,11 +402,11 @@
         public async Task ChainedRequestsWithDifferentHeaders()
         {
             var http = new TestHttpClient(
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Content = new ByteArrayContent(new byte[0]),
                 },
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Content = new ByteArrayContent(new byte[0]),
                 });
@@ -434,11 +434,11 @@
         public async Task SeparateRequestsWithDifferentHeaders()
         {
             var http = new TestHttpClient(
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Content = new ByteArrayContent(new byte[0]),
                 },
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Content = new ByteArrayContent(new byte[0]),
                 });
@@ -464,7 +464,7 @@
         public async Task GetRequestWithHeaderTest()
         {
             var http = new TestHttpClient(HttpConfig.Default.WithHeader("foo", "bar"),
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Content = new ByteArrayContent(new byte[0]),
                 });
@@ -482,7 +482,7 @@
         public async Task GetRequestWithUserAgentTest()
         {
             var http = new TestHttpClient(HttpConfig.Default.WithUserAgent("Spider/1.0"),
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Content = new ByteArrayContent(new byte[0]),
                 });
@@ -500,7 +500,7 @@
         {
             var credentials = new NetworkCredential("admin", "admin");
             var http = new TestHttpClient(HttpConfig.Default.WithCredentials(credentials),
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Content = new ByteArrayContent(new byte[0]),
                 });
@@ -517,7 +517,7 @@
         public async Task GetRequestWithTimeout()
         {
             var http = new TestHttpClient(HttpConfig.Default.WithTimeout(new TimeSpan(0,1,0)),
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Content = new ByteArrayContent(new byte[0]),
                 });
@@ -534,7 +534,7 @@
         public async Task GetRequestWithCookies()
         {
             var http = new TestHttpClient(HttpConfig.Default.WithCookies(new[] { new Cookie("name", "value") }),
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Content = new ByteArrayContent(new byte[0]),
                 });
@@ -551,11 +551,11 @@
         public async Task ChainedGetRequestsWithCookie()
         {
             var http = new TestHttpClient(HttpConfig.Default.WithCookies(new[] { new Cookie("name", "value") }),
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Content = new ByteArrayContent(new byte[0]),
                 },
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Content = new ByteArrayContent(new byte[0]),
                 });
@@ -578,12 +578,12 @@
         public async Task PostRequestTest()
         {
             var http = new TestHttpClient(
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Content = new ByteArrayContent(new byte[0]),
                 });
 
-            var data = new NameValueCollection() { ["name"] = "value" };
+            var data = new NameValueCollection { ["name"] = "value" };
 
             var result = await http.Post(new Uri("https://www.example.com"), data);
             var request = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
@@ -599,12 +599,12 @@
         public async Task PostRequestWithCookie()
         {
             var http = new TestHttpClient(HttpConfig.Default.WithCookies(new[] { new Cookie("name", "value") }),
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Content = new ByteArrayContent(new byte[0]),
                 });
 
-            var data = new NameValueCollection() { ["name"] = "value" };
+            var data = new NameValueCollection { ["name"] = "value" };
 
             var result = await http.Post(new Uri("https://www.example.com"), data);
             var request = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
@@ -621,12 +621,12 @@
         public async Task PostRequestWith2NameValuePairs()
         {
             var http = new TestHttpClient(
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Content = new ByteArrayContent(new byte[0]),
                 });
 
-            var data = new NameValueCollection()
+            var data = new NameValueCollection
             {
                 ["name1"] = "value1",
                 ["name2"] = "value2",
@@ -647,12 +647,12 @@
         public async Task PostRequestWithAmpersandInNameValuePair()
         {
             var http = new TestHttpClient(
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Content = new ByteArrayContent(new byte[0]),
                 });
 
-            var data = new NameValueCollection() { ["foo&bar"] = "baz" };
+            var data = new NameValueCollection { ["foo&bar"] = "baz" };
 
             var result = await http.Post(new Uri("https://www.example.com"), data);
             var request = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
@@ -670,7 +670,7 @@
         {
             var action = "/action_page.php";
             var http = new TestHttpClient(
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Content = new StringContent("<!DOCTYPE html>" +
                                                  "<html>" +
@@ -683,7 +683,7 @@
                                                  "</body>" +
                                                  "</html>", Encoding.UTF8, "text/html"),
                 },
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Content = new ByteArrayContent(new byte[0]),
                 });
@@ -706,7 +706,7 @@
         {
             var action = "/action_page.php";
             var http = new TestHttpClient(
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Content = new StringContent("<!DOCTYPE html>" +
                                                  "<html>" +
@@ -719,11 +719,11 @@
                                                  "</body>" +
                                                  "</html>", Encoding.UTF8, "text/html"),
                 },
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Content = new ByteArrayContent(new byte[0]),
                 });
-            var data = new NameValueCollection()
+            var data = new NameValueCollection
             {
                 ["firstname"] = "Mickey",
                 ["lastname"] = "Mouse"
@@ -746,7 +746,7 @@
         {
             var action = "/action_page.php";
             var http = new TestHttpClient(
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Content = new StringContent("<!DOCTYPE html>" +
                                                  "<html>" +
@@ -764,7 +764,7 @@
                                                  "</body>" +
                                                  "</html>", Encoding.UTF8, "text/html"),
                 },
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Content = new ByteArrayContent(new byte[0]),
                 });
@@ -788,7 +788,7 @@
         {
             var action = "/action_page.php";
             var http = new TestHttpClient(
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Content = new StringContent("<!DOCTYPE html>" +
                                                  "<html>" +
@@ -806,7 +806,7 @@
                                                  "</body>" +
                                                  "</html>", Encoding.UTF8, "text/html"),
                 },
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Content = new ByteArrayContent(new byte[0]),
                 });
@@ -832,7 +832,7 @@
         {
             var action = "/action_page.php";
             var http = new TestHttpClient(
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Content = new StringContent("<!DOCTYPE html>" +
                                                  "<html>" +
@@ -845,11 +845,11 @@
                                                  "</body>" +
                                                  "</html>", Encoding.UTF8, "text/html"),
                 },
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Content = new ByteArrayContent(new byte[0]),
                 });
-            var data = new NameValueCollection()
+            var data = new NameValueCollection
             {
                 ["firstname"] = "Mickey",
                 ["lastname"] = "Mouse"
@@ -889,7 +889,7 @@
                                                  "</body>" +
                                                  "</html>";
             var http = new TestHttpClient(
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Content = new ByteArrayContent(new byte[0]),
                 });
@@ -922,11 +922,11 @@
                                                  "</body>" +
                                                  "</html>";
             var http = new TestHttpClient(
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Content = new ByteArrayContent(new byte[0]),
                 });
-            var data = new NameValueCollection()
+            var data = new NameValueCollection
             {
                 ["firstname"] = "Mickey",
                 ["lastname"] = "Mouse"
@@ -958,11 +958,11 @@
                        "</html>";
 
             var http = new TestHttpClient(
-                new HttpResponseMessage()
+                new HttpResponseMessage
                 {
                     Content = new ByteArrayContent(new byte[0]),
                 });
-            var data = new NameValueCollection()
+            var data = new NameValueCollection
             {
                 ["firstname"] = "Mickey",
                 ["lastname"] = "Mouse"

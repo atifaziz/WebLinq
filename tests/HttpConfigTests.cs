@@ -145,7 +145,7 @@ namespace WebLinq.Tests
                 Assert.That(config1.Headers, Is.EqualTo(config2.Headers));
 
             if (e != Configuration.Timeout)
-                Assert.That(config1.Timeout, Is.EqualTo((config2.Timeout)));
+                Assert.That(config1.Timeout, Is.EqualTo(config2.Timeout));
 
             if (e != Configuration.UseDefaultCredentials)
                 Assert.That(config1.UseDefaultCredentials, Is.EqualTo(config2.UseDefaultCredentials));
