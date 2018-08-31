@@ -60,6 +60,104 @@ namespace WebLinq.Tests
         }
 
         [Test]
+        [Test]
+        public async Task SetCookieHeaderTest()
+        {
+            var http = new TestHttpClient(
+                new HttpResponseMessage()
+                {
+                    Headers =
+                    {
+                        { "Set-Cookie", "foo=bar" }
+                    },
+                    Content = new ByteArrayContent(new byte[0]),
+                },
+                new HttpResponseMessage()
+                {
+                    Content = new ByteArrayContent(new byte[0]),
+                });
+
+            var result = await http.Get(new Uri("https://www.example.com"))
+                                   .Get(new Uri("https://www.example.com/page"));
+
+            var request1 = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
+            var request2 = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
+
+            Assert.That(request1.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com")));
+            Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/page")));
+            Assert.That(request2.Config.Cookies.Single().Name, Is.EqualTo("foo"));
+            Assert.That(request2.Config.Cookies.Single().Value, Is.EqualTo("bar"));
+        }
+
+
+        [Test]
+        public async Task SameCookiesDifferentDomainsKeptInConfiguration()
+        {
+            var http = new TestHttpClient(
+                new HttpResponseMessage()
+                {
+                    Headers =
+                    {
+                        { "Set-Cookie", "foo=bar" }
+                    },
+                    Content = new ByteArrayContent(new byte[0]),
+                },
+                new HttpResponseMessage()
+                {
+                    Headers =
+                    {
+                        { "Set-Cookie", "foo=bar" }
+                    },
+                    Content = new ByteArrayContent(new byte[0]),
+                });
+
+            var result = await http.Get(new Uri("https://www.example.com"))
+                                   .Get(new Uri("https://www.google.com"));
+            var request1 = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
+            var request2 = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
+
+            Assert.That(request1.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com")));
+            Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.google.com")));
+            Assert.That(((TestHttpClient)result.Client).Config.Cookies.Single(c => c.Domain.Equals("www.example.com")).Name, Is.EqualTo("foo"));
+            Assert.That(((TestHttpClient)result.Client).Config.Cookies.Single(c => c.Domain.Equals("www.example.com")).Value, Is.EqualTo("bar"));
+            Assert.That(((TestHttpClient)result.Client).Config.Cookies.Single(c => c.Domain.Equals("www.google.com")).Name, Is.EqualTo("foo"));
+            Assert.That(((TestHttpClient)result.Client).Config.Cookies.Single(c => c.Domain.Equals("www.google.com")).Value, Is.EqualTo("bar"));
+        }
+
+        [Test]
+        public async Task CookiesKeptInSubdomainWhenSpecified()
+        {
+            var http = new TestHttpClient(
+                new HttpResponseMessage()
+                {
+                    Headers =
+                    {
+                        { "Set-Cookie", "foo=bar;Domain=example.com" }
+                    },
+                    Content = new ByteArrayContent(new byte[0]),
+                },
+                new HttpResponseMessage()
+                {
+                    Content = new ByteArrayContent(new byte[0]),
+                });
+
+            var result = await http.Get(new Uri("https://www.example.com")).Get(new Uri("https://mail.example.com"));
+            var request1 = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
+            var request2 = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
+
+            Assert.That(request1.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com")));
+            Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://mail.example.com")));
+            Assert.That(request2.Config.Cookies.Single().Name, Is.EqualTo("foo"));
+            Assert.That(request2.Config.Cookies.Single().Value, Is.EqualTo("bar"));
+        }
+
+        [Test]
         public async Task WithHeaderGetRequestSetHeaderTest()
         {
             var http = new TestHttpClient(HttpConfig.Default.WithHeader("name1","value1"),
