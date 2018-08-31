@@ -123,9 +123,10 @@ namespace WebLinq.Tests
         [Test]
         public void WithCookies()
         {
-            var config = HttpConfig.Default.WithCookies(new[] { new Cookie("name", "value") });
+            var cookies = new[] { new Cookie("name", "value") };
+            var config = HttpConfig.Default.WithCookies(cookies);
 
-            Assert.That(config.Cookies, Is.EquivalentTo(new[] { new Cookie("name", "value") }));
+            Assert.That(config.Cookies, Is.SameAs(cookies));
             AssertConfigurationsEqual(config, HttpConfig.Default, ExceptMember.Cookies);
         }
 
