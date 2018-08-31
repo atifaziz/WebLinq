@@ -37,37 +37,25 @@ namespace WebLinq.Tests
         static void AssertConfigurationsExcept(HttpConfig config1, HttpConfig config2, Configuration e)
         {
             if (e != Configuration.Headers)
-            {
                 Assert.That(config1.Headers, Is.EqualTo(config2.Headers));
-            }
 
             if (e != Configuration.Timeout)
-            {
                 Assert.That(config1.Timeout, Is.EqualTo((config2.Timeout)));
-            }
 
             if (e != Configuration.UseDefaultCredentials)
-            {
                 Assert.That(config1.UseDefaultCredentials, Is.EqualTo(config2.UseDefaultCredentials));
-            }
 
             if (e != Configuration.Credentials)
-            {
                 Assert.That(config1.Credentials, Is.SameAs(config2.Credentials));
-            }
 
             if (e != Configuration.UserAgent)
                 Assert.That(config1.UserAgent, Is.EqualTo(config2.UserAgent));
 
             if (e != Configuration.Cookies)
-            {
                 Assert.That(config1.Cookies, Is.EqualTo(config2.Cookies));
-            }
 
             if (e != Configuration.IgnoreInvalidServerCertificate)
-            {
                 Assert.That(config1.IgnoreInvalidServerCertificate, Is.EqualTo(config2.IgnoreInvalidServerCertificate));
-            }
         }
 
         [Test]
