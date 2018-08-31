@@ -690,10 +690,9 @@
                 {
                     Content = new ByteArrayContent(new byte[0]),
                 });
-            NameValueCollection data = null;
 
             var result = await http.Get(new Uri("https://www.example.com"))
-                                   .Submit(0, data);
+                                   .Submit(0, null);
 
             var request1 = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
             var request2 = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
@@ -771,10 +770,9 @@
                 {
                     Content = new ByteArrayContent(new byte[0]),
                 });
-            NameValueCollection data = null;
 
             var result = await http.Get(new Uri("https://www.example.com"))
-                                   .Submit(0, data);
+                                   .Submit(0, null);
 
             var request1 = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
             var request2 = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
@@ -814,10 +812,8 @@
                     Content = new ByteArrayContent(new byte[0]),
                 });
 
-            NameValueCollection data = null;
-
             var result = await http.Get(new Uri("https://www.example.com"))
-                                   .Submit(0, data);
+                                   .Submit(0, null);
 
             var request1 = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
             var request2 = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
@@ -897,12 +893,10 @@
                     Content = new ByteArrayContent(new byte[0]),
                 });
 
-            NameValueCollection data = null;
-
             var result = await http.SubmitTo(new Uri("https://www.example.org"),
                 Html.HtmlParser.Default.Parse(html, new Uri("https://www.example.com")),
                 0,
-                data);
+                null);
             var request = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
 
             Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Get));
