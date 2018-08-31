@@ -108,7 +108,6 @@
 
             var result = await http.Get(new Uri("https://www.example.com"))
                                    .ReturnErrorneousFetch();
-            var request = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
 
             Assert.That(result.RequestUrl, Is.EqualTo(new Uri("https://www.example.com")));
             Assert.That(result.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
@@ -139,7 +138,6 @@
 
             var result = await http.Get(new Uri("https://www.example.com"))
                                    .ReturnErrorneousFetch();
-            var request = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
 
             Assert.That(result.RequestUrl, Is.EqualTo(new Uri("https://www.example.com")));
             Assert.That(result.StatusCode, Is.EqualTo(HttpStatusCode.NotImplemented));
@@ -170,7 +168,6 @@
 
             var result = await http.Get(new Uri("https://www.example.com"))
                                    .ReturnErrorneousFetch();
-            var request = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
 
             Assert.That(result.RequestUrl, Is.EqualTo(new Uri("https://www.example.com")));
             Assert.That(result.StatusCode, Is.EqualTo(HttpStatusCode.BadGateway));
@@ -201,7 +198,6 @@
 
             var result = await http.Get(new Uri("https://www.example.com"))
                                    .ReturnErrorneousFetch();
-            var request = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
 
             Assert.That(result.RequestUrl, Is.EqualTo(new Uri("https://www.example.com")));
             Assert.That(result.StatusCode, Is.EqualTo(HttpStatusCode.GatewayTimeout));
@@ -232,7 +228,6 @@
 
             var result = await http.Get(new Uri("https://www.example.com"))
                                    .ReturnErrorneousFetch();
-            var request = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
 
             Assert.That(result.RequestUrl, Is.EqualTo(new Uri("https://www.example.com")));
             Assert.That(result.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
