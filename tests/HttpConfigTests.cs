@@ -91,7 +91,7 @@ namespace WebLinq.Tests
         [Test]
         public void WithHeaderTest()
         {
-            HttpConfig config = HttpConfig.Default.WithHeader("name", "value");
+            var config = HttpConfig.Default.WithHeader("name", "value");
             Assert.That(config.Headers, Is.EqualTo(new HttpHeaderCollection().Set("name", "value")));
 
             AssertConfigurationsExcept(config, HttpConfig.Default, Configuration.Headers);
@@ -100,7 +100,7 @@ namespace WebLinq.Tests
         [Test]
         public void WithHeadersTest()
         {
-            HttpConfig config = HttpConfig.Default.WithHeaders(new HttpHeaderCollection().Set("name1", "value1")
+            var config = HttpConfig.Default.WithHeaders(new HttpHeaderCollection().Set("name1", "value1")
                                                                                          .Set("name2", "value2"));
             Assert.That(config.Headers, Is.EqualTo(new HttpHeaderCollection().Set("name1", "value1")
                                                                              .Set("name2", "value2")));
@@ -111,8 +111,8 @@ namespace WebLinq.Tests
         [Test]
         public void WithHeaderEqualsWithHeaders()
         {
-            HttpConfig config1 = HttpConfig.Default.WithHeader("name", "value");
-            HttpConfig config2 = HttpConfig.Default.WithHeaders(new HttpHeaderCollection().Set("name", "value"));
+            var config1 = HttpConfig.Default.WithHeader("name", "value");
+            var config2 = HttpConfig.Default.WithHeaders(new HttpHeaderCollection().Set("name", "value"));
             Assert.That(config1.Headers, Is.EqualTo(config2.Headers));
 
             AssertConfigurationsExcept(config1, config2, Configuration.Headers);
@@ -122,7 +122,7 @@ namespace WebLinq.Tests
         [Test]
         public void WithTimeoutTest()
         {
-            HttpConfig config = HttpConfig.Default.WithTimeout(new TimeSpan(0, 1, 0));
+            var config = HttpConfig.Default.WithTimeout(new TimeSpan(0, 1, 0));
             Assert.That(config.Timeout, Is.EqualTo(new TimeSpan(0, 1, 0)));
 
             AssertConfigurationsExcept(config, HttpConfig.Default, Configuration.Timeout);
@@ -131,7 +131,7 @@ namespace WebLinq.Tests
         [Test]
         public void WithUserAgentTest()
         {
-            HttpConfig config = HttpConfig.Default.WithUserAgent("Spider/1.0");
+            var config = HttpConfig.Default.WithUserAgent("Spider/1.0");
             Assert.That(config.UserAgent, Is.EqualTo("Spider/1.0"));
 
             AssertConfigurationsExcept(config, HttpConfig.Default, Configuration.UserAgent);
@@ -141,7 +141,7 @@ namespace WebLinq.Tests
         public void WithCredentialsTest()
         {
             var credentials = new NetworkCredential("admin", "admin");
-            HttpConfig config = HttpConfig.Default.WithCredentials(credentials);
+            var config = HttpConfig.Default.WithCredentials(credentials);
             Assert.That(config.Credentials, Is.SameAs(credentials));
 
             AssertConfigurationsExcept(config, HttpConfig.Default, Configuration.Credentials);
@@ -150,7 +150,7 @@ namespace WebLinq.Tests
         [Test]
         public void WithUseDefaultCredentialsTest()
         {
-            HttpConfig config = HttpConfig.Default.WithUseDefaultCredentials(true);
+            var config = HttpConfig.Default.WithUseDefaultCredentials(true);
             Assert.That(config.UseDefaultCredentials, Is.EqualTo(true));
             Assert.That(config.Credentials, Is.EqualTo(HttpConfig.Default.Credentials));
 
@@ -160,7 +160,7 @@ namespace WebLinq.Tests
         [Test]
         public void WithCookiesTest()
         {
-            HttpConfig config = HttpConfig.Default.WithCookies(new[] { new Cookie("name", "value") });
+            var config = HttpConfig.Default.WithCookies(new[] { new Cookie("name", "value") });
             Assert.That(config.Cookies, Is.EquivalentTo(new[] { new Cookie("name", "value") }));
 
             AssertConfigurationsExcept(config, HttpConfig.Default, Configuration.Cookies);
@@ -169,7 +169,7 @@ namespace WebLinq.Tests
         [Test]
         public void IgnoreInvalidServerCertificateTest()
         {
-            HttpConfig config = HttpConfig.Default.WithIgnoreInvalidServerCertificate(true);
+            var config = HttpConfig.Default.WithIgnoreInvalidServerCertificate(true);
             Assert.That(config.IgnoreInvalidServerCertificate, Is.True);
 
             AssertConfigurationsExcept(config, HttpConfig.Default, Configuration.IgnoreInvalidServerCertificate);
