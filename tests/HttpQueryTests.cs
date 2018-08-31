@@ -19,7 +19,6 @@ namespace WebLinq.Tests
 {
     public class HttpQueryTests
     {
-
         [Test]
         public async Task GetRequestTest()
         {
@@ -394,6 +393,42 @@ namespace WebLinq.Tests
         }
 
         [Test]
+        public async Task SubmitNoFormNoInputTest()
+        {
+            var action = "/action_page.php";
+            var http = new TestHttpClient(
+                new HttpResponseMessage()
+                {
+                    Content = new StringContent("<!DOCTYPE html>" +
+                                                 "<html>" +
+                                                 "<body>" +
+                                                 "<h2> HTML Forms </h2>" +
+                                                 "<form action=\"" + action + "\">" +
+                                                 "  <br><br>" +
+                                                 "  <input type=\"submit\" value=\"Submit\" >" +
+                                                 "</form>" +
+                                                 "</body>" +
+                                                 "</html>", Encoding.UTF8, "text/html"),
+                },
+                new HttpResponseMessage()
+                {
+                    Content = new ByteArrayContent(new byte[0]),
+                });
+            NameValueCollection data = null;
+
+            var result = await http.Get(new Uri("https://www.example.com"))
+                                   .Submit(0, data);
+
+            var request1 = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
+            var request2 = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
+
+            Assert.That(request1.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com")));
+            Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com" + action)));
+        }
+
+        [Test]
         public async Task SubmitDefaultMethodIsGetTest()
         {
             var action = "/action_page.php";
@@ -405,11 +440,6 @@ namespace WebLinq.Tests
                                                  "<body>" +
                                                  "<h2> HTML Forms </h2>" +
                                                  "<form action=\"" + action + "\">" +
-                                                 "  First name:<br>" +
-                                                 "  <input type=\"text\" name=\"firstname\" value=\"Mickey\" >" +
-                                                 "  <br >" +
-                                                 "  Last name:<br>" +
-                                                 "  <input type=\"text\" name=\"lastname\" value=\"Mouse\" >" +
                                                  "  <br><br>" +
                                                  "  <input type=\"submit\" value=\"Submit\" >" +
                                                  "</form>" +
@@ -438,9 +468,50 @@ namespace WebLinq.Tests
             Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com" + action + "?firstname=Mickey&lastname=Mouse")));
         }
 
+        [Test]
+        public async Task SubmitInputTest()
+        {
+            var action = "/action_page.php";
+            var http = new TestHttpClient(
+                new HttpResponseMessage()
+                {
+                    Content = new StringContent("<!DOCTYPE html>" +
+                                                 "<html>" +
+                                                 "<body>" +
+                                                 "<h2> HTML Forms </h2>" +
+                                                 "<form action=\"" + action + "\">" +
+                                                 "  First name:<br>" +
+                                                 "  <input type=\"text\" name=\"firstname\" value=\"Mickey\" >" +
+                                                 "  <br >" +
+                                                 "  Last name:<br>" +
+                                                 "  <input type=\"text\" name=\"lastname\" value=\"Mouse\" >" +
+                                                 "  <br><br>" +
+                                                 "  <input type=\"submit\" value=\"Submit\" >" +
+                                                 "</form>" +
+                                                 "</body>" +
+                                                 "</html>", Encoding.UTF8, "text/html"),
+                },
+                new HttpResponseMessage()
+                {
+                    Content = new ByteArrayContent(new byte[0]),
+                });
+            NameValueCollection data = null;
+
+            var result = await http.Get(new Uri("https://www.example.com"))
+                                   .Submit(0, data);
+
+            var request1 = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
+            var request2 = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
+
+            Assert.That(request1.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com")));
+            Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com" + action + "?firstname=Mickey&lastname=Mouse")));
+        }
+
 
         [Test]
-        public async Task SubmitPostTest()
+        public async Task SubmitInputPostTest()
         {
             var action = "/action_page.php";
             var http = new TestHttpClient(
@@ -456,6 +527,45 @@ namespace WebLinq.Tests
                                                  "  <br >" +
                                                  "  Last name:<br>" +
                                                  "  <input type=\"text\" name=\"lastname\" value=\"Mouse\" >" +
+                                                 "  <br><br>" +
+                                                 "  <input type=\"submit\" value=\"Submit\" >" +
+                                                 "</form>" +
+                                                 "</body>" +
+                                                 "</html>", Encoding.UTF8, "text/html"),
+                },
+                new HttpResponseMessage()
+                {
+                    Content = new ByteArrayContent(new byte[0]),
+                });
+
+            NameValueCollection data = null;
+
+            var result = await http.Get(new Uri("https://www.example.com"))
+                                   .Submit(0, data);
+
+            var request1 = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
+            var request2 = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
+
+            Assert.That(request1.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com")));
+            Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Post));
+            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com" + action)));
+            Assert.That(await request2.Message.Content.ReadAsStringAsync(), Is.EqualTo("firstname=Mickey&lastname=Mouse"));
+            Assert.That(request2.Message.Content.Headers.GetValues("Content-Type").Single(), Is.EqualTo("application/x-www-form-urlencoded"));
+        }
+
+        [Test]
+        public async Task SubmitPostTest()
+        {
+            var action = "/action_page.php";
+            var http = new TestHttpClient(
+                new HttpResponseMessage()
+                {
+                    Content = new StringContent("<!DOCTYPE html>" +
+                                                 "<html>" +
+                                                 "<body>" +
+                                                 "<h2> HTML Forms </h2>" +
+                                                 "<form method='post' action=\"" + action + "\">" +
                                                  "  <br><br>" +
                                                  "  <input type=\"submit\" value=\"Submit\" >" +
                                                  "</form>" +
@@ -483,10 +593,11 @@ namespace WebLinq.Tests
             Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Post));
             Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com" + action)));
             Assert.That(await request2.Message.Content.ReadAsStringAsync(), Is.EqualTo("firstname=Mickey&lastname=Mouse"));
+            Assert.That(request2.Message.Content.Headers.GetValues("Content-Type").Single(), Is.EqualTo("application/x-www-form-urlencoded"));
         }
 
         [Test]
-        public async Task SubmitToTest()
+        public async Task SubmitToInputTest()
         {
             var action = "/action_page.php";
             var html = "<!DOCTYPE html>" +
@@ -499,6 +610,39 @@ namespace WebLinq.Tests
                                                  "  <br >" +
                                                  "  Last name:<br>" +
                                                  "  <input type=\"text\" name=\"lastname\" value=\"Mouse\" >" +
+                                                 "  <br><br>" +
+                                                 "  <input type=\"submit\" value=\"Submit\" >" +
+                                                 "</form>" +
+                                                 "</body>" +
+                                                 "</html>";
+            var http = new TestHttpClient(
+                new HttpResponseMessage()
+                {
+                    Content = new ByteArrayContent(new byte[0]),
+                });
+
+            NameValueCollection data = null;
+
+            var result = await http.SubmitTo(new Uri("https://www.example.org"),
+                Html.HtmlParser.Default.Parse(html, new Uri("https://www.example.com")),
+                0,
+                data);
+            var request = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
+
+            Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.org" + "?firstname=Mickey&lastname=Mouse")));
+            Assert.That(request.Message.Headers, Is.Empty);
+        }
+
+        [Test]
+        public async Task SubmitToNoInputTest()
+        {
+            var action = "/action_page.php";
+            var html = "<!DOCTYPE html>" +
+                                                 "<html>" +
+                                                 "<body>" +
+                                                 "<h2> HTML Forms </h2>" +
+                                                 "<form action=\"" + action + "\">" +
                                                  "  <br><br>" +
                                                  "  <input type=\"submit\" value=\"Submit\" >" +
                                                  "</form>" +
@@ -534,11 +678,6 @@ namespace WebLinq.Tests
                        "<body>" +
                        "<h2> HTML Forms </h2>" +
                        "<form method='post' action=\"" + action + "\">" +
-                       "  First name:<br>" +
-                       "  <input type=\"text\" name=\"firstname\" value=\"Mickey\" >" +
-                       "  <br >" +
-                       "  Last name:<br>" +
-                       "  <input type=\"text\" name=\"lastname\" value=\"Mouse\" >" +
                        "  <br><br>" +
                        "  <input type=\"submit\" value=\"Submit\" >" +
                        "</form>" +
@@ -565,6 +704,7 @@ namespace WebLinq.Tests
             Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.org")));
             Assert.That(request.Message.Content.Headers.GetValues("Content-Type").Single(), Is.EqualTo("application/x-www-form-urlencoded"));
             Assert.That(await request.Message.Content.ReadAsStringAsync(), Is.EqualTo("firstname=Mickey&lastname=Mouse"));
+            Assert.That(request.Message.Content.Headers.GetValues("Content-Type").Single(), Is.EqualTo("application/x-www-form-urlencoded"));
         }
     }
 
