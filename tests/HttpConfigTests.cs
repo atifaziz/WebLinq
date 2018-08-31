@@ -83,7 +83,7 @@ namespace WebLinq.Tests
         }
 
         [Test]
-        public void WithTimeoutTest()
+        public void WithTimeout()
         {
             var config = HttpConfig.Default.WithTimeout(new TimeSpan(0, 1, 0));
             Assert.That(config.Timeout, Is.EqualTo(new TimeSpan(0, 1, 0)));
@@ -92,7 +92,7 @@ namespace WebLinq.Tests
         }
 
         [Test]
-        public void WithUserAgentTest()
+        public void WithUserAgent()
         {
             var config = HttpConfig.Default.WithUserAgent("Spider/1.0");
             Assert.That(config.UserAgent, Is.EqualTo("Spider/1.0"));
@@ -101,7 +101,7 @@ namespace WebLinq.Tests
         }
 
         [Test]
-        public void WithCredentialsTest()
+        public void WithCredentials()
         {
             var credentials = new NetworkCredential("admin", "admin");
             var config = HttpConfig.Default.WithCredentials(credentials);
@@ -111,7 +111,7 @@ namespace WebLinq.Tests
         }
 
         [Test]
-        public void WithUseDefaultCredentialsTest()
+        public void WithUseDefaultCredentials()
         {
             var config = HttpConfig.Default.WithUseDefaultCredentials(true);
             Assert.That(config.UseDefaultCredentials, Is.True);
@@ -121,7 +121,7 @@ namespace WebLinq.Tests
         }
 
         [Test]
-        public void WithCookiesTest()
+        public void WithCookies()
         {
             var config = HttpConfig.Default.WithCookies(new[] { new Cookie("name", "value") });
             Assert.That(config.Cookies, Is.EquivalentTo(new[] { new Cookie("name", "value") }));
@@ -130,7 +130,7 @@ namespace WebLinq.Tests
         }
 
         [Test]
-        public void IgnoreInvalidServerCertificateTest()
+        public void WithIgnoreInvalidServerCertificate()
         {
             var config = HttpConfig.Default.WithIgnoreInvalidServerCertificate(true);
             Assert.That(config.IgnoreInvalidServerCertificate, Is.True);
