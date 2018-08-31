@@ -18,15 +18,7 @@ namespace WebLinq.Tests
 {
     using NUnit.Framework;
     using System;
-    using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Collections.Specialized;
-    using System.Linq;
     using System.Net;
-    using System.Net.Http.Headers;
-    using System.Text;
-    using System.Threading.Tasks;
-    using static Modules.HttpModule;
 
     [TestFixture]
     public class HttpConfigTests

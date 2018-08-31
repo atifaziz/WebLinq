@@ -5,13 +5,8 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using System.Reactive;
-using System.Reactive.Concurrency;
-using System.Reactive.PlatformServices;
 using System.Reactive.Linq;
-using System.Reactive.Threading;
 using System.Collections.Specialized;
-using Mannex.Collections.Generic;
 using System.Net;
 using static WebLinq.Modules.HttpModule;
 
