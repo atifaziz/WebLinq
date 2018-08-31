@@ -30,9 +30,9 @@ namespace WebLinq.Tests
         }
 
         [Test]
-        public void DefaultConfigHasNoCookies()
+        public void DefaultConfigCookiesIsNull()
         {
-            Assert.That(HttpConfig.Default.Cookies, Is.Empty);
+            Assert.That(HttpConfig.Default.Cookies, Is.Null);
         }
 
         [Test]
