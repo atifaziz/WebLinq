@@ -66,6 +66,7 @@
     <Compile Include="Extensions.cs" />
     <Compile Include="HttpConfigTests.cs" />
     <Compile Include="HttpQueryTests.cs" />
+    <Compile Include="TestHttpClient.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
