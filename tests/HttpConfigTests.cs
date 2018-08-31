@@ -47,7 +47,7 @@ namespace WebLinq.Tests
             var config = HttpConfig.Default.WithHeader("name", "value");
             Assert.That(config.Headers, Is.EqualTo(new HttpHeaderCollection().Set("name", "value")));
 
-            AssertConfigurationsExcept(config, HttpConfig.Default, Configuration.Headers);
+            AssertConfigurationsEqual(config, HttpConfig.Default, ExceptMember.Headers);
         }
 
         [Test]
@@ -58,7 +58,7 @@ namespace WebLinq.Tests
             Assert.That(config.Headers, Is.EqualTo(new HttpHeaderCollection().Set("name1", "value1")
                                                                              .Set("name2", "value2")));
 
-            AssertConfigurationsExcept(config, HttpConfig.Default, Configuration.Headers);
+            AssertConfigurationsEqual(config, HttpConfig.Default, ExceptMember.Headers);
         }
 
         [Test]
@@ -68,8 +68,8 @@ namespace WebLinq.Tests
             var config2 = HttpConfig.Default.WithHeaders(new HttpHeaderCollection().Set("name", "value"));
             Assert.That(config1.Headers, Is.EqualTo(config2.Headers));
 
-            AssertConfigurationsExcept(config1, config2, Configuration.Headers);
-            AssertConfigurationsExcept(config1, HttpConfig.Default, Configuration.Headers);
+            AssertConfigurationsEqual(config1, config2, ExceptMember.Headers);
+            AssertConfigurationsEqual(config1, HttpConfig.Default, ExceptMember.Headers);
         }
 
         [Test]
@@ -78,7 +78,7 @@ namespace WebLinq.Tests
             var config = HttpConfig.Default.WithTimeout(new TimeSpan(0, 1, 0));
             Assert.That(config.Timeout, Is.EqualTo(new TimeSpan(0, 1, 0)));
 
-            AssertConfigurationsExcept(config, HttpConfig.Default, Configuration.Timeout);
+            AssertConfigurationsEqual(config, HttpConfig.Default, ExceptMember.Timeout);
         }
 
         [Test]
@@ -87,7 +87,7 @@ namespace WebLinq.Tests
             var config = HttpConfig.Default.WithUserAgent("Spider/1.0");
             Assert.That(config.UserAgent, Is.EqualTo("Spider/1.0"));
 
-            AssertConfigurationsExcept(config, HttpConfig.Default, Configuration.UserAgent);
+            AssertConfigurationsEqual(config, HttpConfig.Default, ExceptMember.UserAgent);
         }
 
         [Test]
@@ -97,7 +97,7 @@ namespace WebLinq.Tests
             var config = HttpConfig.Default.WithCredentials(credentials);
             Assert.That(config.Credentials, Is.SameAs(credentials));
 
-            AssertConfigurationsExcept(config, HttpConfig.Default, Configuration.Credentials);
+            AssertConfigurationsEqual(config, HttpConfig.Default, ExceptMember.Credentials);
         }
 
         [Test]
@@ -107,7 +107,7 @@ namespace WebLinq.Tests
             Assert.That(config.UseDefaultCredentials, Is.EqualTo(true));
             Assert.That(config.Credentials, Is.EqualTo(HttpConfig.Default.Credentials));
 
-            AssertConfigurationsExcept(config, HttpConfig.Default, Configuration.UseDefaultCredentials);
+            AssertConfigurationsEqual(config, HttpConfig.Default, ExceptMember.UseDefaultCredentials);
         }
 
         [Test]
@@ -116,7 +116,7 @@ namespace WebLinq.Tests
             var config = HttpConfig.Default.WithCookies(new[] { new Cookie("name", "value") });
             Assert.That(config.Cookies, Is.EquivalentTo(new[] { new Cookie("name", "value") }));
 
-            AssertConfigurationsExcept(config, HttpConfig.Default, Configuration.Cookies);
+            AssertConfigurationsEqual(config, HttpConfig.Default, ExceptMember.Cookies);
         }
 
         [Test]
@@ -125,10 +125,10 @@ namespace WebLinq.Tests
             var config = HttpConfig.Default.WithIgnoreInvalidServerCertificate(true);
             Assert.That(config.IgnoreInvalidServerCertificate, Is.True);
 
-            AssertConfigurationsExcept(config, HttpConfig.Default, Configuration.IgnoreInvalidServerCertificate);
+            AssertConfigurationsEqual(config, HttpConfig.Default, ExceptMember.IgnoreInvalidServerCertificate);
         }
 
-        enum Configuration
+        enum ExceptMember
         {
             Headers,
             Timeout,
@@ -139,28 +139,28 @@ namespace WebLinq.Tests
             IgnoreInvalidServerCertificate,
         }
 
-        static void AssertConfigurationsExcept(HttpConfig config1, HttpConfig config2, Configuration e)
+        static void AssertConfigurationsEqual(HttpConfig actual, HttpConfig expected, ExceptMember e)
         {
-            if (e != Configuration.Headers)
-                Assert.That(config1.Headers, Is.EqualTo(config2.Headers));
+            if (e != ExceptMember.Headers)
+                Assert.That(actual.Headers, Is.EqualTo(expected.Headers));
 
-            if (e != Configuration.Timeout)
-                Assert.That(config1.Timeout, Is.EqualTo(config2.Timeout));
+            if (e != ExceptMember.Timeout)
+                Assert.That(actual.Timeout, Is.EqualTo(expected.Timeout));
 
-            if (e != Configuration.UseDefaultCredentials)
-                Assert.That(config1.UseDefaultCredentials, Is.EqualTo(config2.UseDefaultCredentials));
+            if (e != ExceptMember.UseDefaultCredentials)
+                Assert.That(actual.UseDefaultCredentials, Is.EqualTo(expected.UseDefaultCredentials));
 
-            if (e != Configuration.Credentials)
-                Assert.That(config1.Credentials, Is.SameAs(config2.Credentials));
+            if (e != ExceptMember.Credentials)
+                Assert.That(actual.Credentials, Is.SameAs(expected.Credentials));
 
-            if (e != Configuration.UserAgent)
-                Assert.That(config1.UserAgent, Is.EqualTo(config2.UserAgent));
+            if (e != ExceptMember.UserAgent)
+                Assert.That(actual.UserAgent, Is.EqualTo(expected.UserAgent));
 
-            if (e != Configuration.Cookies)
-                Assert.That(config1.Cookies, Is.SameAs(config2.Cookies));
+            if (e != ExceptMember.Cookies)
+                Assert.That(actual.Cookies, Is.SameAs(expected.Cookies));
 
-            if (e != Configuration.IgnoreInvalidServerCertificate)
-                Assert.That(config1.IgnoreInvalidServerCertificate, Is.EqualTo(config2.IgnoreInvalidServerCertificate));
+            if (e != ExceptMember.IgnoreInvalidServerCertificate)
+                Assert.That(actual.IgnoreInvalidServerCertificate, Is.EqualTo(expected.IgnoreInvalidServerCertificate));
         }
     }
 }
