@@ -59,8 +59,6 @@ namespace WebLinq.Tests
             var result = await http.Get(new Uri("https://www.example.com"));
             var request = ((TestHttpClient)result.Client).DequeueRequestMessage();
 
-            Console.WriteLine(request.Content);
-
             Assert.That(request.Method, Is.EqualTo(HttpMethod.Get));
             Assert.That(request.RequestUri, Is.EqualTo(new Uri("https://www.example.com")));
             Assert.That(request.Headers, Is.Empty);
