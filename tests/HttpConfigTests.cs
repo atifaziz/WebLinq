@@ -86,8 +86,8 @@ namespace WebLinq.Tests
         public void WithTimeout()
         {
             var config = HttpConfig.Default.WithTimeout(new TimeSpan(0, 1, 0));
-            Assert.That(config.Timeout, Is.EqualTo(new TimeSpan(0, 1, 0)));
 
+            Assert.That(config.Timeout, Is.EqualTo(new TimeSpan(0, 1, 0)));
             AssertConfigurationsEqual(config, HttpConfig.Default, ExceptMember.Timeout);
         }
 
@@ -95,8 +95,8 @@ namespace WebLinq.Tests
         public void WithUserAgent()
         {
             var config = HttpConfig.Default.WithUserAgent("Spider/1.0");
-            Assert.That(config.UserAgent, Is.EqualTo("Spider/1.0"));
 
+            Assert.That(config.UserAgent, Is.EqualTo("Spider/1.0"));
             AssertConfigurationsEqual(config, HttpConfig.Default, ExceptMember.UserAgent);
         }
 
@@ -105,8 +105,8 @@ namespace WebLinq.Tests
         {
             var credentials = new NetworkCredential("admin", "admin");
             var config = HttpConfig.Default.WithCredentials(credentials);
-            Assert.That(config.Credentials, Is.SameAs(credentials));
 
+            Assert.That(config.Credentials, Is.SameAs(credentials));
             AssertConfigurationsEqual(config, HttpConfig.Default, ExceptMember.Credentials);
         }
 
@@ -114,9 +114,9 @@ namespace WebLinq.Tests
         public void WithUseDefaultCredentials()
         {
             var config = HttpConfig.Default.WithUseDefaultCredentials(true);
+
             Assert.That(config.UseDefaultCredentials, Is.True);
             Assert.That(config.Credentials, Is.EqualTo(HttpConfig.Default.Credentials));
-
             AssertConfigurationsEqual(config, HttpConfig.Default, ExceptMember.UseDefaultCredentials);
         }
 
@@ -124,8 +124,8 @@ namespace WebLinq.Tests
         public void WithCookies()
         {
             var config = HttpConfig.Default.WithCookies(new[] { new Cookie("name", "value") });
-            Assert.That(config.Cookies, Is.EquivalentTo(new[] { new Cookie("name", "value") }));
 
+            Assert.That(config.Cookies, Is.EquivalentTo(new[] { new Cookie("name", "value") }));
             AssertConfigurationsEqual(config, HttpConfig.Default, ExceptMember.Cookies);
         }
 
@@ -133,8 +133,8 @@ namespace WebLinq.Tests
         public void WithIgnoreInvalidServerCertificate()
         {
             var config = HttpConfig.Default.WithIgnoreInvalidServerCertificate(true);
-            Assert.That(config.IgnoreInvalidServerCertificate, Is.True);
 
+            Assert.That(config.IgnoreInvalidServerCertificate, Is.True);
             AssertConfigurationsEqual(config, HttpConfig.Default, ExceptMember.IgnoreInvalidServerCertificate);
         }
 
