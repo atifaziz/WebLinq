@@ -157,7 +157,7 @@ namespace WebLinq.Tests
                 Assert.That(config1.UserAgent, Is.EqualTo(config2.UserAgent));
 
             if (e != Configuration.Cookies)
-                Assert.That(config1.Cookies, Is.EqualTo(config2.Cookies));
+                Assert.That(config1.Cookies, Is.SameAs(config2.Cookies));
 
             if (e != Configuration.IgnoreInvalidServerCertificate)
                 Assert.That(config1.IgnoreInvalidServerCertificate, Is.EqualTo(config2.IgnoreInvalidServerCertificate));
