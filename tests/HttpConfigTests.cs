@@ -34,7 +34,7 @@ namespace WebLinq.Tests
             IgnoreInvalidServerCertificate,
         }
 
-        void AssertConfigurationsExcept(HttpConfig config1, HttpConfig config2, Configuration e)
+        static void AssertConfigurationsExcept(HttpConfig config1, HttpConfig config2, Configuration e)
         {
             if (e != Configuration.Headers)
             {
