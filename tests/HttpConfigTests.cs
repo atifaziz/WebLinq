@@ -18,13 +18,15 @@ namespace WebLinq.Tests
 {
     using NUnit.Framework;
     using System;
+    using System.Linq;
     using System.Net;
+    using MoreLinq;
 
     [TestFixture]
     public class HttpConfigTests
     {
         [Test]
-        public void DefaultConfigHasNoHeaders()
+        public void DefaultConfigHeadersIsEmpty()
         {
             Assert.That(HttpConfig.Default.Headers, Is.Empty);
         }
@@ -42,34 +44,42 @@ namespace WebLinq.Tests
         }
 
         [Test]
-        public void WithHeaderTest()
+        public void WithHeader()
         {
-            var config = HttpConfig.Default.WithHeader("name", "value");
-            Assert.That(config.Headers, Is.EqualTo(new HttpHeaderCollection().Set("name", "value")));
+            var config = HttpConfig.Default
+                                   .WithHeader("name1", "value1")
+                                   .WithHeader("name2", "value2")
+                                   .WithHeader("name3", "value3");
+
+            var entry = config.Headers.Fold((e1, e2, e3) => new
+            {
+                First = e3, Second = e2, Third = e1,
+            });
+
+            Assert.That(entry.First.Key, Is.EqualTo("name1"));
+            Assert.That(entry.First.Value.Single(), Is.EqualTo("value1"));
+
+            Assert.That(entry.Second.Key, Is.EqualTo("name2"));
+            Assert.That(entry.Second.Value.Single(), Is.EqualTo("value2"));
+
+            Assert.That(entry.Third.Key, Is.EqualTo("name3"));
+            Assert.That(entry.Third.Value.Single(), Is.EqualTo("value3"));
 
             AssertConfigurationsEqual(config, HttpConfig.Default, ExceptMember.Headers);
         }
 
         [Test]
-        public void WithHeadersTest()
+        public void WithHeaders()
         {
-            var config = HttpConfig.Default.WithHeaders(new HttpHeaderCollection().Set("name1", "value1")
-                                                                                         .Set("name2", "value2"));
-            Assert.That(config.Headers, Is.EqualTo(new HttpHeaderCollection().Set("name1", "value1")
-                                                                             .Set("name2", "value2")));
+            var headers = HttpHeaderCollection.Empty
+                                              .Set("name1", "value1")
+                                              .Set("name2", "value2")
+                                              .Set("name3", "value3");
 
+            var config = HttpConfig.Default.WithHeaders(headers);
+
+            Assert.That(config.Headers, Is.SameAs(headers));
             AssertConfigurationsEqual(config, HttpConfig.Default, ExceptMember.Headers);
-        }
-
-        [Test]
-        public void WithHeaderEqualsWithHeaders()
-        {
-            var config1 = HttpConfig.Default.WithHeader("name", "value");
-            var config2 = HttpConfig.Default.WithHeaders(new HttpHeaderCollection().Set("name", "value"));
-            Assert.That(config1.Headers, Is.EqualTo(config2.Headers));
-
-            AssertConfigurationsEqual(config1, config2, ExceptMember.Headers);
-            AssertConfigurationsEqual(config1, HttpConfig.Default, ExceptMember.Headers);
         }
 
         [Test]
