@@ -28,7 +28,6 @@ namespace WebLinq.Tests
     using System.Threading.Tasks;
     using static Modules.HttpModule;
 
-    
     [TestFixture]
     public class HttpConfigTests
     {
@@ -71,7 +70,7 @@ namespace WebLinq.Tests
             if (e != Configuration.Cookies)
             {
                 Assert.That(config1.Cookies, Is.EqualTo(config2.Cookies));
-            }   
+            }
 
             if (e != Configuration.IgnoreInvalidServerCertificate)
             {
@@ -108,7 +107,7 @@ namespace WebLinq.Tests
 
         [Test]
         public void WithHeadersTest()
-        {            
+        {
             HttpConfig config = HttpConfig.Default.WithHeaders(new HttpHeaderCollection().Set("name1", "value1")
                                                                                          .Set("name2", "value2"));
             Assert.That(config.Headers, Is.EqualTo(new HttpHeaderCollection().Set("name1", "value1")

@@ -529,7 +529,7 @@ namespace WebLinq.Tests
 
             var result = await http.Get(new Uri("https://www.example.com"));
             var request = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
-        
+
             Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Get));
             Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com")));
             Assert.That(request.Config.Timeout, Is.EqualTo(new TimeSpan(0,1,0)));
@@ -589,7 +589,7 @@ namespace WebLinq.Tests
                 });
 
             var data = new NameValueCollection() { ["name"] = "value" };
-            
+
             var result = await http.Post(new Uri("https://www.example.com"), data);
             var request = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
 
@@ -936,8 +936,8 @@ namespace WebLinq.Tests
                 ["firstname"] = "Mickey",
                 ["lastname"] = "Mouse"
             };
-            var result = await http.SubmitTo(new Uri("https://www.example.org"), 
-                Html.HtmlParser.Default.Parse(html, new Uri("https://www.example.com")), 
+            var result = await http.SubmitTo(new Uri("https://www.example.org"),
+                Html.HtmlParser.Default.Parse(html, new Uri("https://www.example.com")),
                 0,
                 data);
             var request = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
@@ -973,7 +973,7 @@ namespace WebLinq.Tests
                 ["lastname"] = "Mouse"
             };
             var result = await http.SubmitTo(new Uri("https://www.example.org"),
-                Html.HtmlParser.Default.Parse(html, new Uri("https://www.example.com")), 
+                Html.HtmlParser.Default.Parse(html, new Uri("https://www.example.com")),
                 0,
                 data);
             var request = ((TestHttpClient)result.Client).DequeueRequest((m, c) => new { Message = m, Config = c });
