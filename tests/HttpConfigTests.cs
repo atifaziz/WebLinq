@@ -114,7 +114,7 @@ namespace WebLinq.Tests
         public void WithUseDefaultCredentialsTest()
         {
             var config = HttpConfig.Default.WithUseDefaultCredentials(true);
-            Assert.That(config.UseDefaultCredentials, Is.EqualTo(true));
+            Assert.That(config.UseDefaultCredentials, Is.True);
             Assert.That(config.Credentials, Is.EqualTo(HttpConfig.Default.Credentials));
 
             AssertConfigurationsEqual(config, HttpConfig.Default, ExceptMember.UseDefaultCredentials);
