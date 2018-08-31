@@ -9,6 +9,7 @@
     using System.Reactive.Linq;
     using System.Collections.Specialized;
     using System.Net;
+    using System.Reactive.Threading.Tasks;
     using NUnit.Framework;
     using static Modules.HttpModule;
 
@@ -31,7 +32,7 @@
         }
 
         [Test]
-        public async Task AcceptThrowsExceptionWithWrongType()
+        public void AcceptThrowsExceptionWithWrongType()
         {
             var http = new TestHttpClient(
                 new HttpResponseMessage
@@ -39,7 +40,10 @@
                     Content = new StringContent("foo", Encoding.UTF8, "text/csv")
                 });
 
-            Assert.Throws<System.Exception>(() => http.Get(new Uri("https://www.example.com")).Accept("text/html").GetAwaiter().GetResult());
+            Assert.ThrowsAsync<Exception>(() =>
+                http.Get(new Uri("https://www.example.com"))
+                    .Accept("text/html")
+                    .ToTask());
         }
 
         [Test]
