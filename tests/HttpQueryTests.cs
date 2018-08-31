@@ -1,17 +1,17 @@
-﻿using NUnit.Framework;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
-using System.Reactive.Linq;
-using System.Collections.Specialized;
-using System.Net;
-using static WebLinq.Modules.HttpModule;
-
-namespace WebLinq.Tests
+﻿namespace WebLinq.Tests
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Net.Http;
+    using System.Text;
+    using System.Threading.Tasks;
+    using System.Reactive.Linq;
+    using System.Collections.Specialized;
+    using System.Net;
+    using NUnit.Framework;
+    using static Modules.HttpModule;
+
     public class HttpQueryTests
     {
         [Test]
