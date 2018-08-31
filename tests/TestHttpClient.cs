@@ -5,7 +5,7 @@
     using System.Net.Http;
     using System.Threading.Tasks;
 
-    public class TestHttpClient : IHttpClient
+    class TestHttpClient : IHttpClient
     {
         readonly Queue<HttpResponseMessage> _responses;
         readonly Queue<HttpRequestMessage> _requests;
