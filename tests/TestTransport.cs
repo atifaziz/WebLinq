@@ -2,7 +2,9 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Net;
     using System.Net.Http;
+    using System.Text;
     using System.Threading.Tasks;
     using Modules;
 
@@ -24,6 +26,40 @@
             Http = HttpModule.Http.WithConfig(config)
                                   .Wrap((_, req, cfg) => SendAsync(req, cfg));
         }
+
+        public TestTransport Enqueue(HttpResponseMessage response)
+        {
+            _responses.Enqueue(response);
+            return this;
+        }
+
+        public TestTransport EnqueueHtml(string html, HttpStatusCode statusCode = HttpStatusCode.OK) =>
+            Enqueue(new HttpResponseMessage
+            {
+                StatusCode = statusCode,
+                Content = new StringContent(html, Encoding.UTF8, "text/html")
+            });
+
+        public TestTransport EnqueueText(string text, HttpStatusCode statusCode = HttpStatusCode.OK) =>
+            Enqueue(new HttpResponseMessage
+            {
+                StatusCode = statusCode,
+                Content = new StringContent(text, Encoding.UTF8, "text/plain")
+            });
+
+        public TestTransport EnqueueJson(string json, HttpStatusCode statusCode = HttpStatusCode.OK) =>
+            Enqueue(new HttpResponseMessage
+            {
+                StatusCode = statusCode,
+                Content = new StringContent(json, Encoding.UTF8, "application/json")
+            });
+
+        public TestTransport Enqueue(byte[] bytes, HttpStatusCode statusCode = HttpStatusCode.OK) =>
+            Enqueue(new HttpResponseMessage
+            {
+                StatusCode = statusCode,
+                Content = new ByteArrayContent(bytes)
+            });
 
         public HttpRequestMessage DequeueRequestMessage() =>
             DequeueRequest((rm, _) => rm);

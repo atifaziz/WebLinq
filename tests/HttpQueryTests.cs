@@ -3,7 +3,6 @@
     using System;
     using System.Linq;
     using System.Net.Http;
-    using System.Text;
     using System.Threading.Tasks;
     using System.Reactive.Linq;
     using System.Collections.Specialized;
@@ -17,14 +16,10 @@
         [Test]
         public async Task AcceptSingleMediaType()
         {
-            var tt = new TestTransport(
-                new HttpResponseMessage
-                {
-                    Content = new StringContent(string.Empty, Encoding.UTF8, "text/plain")
-                });
+            var tt = new TestTransport().EnqueueText(string.Empty);
 
             await tt.Http.Get(new Uri("https://www.example.com"))
-                      .Accept("text/plain");
+                         .Accept("text/plain");
 
             // Succeeds if it doesn't throw.
         }
@@ -32,14 +27,10 @@
         [Test]
         public async Task AcceptMultipleMediaTypes()
         {
-            var tt = new TestTransport(
-                new HttpResponseMessage
-                {
-                    Content = new StringContent("{}", Encoding.UTF8, "application/json")
-                });
+            var tt = new TestTransport().EnqueueJson("{}");
 
             await tt.Http.Get(new Uri("https://www.example.com"))
-                      .Accept("text/json", "application/json");
+                         .Accept("text/json", "application/json");
 
             // Succeeds if it doesn't throw.
         }
@@ -47,11 +38,7 @@
         [Test]
         public void AcceptThrowsExceptionOnMediaTypeMismatch()
         {
-            var tt = new TestTransport(
-                new HttpResponseMessage
-                {
-                    Content = new StringContent("foo", Encoding.UTF8, "text/plain")
-                });
+            var tt = new TestTransport().EnqueueText("foo");
 
             Assert.ThrowsAsync<Exception>(() =>
                 tt.Http.Get(new Uri("https://www.example.com"))
@@ -62,11 +49,7 @@
         [Test]
         public async Task GetRequestTest()
         {
-            var tt = new TestTransport(
-                new HttpResponseMessage
-                {
-                    Content = new ByteArrayContent(new byte[0]),
-                });
+            var tt = new TestTransport().Enqueue(new byte[0]);
 
             await tt.Http.Get(new Uri("https://www.example.com"));
             var request = tt.DequeueRequestMessage();
@@ -79,10 +62,8 @@
         [Test]
         public async Task GetRequestSetHeaderTest()
         {
-            var tt = new TestTransport(HttpConfig.Default.WithHeaders(HttpHeaderCollection.Empty), new HttpResponseMessage
-            {
-                Content = new ByteArrayContent(new byte[0]),
-            });
+            var tt = new TestTransport(HttpConfig.Default.WithHeaders(HttpHeaderCollection.Empty));
+            tt.Enqueue(new byte[0]);
 
             await tt.Http.SetHeader("foo", "bar").Get(new Uri("https://www.example.com"));
             var request = tt.DequeueRequest((m, c) => new { Message = m, c.Headers });
@@ -98,12 +79,7 @@
         [Test]
         public void NotFoundFetchThrowsException()
         {
-            var tt = new TestTransport(
-                new HttpResponseMessage
-                {
-                    StatusCode = HttpStatusCode.NotFound,
-                    Content = new ByteArrayContent(new byte[0]),
-                });
+            var tt = new TestTransport().Enqueue(new byte[0], HttpStatusCode.NotFound);
 
             Assert.ThrowsAsync<HttpRequestException>(() =>
                 tt.Http.Get(new Uri("https://www.example.com")).ToTask());
@@ -112,12 +88,7 @@
         [Test]
         public async Task NotFoundFetchReturnErroneousFetchTest()
         {
-            var tt = new TestTransport(
-                new HttpResponseMessage
-                {
-                    StatusCode = HttpStatusCode.NotFound,
-                    Content = new ByteArrayContent(new byte[0]),
-                });
+            var tt = new TestTransport().Enqueue(new byte[0], HttpStatusCode.NotFound);
 
             var result = await tt.Http.Get(new Uri("https://www.example.com"))
                                    .ReturnErrorneousFetch();
@@ -129,12 +100,7 @@
         [Test]
         public void NotImplementedErroneousFetchThrowsException()
         {
-            var tt = new TestTransport(
-                new HttpResponseMessage
-                {
-                    StatusCode = HttpStatusCode.NotImplemented,
-                    Content = new ByteArrayContent(new byte[0]),
-                });
+            var tt = new TestTransport().Enqueue(new byte[0], HttpStatusCode.NotImplemented);
 
             Assert.ThrowsAsync<HttpRequestException>(() =>
                 tt.Http.Get(new Uri("https://www.example.com")).ToTask());
@@ -143,12 +109,7 @@
         [Test]
         public async Task NotImplementedFetchReturnErroneousFetchTest()
         {
-            var tt = new TestTransport(
-                new HttpResponseMessage
-                {
-                    StatusCode = HttpStatusCode.NotImplemented,
-                    Content = new ByteArrayContent(new byte[0]),
-                });
+            var tt = new TestTransport().Enqueue(new byte[0], HttpStatusCode.NotImplemented);
 
             var result = await tt.Http.Get(new Uri("https://www.example.com"))
                                    .ReturnErrorneousFetch();
@@ -160,12 +121,7 @@
         [Test]
         public void BadGatewayFetchThrowsException()
         {
-            var tt = new TestTransport(
-                new HttpResponseMessage
-                {
-                    StatusCode = HttpStatusCode.BadGateway,
-                    Content = new ByteArrayContent(new byte[0]),
-                });
+            var tt = new TestTransport().Enqueue(new byte[0], HttpStatusCode.BadGateway);
 
             Assert.ThrowsAsync<HttpRequestException>(() =>
                 tt.Http.Get(new Uri("https://www.example.com")).ToTask());
@@ -174,12 +130,7 @@
         [Test]
         public async Task BadGatewayFetchReturnErroneousFetchTest()
         {
-            var tt = new TestTransport(
-                new HttpResponseMessage
-                {
-                    StatusCode = HttpStatusCode.BadGateway,
-                    Content = new ByteArrayContent(new byte[0]),
-                });
+            var tt = new TestTransport().Enqueue(new byte[0], HttpStatusCode.BadGateway);
 
             var result = await tt.Http.Get(new Uri("https://www.example.com"))
                                    .ReturnErrorneousFetch();
@@ -191,12 +142,7 @@
         [Test]
         public void GatewayTimeoutFetchThrowsException()
         {
-            var tt = new TestTransport(
-                new HttpResponseMessage
-                {
-                    StatusCode = HttpStatusCode.GatewayTimeout,
-                    Content = new ByteArrayContent(new byte[0]),
-                });
+            var tt = new TestTransport().Enqueue(new byte[0], HttpStatusCode.GatewayTimeout);
 
             Assert.ThrowsAsync<HttpRequestException>(() =>
                 tt.Http.Get(new Uri("https://www.example.com")).ToTask());
@@ -205,12 +151,7 @@
         [Test]
         public async Task GatewayTimeoutFetchReturnErroneousFetchTest()
         {
-            var tt = new TestTransport(
-                new HttpResponseMessage
-                {
-                    StatusCode = HttpStatusCode.GatewayTimeout,
-                    Content = new ByteArrayContent(new byte[0]),
-                });
+            var tt = new TestTransport().Enqueue(new byte[0], HttpStatusCode.GatewayTimeout);
 
             var result = await tt.Http.Get(new Uri("https://www.example.com"))
                                    .ReturnErrorneousFetch();
@@ -222,12 +163,7 @@
         [Test]
         public void ForbiddenFetchThrowsException()
         {
-            var tt = new TestTransport(
-                new HttpResponseMessage
-                {
-                    StatusCode = HttpStatusCode.Forbidden,
-                    Content = new ByteArrayContent(new byte[0]),
-                });
+            var tt = new TestTransport().Enqueue(new byte[0], HttpStatusCode.Forbidden);
 
             Assert.ThrowsAsync<HttpRequestException>(() =>
                 tt.Http.Get(new Uri("https://www.example.com")).ToTask());
@@ -236,12 +172,7 @@
         [Test]
         public async Task ForbiddenFetchReturnErroneousFetchTest()
         {
-            var tt = new TestTransport(
-                new HttpResponseMessage
-                {
-                    StatusCode = HttpStatusCode.Forbidden,
-                    Content = new ByteArrayContent(new byte[0]),
-                });
+            var tt = new TestTransport().Enqueue(new byte[0], HttpStatusCode.Forbidden);
 
             var result = await tt.Http.Get(new Uri("https://www.example.com"))
                                    .ReturnErrorneousFetch();
@@ -253,17 +184,16 @@
         [Test]
         public async Task SetCookieHeaderTest()
         {
-            var tt = new TestTransport(new HttpResponseMessage
-            {
-                Content = new ByteArrayContent(new byte[0]),
-            }, new HttpResponseMessage
-            {
-                Headers =
+            var tt = new TestTransport()
+                .Enqueue(new byte[0])
+                .Enqueue(new HttpResponseMessage
                 {
-                    { "Set-Cookie", "foo=bar" }
-                },
-                Content = new ByteArrayContent(new byte[0]),
-            });
+                    Headers =
+                    {
+                        { "Set-Cookie", "foo=bar" }
+                    },
+                    Content = new ByteArrayContent(new byte[0]),
+                });
 
             var result = await tt.Http.Get(new Uri("https://www.example.com"))
                                    .Get(new Uri("https://www.example.com/page"));
@@ -319,12 +249,9 @@
         [Test]
         public async Task CookiesKeptInSubdomainWhenSpecified()
         {
-            var tt = new TestTransport(
-                new HttpResponseMessage
-                {
-                    Content = new ByteArrayContent(new byte[0]),
-                },
-                new HttpResponseMessage
+            var tt = new TestTransport()
+                .Enqueue(new byte[0])
+                .Enqueue(new HttpResponseMessage
                 {
                     Headers =
                     {
@@ -351,11 +278,8 @@
         [Test]
         public async Task WithHeaderGetRequestSetHeaderTest()
         {
-            var tt = new TestTransport(HttpConfig.Default.WithHeader("name1","value1"),
-                new HttpResponseMessage
-                {
-                    Content = new ByteArrayContent(new byte[0]),
-                });
+            var tt = new TestTransport(HttpConfig.Default.WithHeader("name1", "value1"))
+                .Enqueue(new byte[0]);
 
             await tt.Http.SetHeader("name2", "value2").Get(new Uri("https://www.example.com"));
             var request = tt.DequeueRequest((m, c) => new { Message = m, c.Headers });
@@ -372,11 +296,8 @@
         [Test]
         public async Task GetRequestsSetSameHeaderTest()
         {
-            var tt = new TestTransport(HttpConfig.Default.WithHeader("foo", "bar"),
-                new HttpResponseMessage
-                {
-                    Content = new ByteArrayContent(new byte[0]),
-                });
+            var tt = new TestTransport(HttpConfig.Default.WithHeader("foo", "bar"))
+                .Enqueue(new byte[0]);
 
             await tt.Http.SetHeader("foo", "bar").Get(new Uri("https://www.example.com"));
             var request = tt.DequeueRequest((m, c) => new { Message = m, c.Headers });
@@ -391,15 +312,9 @@
         [Test]
         public async Task ChainedGetRequests()
         {
-            var tt = new TestTransport(HttpConfig.Default,
-                new HttpResponseMessage
-                {
-                    Content = new ByteArrayContent(new byte[0]),
-                },
-                new HttpResponseMessage
-                {
-                    Content = new ByteArrayContent(new byte[0]),
-                });
+            var tt = new TestTransport()
+                .Enqueue(new byte[0])
+                .Enqueue(new byte[0]);
 
             await tt.Http.Get(new Uri("https://www.example.com"))
                          .Get(new Uri("https://www.example.com/page"));
@@ -417,13 +332,9 @@
         [Test, Ignore("https://github.com/weblinq/WebLinq/issues/18")]
         public async Task ChainedRequestsWithDifferentHeaders()
         {
-            var tt = new TestTransport(new HttpResponseMessage
-            {
-                Content = new ByteArrayContent(new byte[0]),
-            }, new HttpResponseMessage
-            {
-                Content = new ByteArrayContent(new byte[0]),
-            });
+            var tt = new TestTransport()
+                .Enqueue(new byte[0])
+                .Enqueue(new byte[0]);
 
             await tt.Http.SetHeader("h1", "v1")
                          .Get(new Uri("https://www.example.com"))
@@ -447,13 +358,9 @@
         [Test]
         public async Task SeparateRequestsWithDifferentHeaders()
         {
-            var tt = new TestTransport(new HttpResponseMessage
-            {
-                Content = new ByteArrayContent(new byte[0]),
-            }, new HttpResponseMessage
-            {
-                Content = new ByteArrayContent(new byte[0]),
-            });
+            var tt = new TestTransport()
+                .Enqueue(new byte[0])
+                .Enqueue(new byte[0]);
 
             await tt.Http.SetHeader("h1", "v1").Get(new Uri("https://www.example.com"));
             await tt.Http.SetHeader("h2", "v2").Get(new Uri("https://www.example.com/page"));
@@ -475,11 +382,9 @@
         [Test]
         public async Task GetRequestWithHeaderTest()
         {
-            var tt = new TestTransport(HttpConfig.Default.WithHeader("foo", "bar"),
-                new HttpResponseMessage
-                {
-                    Content = new ByteArrayContent(new byte[0]),
-                });
+            var tt = new TestTransport(HttpConfig.Default.WithHeader("foo", "bar"))
+                .Enqueue(new byte[0])
+                .Enqueue(new byte[0]);
 
             await tt.Http.Get(new Uri("https://www.example.com"));
             var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c});
@@ -493,11 +398,8 @@
         [Test]
         public async Task GetRequestWithUserAgentTest()
         {
-            var tt = new TestTransport(HttpConfig.Default.WithUserAgent("Spider/1.0"),
-                new HttpResponseMessage
-                {
-                    Content = new ByteArrayContent(new byte[0]),
-                });
+            var tt = new TestTransport(HttpConfig.Default.WithUserAgent("Spider/1.0"))
+                .Enqueue(new byte[0]);
 
             await tt.Http.Get(new Uri("https://www.example.com"));
             var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
@@ -511,11 +413,8 @@
         public async Task GetRequestWithCredentialsTest()
         {
             var credentials = new NetworkCredential("admin", "admin");
-            var tt = new TestTransport(HttpConfig.Default.WithCredentials(credentials),
-                new HttpResponseMessage
-                {
-                    Content = new ByteArrayContent(new byte[0])
-                });
+            var tt = new TestTransport(HttpConfig.Default.WithCredentials(credentials))
+                .Enqueue(new byte[0]);
 
             await tt.Http.Get(new Uri("https://www.example.com"));
             var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
@@ -528,11 +427,8 @@
         [Test]
         public async Task GetRequestWithTimeout()
         {
-            var tt = new TestTransport(HttpConfig.Default.WithTimeout(new TimeSpan(0, 1, 0)),
-                new HttpResponseMessage
-                {
-                    Content = new ByteArrayContent(new byte[0]),
-                });
+            var tt = new TestTransport(HttpConfig.Default.WithTimeout(new TimeSpan(0, 1, 0)))
+                .Enqueue(new byte[0]);
 
             await tt.Http.Get(new Uri("https://www.example.com"));
             var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
@@ -545,11 +441,8 @@
         [Test]
         public async Task GetRequestWithCookies()
         {
-            var tt = new TestTransport(HttpConfig.Default.WithCookies(new[] { new Cookie("name", "value") }),
-                new HttpResponseMessage
-                {
-                    Content = new ByteArrayContent(new byte[0]),
-                });
+            var tt = new TestTransport(HttpConfig.Default.WithCookies(new[] { new Cookie("name", "value") }))
+                .Enqueue(new byte[0]);
 
             await tt.Http.Get(new Uri("https://www.example.com"));
             var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
@@ -562,15 +455,9 @@
         [Test]
         public async Task ChainedGetRequestsWithCookie()
         {
-            var tt = new TestTransport(HttpConfig.Default.WithCookies(new[] { new Cookie("name", "value") }),
-                new HttpResponseMessage
-                {
-                    Content = new ByteArrayContent(new byte[0]),
-                },
-                new HttpResponseMessage
-                {
-                    Content = new ByteArrayContent(new byte[0]),
-                });
+            var tt = new TestTransport(HttpConfig.Default.WithCookies(new[] { new Cookie("name", "value") }))
+                .Enqueue(new byte[0])
+                .Enqueue(new byte[0]);
 
             await tt.Http.Get(new Uri("https://www.example.com"))
                          .Get(new Uri("https://www.example.com/page"));
@@ -589,11 +476,8 @@
         [Test]
         public async Task PostRequestTest()
         {
-            var tt = new TestTransport(
-                new HttpResponseMessage
-                {
-                    Content = new ByteArrayContent(new byte[0]),
-                });
+            var tt = new TestTransport()
+                .Enqueue(new byte[0]);
 
             var data = new NameValueCollection { ["name"] = "value" };
 
@@ -610,11 +494,8 @@
         [Test]
         public async Task PostRequestWithCookie()
         {
-            var tt = new TestTransport(HttpConfig.Default.WithCookies(new[] { new Cookie("name", "value") }),
-                new HttpResponseMessage
-                {
-                    Content = new ByteArrayContent(new byte[0]),
-                });
+            var tt = new TestTransport(HttpConfig.Default.WithCookies(new[] { new Cookie("name", "value") }))
+                .Enqueue(new byte[0]);
 
             var data = new NameValueCollection { ["name"] = "value" };
 
@@ -631,11 +512,7 @@
         [Test]
         public async Task PostRequestWith2NameValuePairs()
         {
-            var tt = new TestTransport(
-                new HttpResponseMessage
-                {
-                    Content = new ByteArrayContent(new byte[0]),
-                });
+            var tt = new TestTransport().Enqueue(new byte[0]);
 
             var data = new NameValueCollection
             {
@@ -656,11 +533,7 @@
         [Test]
         public async Task PostRequestWithAmpersandInNameValuePair()
         {
-            var tt = new TestTransport(
-                new HttpResponseMessage
-                {
-                    Content = new ByteArrayContent(new byte[0]),
-                });
+            var tt = new TestTransport().Enqueue(new byte[0]);
 
             var data = new NameValueCollection { ["foo&bar"] = "baz" };
 
@@ -678,24 +551,19 @@
         public async Task SubmitNoFormNoInputTest()
         {
             var action = "/action_page.php";
-            var tt = new TestTransport(
-                new HttpResponseMessage
-                {
-                    Content = new StringContent("<!DOCTYPE html>" +
-                                                "<html>" +
-                                                "<body>" +
-                                                "<h2> HTML Forms </h2>" +
-                                                "<form action=\"" + action + "\">" +
-                                                "  <br><br>" +
-                                                "  <input type=\"submit\" value=\"Submit\" >" +
-                                                "</form>" +
-                                                "</body>" +
-                                                "</html>", Encoding.UTF8, "text/html"),
-                },
-                new HttpResponseMessage
-                {
-                    Content = new ByteArrayContent(new byte[0]),
-                });
+            var tt = new TestTransport()
+                .EnqueueHtml(
+                    "<!DOCTYPE html>" +
+                    "<html>" +
+                    "<body>" +
+                    "<h2> HTML Forms </h2>" +
+                    "<form action=\"" + action + "\">" +
+                    "  <br><br>" +
+                    "  <input type=\"submit\" value=\"Submit\" >" +
+                    "</form>" +
+                    "</body>" +
+                    "</html>")
+                .Enqueue(new byte[0]);
 
             await tt.Http.Get(new Uri("https://www.example.com"))
                          .Submit(0, null);
@@ -713,24 +581,19 @@
         public async Task SubmitDefaultMethodIsGetTest()
         {
             var action = "/action_page.php";
-            var tt = new TestTransport(
-                new HttpResponseMessage
-                {
-                    Content = new StringContent("<!DOCTYPE html>" +
-                                                "<html>" +
-                                                "<body>" +
-                                                "<h2> HTML Forms </h2>" +
-                                                "<form action=\"" + action + "\">" +
-                                                "  <br><br>" +
-                                                "  <input type=\"submit\" value=\"Submit\" >" +
-                                                "</form>" +
-                                                "</body>" +
-                                                "</html>", Encoding.UTF8, "text/html"),
-                },
-                new HttpResponseMessage
-                {
-                    Content = new ByteArrayContent(new byte[0]),
-                });
+            var tt = new TestTransport()
+                .EnqueueHtml(
+                    "<!DOCTYPE html>" +
+                    "<html>" +
+                    "<body>" +
+                    "<h2> HTML Forms </h2>" +
+                    "<form action=\"" + action + "\">" +
+                    "  <br><br>" +
+                    "  <input type=\"submit\" value=\"Submit\" >" +
+                    "</form>" +
+                    "</body>" +
+                    "</html>")
+                .Enqueue(new byte[0]);
 
             var data = new NameValueCollection
             {
@@ -754,29 +617,24 @@
         public async Task SubmitInputTest()
         {
             var action = "/action_page.php";
-            var tt = new TestTransport(
-                new HttpResponseMessage
-                {
-                    Content = new StringContent("<!DOCTYPE html>" +
-                                                "<html>" +
-                                                "<body>" +
-                                                "<h2> HTML Forms </h2>" +
-                                                "<form action=\"" + action + "\">" +
-                                                "  First name:<br>" +
-                                                "  <input type=\"text\" name=\"firstname\" value=\"Mickey\" >" +
-                                                "  <br >" +
-                                                "  Last name:<br>" +
-                                                "  <input type=\"text\" name=\"lastname\" value=\"Mouse\" >" +
-                                                "  <br><br>" +
-                                                "  <input type=\"submit\" value=\"Submit\" >" +
-                                                "</form>" +
-                                                "</body>" +
-                                                "</html>", Encoding.UTF8, "text/html"),
-                },
-                new HttpResponseMessage
-                {
-                    Content = new ByteArrayContent(new byte[0]),
-                });
+            var tt = new TestTransport()
+                .EnqueueHtml(
+                    "<!DOCTYPE html>" +
+                    "<html>" +
+                    "<body>" +
+                    "<h2> HTML Forms </h2>" +
+                    "<form action=\"" + action + "\">" +
+                    "  First name:<br>" +
+                    "  <input type=\"text\" name=\"firstname\" value=\"Mickey\" >" +
+                    "  <br >" +
+                    "  Last name:<br>" +
+                    "  <input type=\"text\" name=\"lastname\" value=\"Mouse\" >" +
+                    "  <br><br>" +
+                    "  <input type=\"submit\" value=\"Submit\" >" +
+                    "</form>" +
+                    "</body>" +
+                    "</html>")
+                .Enqueue(new byte[0]);
 
             await tt.Http.Get(new Uri("https://www.example.com"))
                          .Submit(0, null);
@@ -795,29 +653,24 @@
         public async Task SubmitInputPostTest()
         {
             var action = "/action_page.php";
-            var tt = new TestTransport(
-                new HttpResponseMessage
-                {
-                    Content = new StringContent("<!DOCTYPE html>" +
-                                                "<html>" +
-                                                "<body>" +
-                                                "<h2> HTML Forms </h2>" +
-                                                "<form method='post' action=\"" + action + "\">" +
-                                                "  First name:<br>" +
-                                                "  <input type=\"text\" name=\"firstname\" value=\"Mickey\" >" +
-                                                "  <br >" +
-                                                "  Last name:<br>" +
-                                                "  <input type=\"text\" name=\"lastname\" value=\"Mouse\" >" +
-                                                "  <br><br>" +
-                                                "  <input type=\"submit\" value=\"Submit\" >" +
-                                                "</form>" +
-                                                "</body>" +
-                                                "</html>", Encoding.UTF8, "text/html"),
-                },
-                new HttpResponseMessage
-                {
-                    Content = new ByteArrayContent(new byte[0]),
-                });
+            var tt = new TestTransport()
+                .EnqueueHtml(
+                    "<!DOCTYPE html>" +
+                    "<html>" +
+                    "<body>" +
+                    "<h2> HTML Forms </h2>" +
+                    "<form method='post' action=\"" + action + "\">" +
+                    "  First name:<br>" +
+                    "  <input type=\"text\" name=\"firstname\" value=\"Mickey\" >" +
+                    "  <br >" +
+                    "  Last name:<br>" +
+                    "  <input type=\"text\" name=\"lastname\" value=\"Mouse\" >" +
+                    "  <br><br>" +
+                    "  <input type=\"submit\" value=\"Submit\" >" +
+                    "</form>" +
+                    "</body>" +
+                    "</html>")
+                .Enqueue(new byte[0]);
 
             await tt.Http.Get(new Uri("https://www.example.com"))
                          .Submit(0, null);
@@ -837,24 +690,19 @@
         public async Task SubmitPostTest()
         {
             var action = "/action_page.php";
-            var tt = new TestTransport(
-                new HttpResponseMessage
-                {
-                    Content = new StringContent("<!DOCTYPE html>" +
-                                                "<html>" +
-                                                "<body>" +
-                                                "<h2> HTML Forms </h2>" +
-                                                "<form method='post' action=\"" + action + "\">" +
-                                                "  <br><br>" +
-                                                "  <input type=\"submit\" value=\"Submit\" >" +
-                                                "</form>" +
-                                                "</body>" +
-                                                "</html>", Encoding.UTF8, "text/html"),
-                },
-                new HttpResponseMessage
-                {
-                    Content = new ByteArrayContent(new byte[0]),
-                });
+            var tt = new TestTransport()
+                .EnqueueHtml(
+                    "<!DOCTYPE html>" +
+                    "<html>" +
+                    "<body>" +
+                    "<h2> HTML Forms </h2>" +
+                    "<form method='post' action=\"" + action + "\">" +
+                    "  <br><br>" +
+                    "  <input type=\"submit\" value=\"Submit\" >" +
+                    "</form>" +
+                    "</body>" +
+                    "</html>")
+                .Enqueue(new byte[0]);
 
             var data = new NameValueCollection
             {
@@ -895,11 +743,8 @@
                                                  "</form>" +
                                                  "</body>" +
                                                  "</html>";
-            var tt = new TestTransport(
-                new HttpResponseMessage
-                {
-                    Content = new ByteArrayContent(new byte[0]),
-                });
+
+            var tt = new TestTransport().Enqueue(new byte[0]);
 
             await tt.Http.SubmitTo(new Uri("https://www.example.org"),
                                    Html.HtmlParser.Default.Parse(html, new Uri("https://www.example.com")),
@@ -925,11 +770,8 @@
                                                  "</form>" +
                                                  "</body>" +
                                                  "</html>";
-            var tt = new TestTransport(
-                new HttpResponseMessage
-                {
-                    Content = new ByteArrayContent(new byte[0]),
-                });
+            var tt = new TestTransport().Enqueue(new byte[0]);
+
             var data = new NameValueCollection
             {
                 ["firstname"] = "Mickey",
@@ -960,11 +802,8 @@
                        "</body>" +
                        "</html>";
 
-            var tt = new TestTransport(
-                new HttpResponseMessage
-                {
-                    Content = new ByteArrayContent(new byte[0]),
-                });
+            var tt = new TestTransport().Enqueue(new byte[0]);
+
             var data = new NameValueCollection
             {
                 ["firstname"] = "Mickey",
