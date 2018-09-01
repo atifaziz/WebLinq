@@ -1,0 +1,49 @@
+﻿namespace WebLinq.Tests
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Net.Http;
+    using System.Threading.Tasks;
+    using Modules;
+
+    sealed class TestTransport
+    {
+        readonly Queue<HttpResponseMessage> _responses;
+        readonly Queue<HttpRequestMessage> _requests;
+        readonly Queue<HttpConfig> _requestConfigs;
+
+        public TestTransport(params HttpResponseMessage[] responses) :
+            this(HttpConfig.Default, responses) {}
+
+        public TestTransport(HttpConfig config, params HttpResponseMessage[] responses)
+        {
+            _responses      = new Queue<HttpResponseMessage>(responses);
+            _requests       = new Queue<HttpRequestMessage>();
+            _requestConfigs = new Queue<HttpConfig>();
+
+            Http = HttpModule.Http.WithConfig(config)
+                                  .Wrap((_, req, cfg) => SendAsync(req, cfg));
+        }
+
+        public HttpRequestMessage DequeueRequestMessage() =>
+            DequeueRequest((rm, _) => rm);
+
+        public T DequeueRequest<T>(Func<HttpRequestMessage, HttpConfig, T> selector)
+        {
+            var config = _requestConfigs.Dequeue();
+            var request = _requests.Dequeue();
+            return selector(request, config);
+        }
+
+        public IHttpClient Http { get; }
+
+        Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpConfig config)
+        {
+            _requestConfigs.Enqueue(config);
+            _requests.Enqueue(request);
+            var response = _responses.Dequeue();
+            response.RequestMessage = request;
+            return Task.FromResult(response);
+        }
+    }
+}
