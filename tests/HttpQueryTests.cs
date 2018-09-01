@@ -105,7 +105,8 @@
                     Content = new ByteArrayContent(new byte[0]),
                 });
 
-            Assert.Throws<HttpRequestException>(() => tt.Http.Get(new Uri("https://www.example.com")).GetAwaiter().GetResult());
+            Assert.ThrowsAsync<HttpRequestException>(() =>
+                tt.Http.Get(new Uri("https://www.example.com")).ToTask());
         }
 
         [Test]
@@ -135,7 +136,8 @@
                     Content = new ByteArrayContent(new byte[0]),
                 });
 
-            Assert.Throws<HttpRequestException>(() => tt.Http.Get(new Uri("https://www.example.com")).GetAwaiter().GetResult());
+            Assert.ThrowsAsync<HttpRequestException>(() =>
+                tt.Http.Get(new Uri("https://www.example.com")).ToTask());
         }
 
         [Test]
@@ -165,7 +167,8 @@
                     Content = new ByteArrayContent(new byte[0]),
                 });
 
-            Assert.Throws<HttpRequestException>(() => tt.Http.Get(new Uri("https://www.example.com")).GetAwaiter().GetResult());
+            Assert.ThrowsAsync<HttpRequestException>(() =>
+                tt.Http.Get(new Uri("https://www.example.com")).ToTask());
         }
 
         [Test]
@@ -195,7 +198,8 @@
                     Content = new ByteArrayContent(new byte[0]),
                 });
 
-            Assert.Throws<HttpRequestException>(() => tt.Http.Get(new Uri("https://www.example.com")).GetAwaiter().GetResult());
+            Assert.ThrowsAsync<HttpRequestException>(() =>
+                tt.Http.Get(new Uri("https://www.example.com")).ToTask());
         }
 
         [Test]
@@ -225,7 +229,8 @@
                     Content = new ByteArrayContent(new byte[0]),
                 });
 
-            Assert.Throws<HttpRequestException>(() => tt.Http.Get(new Uri("https://www.example.com")).GetAwaiter().GetResult());
+            Assert.ThrowsAsync<HttpRequestException>(() =>
+                tt.Http.Get(new Uri("https://www.example.com")).ToTask());
         }
 
         [Test]
