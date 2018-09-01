@@ -74,7 +74,6 @@
             Assert.That(request.Method, Is.EqualTo(HttpMethod.Get));
             Assert.That(request.RequestUri, Is.EqualTo(new Uri("https://www.example.com")));
             Assert.That(request.Headers, Is.Empty);
-            Assert.That(request.Properties.Count, Is.Zero);
         }
 
         [Test]
@@ -625,7 +624,6 @@
             Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com")));
 
             Assert.That(request.Config.Headers, Is.Empty);
-            Assert.That(request.Message.Properties.Count, Is.Zero);
             Assert.That(await request.Message.Content.ReadAsStringAsync(), Is.EqualTo("name=value"));
         }
 
@@ -651,7 +649,6 @@
             Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com")));
 
             Assert.That(request.Config.Headers, Is.Empty);
-            Assert.That(request.Message.Properties.Count, Is.Zero);
             Assert.That(await request.Message.Content.ReadAsStringAsync(), Is.EqualTo("name1=value1&name2=value2"));
         }
 
@@ -673,7 +670,6 @@
             Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com")));
 
             Assert.That(request.Config.Headers, Is.Empty);
-            Assert.That(request.Message.Properties.Count, Is.Zero);
             Assert.That(await request.Message.Content.ReadAsStringAsync(), Is.EqualTo("foo%26bar=baz"));
         }
 
