@@ -15,28 +15,42 @@
     public class HttpQueryTests
     {
         [Test]
-        public async Task AcceptTest()
+        public async Task AcceptSingleMediaType()
         {
             var http = new TestHttpClient(
                 new HttpResponseMessage
                 {
-                    Content = new StringContent(string.Empty, Encoding.UTF8, "text/html")
+                    Content = new StringContent(string.Empty, Encoding.UTF8, "text/plain")
                 });
 
-            var result = await http.Get(new Uri("https://www.example.com")).Accept("text/html");
-            var request = ((TestHttpClient)result.Client).DequeueRequestMessage();
+            await http.Get(new Uri("https://www.example.com"))
+                      .Accept("text/plain");
 
-            Assert.That(request.Method, Is.EqualTo(HttpMethod.Get));
-            Assert.That(request.RequestUri, Is.EqualTo(new Uri("https://www.example.com")));
+            // Succeeds if it doesn't throw.
         }
 
         [Test]
-        public void AcceptThrowsExceptionWithWrongType()
+        public async Task AcceptMultipleMediaTypes()
         {
             var http = new TestHttpClient(
                 new HttpResponseMessage
                 {
-                    Content = new StringContent("foo", Encoding.UTF8, "text/csv")
+                    Content = new StringContent("{}", Encoding.UTF8, "application/json")
+                });
+
+            await http.Get(new Uri("https://www.example.com"))
+                      .Accept("text/json", "application/json");
+
+            // Succeeds if it doesn't throw.
+        }
+
+        [Test]
+        public void AcceptThrowsExceptionOnMediaTypeMismatch()
+        {
+            var http = new TestHttpClient(
+                new HttpResponseMessage
+                {
+                    Content = new StringContent("foo", Encoding.UTF8, "text/plain")
                 });
 
             Assert.ThrowsAsync<Exception>(() =>
