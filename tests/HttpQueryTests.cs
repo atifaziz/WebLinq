@@ -68,7 +68,7 @@
                     Content = new ByteArrayContent(new byte[0]),
                 });
 
-            var result = await tt.Http.Get(new Uri("https://www.example.com"));
+            await tt.Http.Get(new Uri("https://www.example.com"));
             var request = tt.DequeueRequestMessage();
 
             Assert.That(request.Method, Is.EqualTo(HttpMethod.Get));
@@ -84,7 +84,7 @@
                 Content = new ByteArrayContent(new byte[0]),
             });
 
-            var result = await tt.Http.SetHeader("foo", "bar").Get(new Uri("https://www.example.com"));
+            await tt.Http.SetHeader("foo", "bar").Get(new Uri("https://www.example.com"));
             var request = tt.DequeueRequest((m, c) => new { Message = m, c.Headers });
 
             Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Get));
@@ -352,7 +352,7 @@
                     Content = new ByteArrayContent(new byte[0]),
                 });
 
-            var result = await tt.Http.SetHeader("name2", "value2").Get(new Uri("https://www.example.com"));
+            await tt.Http.SetHeader("name2", "value2").Get(new Uri("https://www.example.com"));
             var request = tt.DequeueRequest((m, c) => new { Message = m, c.Headers });
 
             Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Get));
@@ -373,7 +373,7 @@
                     Content = new ByteArrayContent(new byte[0]),
                 });
 
-            var result = await tt.Http.SetHeader("foo", "bar").Get(new Uri("https://www.example.com"));
+            await tt.Http.SetHeader("foo", "bar").Get(new Uri("https://www.example.com"));
             var request = tt.DequeueRequest((m, c) => new { Message = m, c.Headers });
 
             Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Get));
@@ -396,8 +396,8 @@
                     Content = new ByteArrayContent(new byte[0]),
                 });
 
-            var result = await tt.Http.Get(new Uri("https://www.example.com"))
-                                   .Get(new Uri("https://www.example.com/page"));
+            await tt.Http.Get(new Uri("https://www.example.com"))
+                         .Get(new Uri("https://www.example.com/page"));
             var request1 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
             var request2 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
 
@@ -420,10 +420,10 @@
                 Content = new ByteArrayContent(new byte[0]),
             });
 
-            var result = await tt.Http.SetHeader("h1", "v1")
-                                   .Get(new Uri("https://www.example.com"))
-                                   .SetHeader("h2", "v2")
-                                   .Get(new Uri("https://www.example.com/page"));
+            await tt.Http.SetHeader("h1", "v1")
+                         .Get(new Uri("https://www.example.com"))
+                         .SetHeader("h2", "v2")
+                         .Get(new Uri("https://www.example.com/page"));
 
             var request1 = tt.DequeueRequest((m, c) => new { Message = m, c.Headers });
             var request2 = tt.DequeueRequest((m, c) => new { Message = m, c.Headers });
@@ -450,8 +450,8 @@
                 Content = new ByteArrayContent(new byte[0]),
             });
 
-            var result1 = await tt.Http.SetHeader("h1", "v1").Get(new Uri("https://www.example.com"));
-            var result2 = await tt.Http.SetHeader("h2", "v2").Get(new Uri("https://www.example.com/page"));
+            await tt.Http.SetHeader("h1", "v1").Get(new Uri("https://www.example.com"));
+            await tt.Http.SetHeader("h2", "v2").Get(new Uri("https://www.example.com/page"));
 
             var request1 = tt.DequeueRequest((m, c) => new { Message = m, c.Headers });
             var request2 = tt.DequeueRequest((m, c) => new { Message = m, c.Headers });
@@ -476,7 +476,7 @@
                     Content = new ByteArrayContent(new byte[0]),
                 });
 
-            var result = await tt.Http.Get(new Uri("https://www.example.com"));
+            await tt.Http.Get(new Uri("https://www.example.com"));
             var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c});
 
             Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Get));
@@ -494,7 +494,7 @@
                     Content = new ByteArrayContent(new byte[0]),
                 });
 
-            var result = await tt.Http.Get(new Uri("https://www.example.com"));
+            await tt.Http.Get(new Uri("https://www.example.com"));
             var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
 
             Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Get));
@@ -512,7 +512,7 @@
                     Content = new ByteArrayContent(new byte[0])
                 });
 
-            var result = await tt.Http.Get(new Uri("https://www.example.com"));
+            await tt.Http.Get(new Uri("https://www.example.com"));
             var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
 
             Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Get));
@@ -529,7 +529,7 @@
                     Content = new ByteArrayContent(new byte[0]),
                 });
 
-            var result = await tt.Http.Get(new Uri("https://www.example.com"));
+            await tt.Http.Get(new Uri("https://www.example.com"));
             var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
 
             Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Get));
@@ -546,7 +546,7 @@
                     Content = new ByteArrayContent(new byte[0]),
                 });
 
-            var result = await tt.Http.Get(new Uri("https://www.example.com"));
+            await tt.Http.Get(new Uri("https://www.example.com"));
             var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
 
             Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Get));
@@ -567,8 +567,8 @@
                     Content = new ByteArrayContent(new byte[0]),
                 });
 
-            var result = await tt.Http.Get(new Uri("https://www.example.com"))
-                                   .Get(new Uri("https://www.example.com/page"));
+            await tt.Http.Get(new Uri("https://www.example.com"))
+                         .Get(new Uri("https://www.example.com/page"));
 
             var request1 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
             var request2 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
@@ -592,7 +592,7 @@
 
             var data = new NameValueCollection { ["name"] = "value" };
 
-            var result = await tt.Http.Post(new Uri("https://www.example.com"), data);
+            await tt.Http.Post(new Uri("https://www.example.com"), data);
             var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
 
             Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Post));
@@ -613,7 +613,7 @@
 
             var data = new NameValueCollection { ["name"] = "value" };
 
-            var result = await tt.Http.Post(new Uri("https://www.example.com"), data);
+            await tt.Http.Post(new Uri("https://www.example.com"), data);
             var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
 
             Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Post));
@@ -638,7 +638,7 @@
                 ["name2"] = "value2",
             };
 
-            var result = await tt.Http.Post(new Uri("https://www.example.com"), data);
+            await tt.Http.Post(new Uri("https://www.example.com"), data);
             var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
 
             Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Post));
@@ -659,7 +659,7 @@
 
             var data = new NameValueCollection { ["foo&bar"] = "baz" };
 
-            var result = await tt.Http.Post(new Uri("https://www.example.com"), data);
+            await tt.Http.Post(new Uri("https://www.example.com"), data);
             var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
 
             Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Post));
@@ -692,8 +692,8 @@
                     Content = new ByteArrayContent(new byte[0]),
                 });
 
-            var result = await tt.Http.Get(new Uri("https://www.example.com"))
-                                   .Submit(0, null);
+            await tt.Http.Get(new Uri("https://www.example.com"))
+                         .Submit(0, null);
 
             var request1 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
             var request2 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
@@ -773,8 +773,8 @@
                     Content = new ByteArrayContent(new byte[0]),
                 });
 
-            var result = await tt.Http.Get(new Uri("https://www.example.com"))
-                                   .Submit(0, null);
+            await tt.Http.Get(new Uri("https://www.example.com"))
+                         .Submit(0, null);
 
             var request1 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
             var request2 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
@@ -814,8 +814,8 @@
                     Content = new ByteArrayContent(new byte[0]),
                 });
 
-            var result = await tt.Http.Get(new Uri("https://www.example.com"))
-                                   .Submit(0, null);
+            await tt.Http.Get(new Uri("https://www.example.com"))
+                         .Submit(0, null);
 
             var request1 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
             var request2 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
@@ -857,8 +857,8 @@
                 ["lastname"] = "Mouse"
             };
 
-            var result = await tt.Http.Get(new Uri("https://www.example.com"))
-                                   .Submit(0, data);
+            await tt.Http.Get(new Uri("https://www.example.com"))
+                         .Submit(0, data);
 
             var request1 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
             var request2 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
@@ -896,10 +896,9 @@
                     Content = new ByteArrayContent(new byte[0]),
                 });
 
-            var result = await tt.Http.SubmitTo(new Uri("https://www.example.org"),
-                Html.HtmlParser.Default.Parse(html, new Uri("https://www.example.com")),
-                0,
-                null);
+            await tt.Http.SubmitTo(new Uri("https://www.example.org"),
+                                   Html.HtmlParser.Default.Parse(html, new Uri("https://www.example.com")),
+                                   0, null);
             var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
 
             Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Get));
@@ -931,10 +930,9 @@
                 ["firstname"] = "Mickey",
                 ["lastname"] = "Mouse"
             };
-            var result = await tt.Http.SubmitTo(new Uri("https://www.example.org"),
-                Html.HtmlParser.Default.Parse(html, new Uri("https://www.example.com")),
-                0,
-                data);
+            await tt.Http.SubmitTo(new Uri("https://www.example.org"),
+                                   Html.HtmlParser.Default.Parse(html, new Uri("https://www.example.com")),
+                                   0, data);
             var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
 
             Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Get));
@@ -967,10 +965,9 @@
                 ["firstname"] = "Mickey",
                 ["lastname"] = "Mouse"
             };
-            var result = await tt.Http.SubmitTo(new Uri("https://www.example.org"),
-                Html.HtmlParser.Default.Parse(html, new Uri("https://www.example.com")),
-                0,
-                data);
+            await tt.Http.SubmitTo(new Uri("https://www.example.org"),
+                                   Html.HtmlParser.Default.Parse(html, new Uri("https://www.example.com")),
+                                   0, data);
             var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
 
             Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Post));
