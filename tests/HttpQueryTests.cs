@@ -302,7 +302,6 @@
         public async Task GetRequestWithHeaderTest()
         {
             var tt = new TestTransport(HttpConfig.Default.WithHeader("foo", "bar"))
-                .Enqueue(new byte[0])
                 .Enqueue(new byte[0]);
 
             await tt.Http.Get(new Uri("https://www.example.com/"));
