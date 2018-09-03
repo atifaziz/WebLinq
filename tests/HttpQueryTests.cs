@@ -550,7 +550,6 @@
                       <h2> HTML Forms </h2>
                       <form action='action_page.php'>
                         <br><br>
-                        <input type='submit' value='Submit' >
                     </form>
                     </body>
                     </html>")
@@ -579,7 +578,6 @@
                       <h2> HTML Forms </h2>
                       <form action='action_page.php'>
                         <br><br>
-                        <input type='submit' value='Submit' >
                     </form>
                     </body>
                     </html>")
@@ -685,7 +683,6 @@
                       <h2> HTML Forms </h2>
                       <form method='post' action='action_page.php'>
                         <br><br>
-                        <input type='submit' value='Submit' >
                       </form>
                     </body>
                     </html>")
@@ -753,7 +750,6 @@
                   <h2> HTML Forms </h2>
                   <form action='action_page.php'>
                     <br><br>
-                    <input type='submit' value='Submit' >
                 </form>
                 </body>
                 </html>";
@@ -784,7 +780,6 @@
                   <h2> HTML Forms </h2>
                   <form method='post' action='action_page.php'>
                     <br><br>
-                    <input type='submit' value='Submit' >
                 </form>
                 </body>
                 </html>";
