@@ -568,6 +568,43 @@
         }
 
         [Test]
+        public async Task SubmitPostNoDataTest()
+        {
+            var tt = new TestTransport()
+                .EnqueueHtml(@"
+                    <!DOCTYPE html>
+                    <html>
+                    <body>
+                      <h2> HTML Forms </h2>
+                      <form method='post' action='action_page.php'>
+                        <br><br>
+                    </form>
+                    </body>
+                    </html>")
+                .Enqueue(new byte[0]);
+
+            await tt.Http.Get(new Uri("https://www.example.com/"))
+                         .Submit(0, null);
+
+            var message1 = tt.DequeueRequestMessage();
+            var message2 = tt.DequeueRequestMessage();
+
+            Assert.That(message1.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(message1.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
+            Assert.That(message2.Method, Is.EqualTo(HttpMethod.Post));
+            Assert.That(message2.RequestUri, Is.EqualTo(new Uri("https://www.example.com/action_page.php")));
+        }
+
+        [Test]
+        public void PostNullDataTest()
+        {
+            var tt = new TestTransport()
+                .Enqueue(new byte[0]);
+
+            Assert.ThrowsAsync<NullReferenceException>(() => tt.Http.Post(new Uri("https://www.example.com/"), data:null).ToTask());
+        }
+
+        [Test]
         public async Task SubmitDefaultMethodIsGetTest()
         {
             var tt = new TestTransport()
