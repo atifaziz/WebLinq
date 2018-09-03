@@ -458,11 +458,11 @@
                 .Enqueue(new byte[0]);
             var data = new NameValueCollection { ["name"] = "value" };
 
-            var result = await tt.Http.Post(new Uri("https://www.example.com"), data);
+            await tt.Http.Post(new Uri("https://www.example.com/"), data);
             var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
 
             Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Post));
-            Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com")));
+            Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
             Assert.That(await request.Message.Content.ReadAsStringAsync(), Is.EqualTo("name=value"));
             Assert.That(request.Config.Credentials, Is.SameAs(credentials));
         }
