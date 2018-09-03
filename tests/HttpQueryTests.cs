@@ -76,109 +76,33 @@
             Assert.That(request.Headers.Single().Value.Single(), Is.EqualTo("bar"));
         }
 
-        [Test]
-        public void NotFoundFetchThrowsException()
+        [TestCase(HttpStatusCode.NotFound)]
+        [TestCase(HttpStatusCode.NotImplemented)]
+        [TestCase(HttpStatusCode.BadGateway)]
+        [TestCase(HttpStatusCode.GatewayTimeout)]
+        [TestCase(HttpStatusCode.Forbidden)]
+        public void NotFoundFetchThrowsException(HttpStatusCode statusCode)
         {
-            var tt = new TestTransport().Enqueue(new byte[0], HttpStatusCode.NotFound);
+            var tt = new TestTransport().Enqueue(new byte[0], statusCode);
 
             Assert.ThrowsAsync<HttpRequestException>(() =>
                 tt.Http.Get(new Uri("https://www.example.com/")).ToTask());
         }
 
-        [Test]
-        public async Task NotFoundFetchReturnErroneousFetchTest()
+        [TestCase(HttpStatusCode.NotFound)]
+        [TestCase(HttpStatusCode.NotImplemented)]
+        [TestCase(HttpStatusCode.BadGateway)]
+        [TestCase(HttpStatusCode.GatewayTimeout)]
+        [TestCase(HttpStatusCode.Forbidden)]
+        public async Task NotFoundFetchReturnErroneousFetchTest(HttpStatusCode statusCode)
         {
-            var tt = new TestTransport().Enqueue(new byte[0], HttpStatusCode.NotFound);
+            var tt = new TestTransport().Enqueue(new byte[0], statusCode);
 
             var result = await tt.Http.Get(new Uri("https://www.example.com/"))
                                    .ReturnErrorneousFetch();
 
             Assert.That(result.RequestUrl, Is.EqualTo(new Uri("https://www.example.com/")));
-            Assert.That(result.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
-        }
-
-        [Test]
-        public void NotImplementedErroneousFetchThrowsException()
-        {
-            var tt = new TestTransport().Enqueue(new byte[0], HttpStatusCode.NotImplemented);
-
-            Assert.ThrowsAsync<HttpRequestException>(() =>
-                tt.Http.Get(new Uri("https://www.example.com/")).ToTask());
-        }
-
-        [Test]
-        public async Task NotImplementedFetchReturnErroneousFetchTest()
-        {
-            var tt = new TestTransport().Enqueue(new byte[0], HttpStatusCode.NotImplemented);
-
-            var result = await tt.Http.Get(new Uri("https://www.example.com/"))
-                                   .ReturnErrorneousFetch();
-
-            Assert.That(result.RequestUrl, Is.EqualTo(new Uri("https://www.example.com/")));
-            Assert.That(result.StatusCode, Is.EqualTo(HttpStatusCode.NotImplemented));
-        }
-
-        [Test]
-        public void BadGatewayFetchThrowsException()
-        {
-            var tt = new TestTransport().Enqueue(new byte[0], HttpStatusCode.BadGateway);
-
-            Assert.ThrowsAsync<HttpRequestException>(() =>
-                tt.Http.Get(new Uri("https://www.example.com/")).ToTask());
-        }
-
-        [Test]
-        public async Task BadGatewayFetchReturnErroneousFetchTest()
-        {
-            var tt = new TestTransport().Enqueue(new byte[0], HttpStatusCode.BadGateway);
-
-            var result = await tt.Http.Get(new Uri("https://www.example.com/"))
-                                   .ReturnErrorneousFetch();
-
-            Assert.That(result.RequestUrl, Is.EqualTo(new Uri("https://www.example.com/")));
-            Assert.That(result.StatusCode, Is.EqualTo(HttpStatusCode.BadGateway));
-        }
-
-        [Test]
-        public void GatewayTimeoutFetchThrowsException()
-        {
-            var tt = new TestTransport().Enqueue(new byte[0], HttpStatusCode.GatewayTimeout);
-
-            Assert.ThrowsAsync<HttpRequestException>(() =>
-                tt.Http.Get(new Uri("https://www.example.com/")).ToTask());
-        }
-
-        [Test]
-        public async Task GatewayTimeoutFetchReturnErroneousFetchTest()
-        {
-            var tt = new TestTransport().Enqueue(new byte[0], HttpStatusCode.GatewayTimeout);
-
-            var result = await tt.Http.Get(new Uri("https://www.example.com/"))
-                                   .ReturnErrorneousFetch();
-
-            Assert.That(result.RequestUrl, Is.EqualTo(new Uri("https://www.example.com/")));
-            Assert.That(result.StatusCode, Is.EqualTo(HttpStatusCode.GatewayTimeout));
-        }
-
-        [Test]
-        public void ForbiddenFetchThrowsException()
-        {
-            var tt = new TestTransport().Enqueue(new byte[0], HttpStatusCode.Forbidden);
-
-            Assert.ThrowsAsync<HttpRequestException>(() =>
-                tt.Http.Get(new Uri("https://www.example.com/")).ToTask());
-        }
-
-        [Test]
-        public async Task ForbiddenFetchReturnErroneousFetchTest()
-        {
-            var tt = new TestTransport().Enqueue(new byte[0], HttpStatusCode.Forbidden);
-
-            var result = await tt.Http.Get(new Uri("https://www.example.com/"))
-                                   .ReturnErrorneousFetch();
-
-            Assert.That(result.RequestUrl, Is.EqualTo(new Uri("https://www.example.com/")));
-            Assert.That(result.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
+            Assert.That(result.StatusCode, Is.EqualTo(statusCode));
         }
 
         [Test]
