@@ -558,13 +558,13 @@
             await tt.Http.Get(new Uri("https://www.example.com/"))
                          .Submit(0, null);
 
-            var request1 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
-            var request2 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+            var message1 = tt.DequeueRequestMessage();
+            var message2 = tt.DequeueRequestMessage();
 
-            Assert.That(request1.Message.Method, Is.EqualTo(HttpMethod.Get));
-            Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
-            Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Get));
-            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/action_page.php")));
+            Assert.That(message1.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(message1.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
+            Assert.That(message2.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(message2.RequestUri, Is.EqualTo(new Uri("https://www.example.com/action_page.php")));
         }
 
         [Test]
