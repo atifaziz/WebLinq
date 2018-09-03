@@ -59,12 +59,14 @@
         }
 
         [Test]
-        public async Task AcceptHasNoEffectOnNoString()
+        public async Task AcceptNoParameterTest()
         {
             var tt = new TestTransport().Enqueue(new byte[0]);
 
             await tt.Http.Get(new Uri("https://www.example.com/"))
                          .Accept();
+            
+            // Succeeds if it doesn't throw.
         }
 
         [Test]
