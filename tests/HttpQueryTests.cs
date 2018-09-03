@@ -451,6 +451,26 @@
         }
 
         [Test]
+        public async Task PostRequestWithCredentialsTest()
+        {
+            var credentials = new NetworkCredential("admin", "admin");
+            var tt = new TestTransport(HttpConfig.Default.WithCredentials(credentials),
+                new HttpResponseMessage
+                {
+                    Content = new ByteArrayContent(new byte[0]),
+                });
+            var data = new NameValueCollection { ["name"] = "value" };
+
+            var result = await tt.Http.Post(new Uri("https://www.example.com"), data);
+            var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+
+            Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Post));
+            Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com")));
+            Assert.That(await request.Message.Content.ReadAsStringAsync(), Is.EqualTo("name=value"));
+            Assert.That(request.Config.Credentials, Is.SameAs(credentials));
+        }
+
+        [Test]
         public async Task PostRequestWith2NameValuePairs()
         {
             var tt = new TestTransport().Enqueue(new byte[0]);
