@@ -446,8 +446,6 @@
 
             Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Post));
             Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
-
-            Assert.That(request.Config.Headers, Is.Empty);
             Assert.That(await request.Message.Content.ReadAsStringAsync(), Is.EqualTo("name=value"));
             Assert.That(request.Config.Cookies.Single(), Is.SameAs(cookie));
         }
@@ -468,7 +466,6 @@
 
             Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Post));
             Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
-            Assert.That(request.Config.Headers, Is.Empty);
             Assert.That(await request.Message.Content.ReadAsStringAsync(), Is.EqualTo("name1=value1&name2=value2"));
         }
 
@@ -484,7 +481,6 @@
 
             Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Post));
             Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
-            Assert.That(request.Config.Headers, Is.Empty);
             Assert.That(await request.Message.Content.ReadAsStringAsync(), Is.EqualTo("foo%26bar=baz"));
         }
 
