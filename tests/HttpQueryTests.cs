@@ -838,5 +838,31 @@
             Assert.That(message.Content.Headers.GetValues("Content-Type").Single(), Is.EqualTo("application/x-www-form-urlencoded"));
             Assert.That(await message.Content.ReadAsStringAsync(), Is.EqualTo("firstname=Mickey&lastname=Mouse"));
         }
+
+        [TestCase(HttpStatusCode.Ambiguous)]
+        [TestCase(HttpStatusCode.Moved)]
+        [TestCase(HttpStatusCode.Redirect)]
+        [TestCase(HttpStatusCode.RedirectMethod)]
+        [TestCase(HttpStatusCode.RedirectKeepVerb)]
+        public async Task RedirectionTests(HttpStatusCode statusCode)
+        {
+            var tt = new TestTransport()
+                .Enqueue(new HttpResponseMessage
+                {
+                    Content = new ByteArrayContent(new byte[0]),
+                    Headers =
+                    {
+                        Location =  new Uri("https://www.example.com/index.htm")
+                    },
+                    StatusCode = statusCode,
+                })
+                .Enqueue(new byte[0]);
+
+            await tt.Http.Get(new Uri("https://www.example.com/"));
+            tt.DequeueRequestMessage();
+            var message = tt.DequeueRequestMessage();
+
+            Assert.That(message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/index.htm")));
+        }
     }
 }
