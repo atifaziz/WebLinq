@@ -507,6 +507,24 @@
         }
 
         [Test]
+        public async Task PostRequestWithEmptyNameValuePair()
+        {
+            var tt = new TestTransport().Enqueue(new byte[0]);
+
+            var data = new NameValueCollection
+            {
+                [""] = "",
+            };
+
+            await tt.Http.Post(new Uri("https://www.example.com/"), data);
+            var message = tt.DequeueRequestMessage();
+
+            Assert.That(message.Method, Is.EqualTo(HttpMethod.Post));
+            Assert.That(message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
+            Assert.That(await message.Content.ReadAsStringAsync(), Is.EqualTo("="));
+        }
+
+        [Test]
         public async Task PostRequestWithAmpersandInNameValuePair()
         {
             var tt = new TestTransport().Enqueue(new byte[0]);
