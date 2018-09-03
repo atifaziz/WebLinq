@@ -13,6 +13,7 @@
 
     public class HttpQueryTests
     {
+
         [Test]
         public async Task AcceptSingleMediaType()
         {
@@ -44,6 +45,26 @@
                 tt.Http.Get(new Uri("https://www.example.com/"))
                     .Accept("text/html")
                     .ToTask());
+        }
+
+        [Test]
+        public void AcceptThrowsExceptionOnEmptyString()
+        {
+            var tt = new TestTransport().Enqueue(new byte[0]);
+
+            Assert.ThrowsAsync<Exception>(() =>
+                tt.Http.Get(new Uri("https://www.example.com/"))
+                    .Accept("")
+                    .ToTask());
+        }
+
+        [Test]
+        public async Task AcceptHasNoEffectOnNoString()
+        {
+            var tt = new TestTransport().Enqueue(new byte[0]);
+
+            await tt.Http.Get(new Uri("https://www.example.com/"))
+                         .Accept();
         }
 
         [Test]
