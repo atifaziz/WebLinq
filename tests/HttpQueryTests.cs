@@ -443,7 +443,6 @@
         {
             var tt = new TestTransport()
                 .Enqueue(new byte[0]);
-
             var data = new NameValueCollection { ["name"] = "value" };
 
             await tt.Http.Post(new Uri("https://www.example.com/"), data);
