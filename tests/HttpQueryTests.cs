@@ -522,7 +522,7 @@
         }
 
         [Test]
-        public async Task SubmitNoFormNoInputTest()
+        public async Task SubmitNoDataTest()
         {
             var tt = new TestTransport()
                 .EnqueueHtml(@"
