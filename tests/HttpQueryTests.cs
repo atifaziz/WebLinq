@@ -470,6 +470,21 @@
         }
 
         [Test]
+        public async Task PostRequestWithUserAgentTest()
+        {
+            var tt = new TestTransport(HttpConfig.Default.WithUserAgent("Spider/1.0"))
+                .Enqueue(new byte[0]);
+            var data = new NameValueCollection { ["name"] = "value" };
+
+            await tt.Http.Post(new Uri("https://www.example.com/"), data);
+            var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+
+            Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Post));
+            Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
+            Assert.That(request.Config.UserAgent, Is.EqualTo("Spider/1.0"));
+        }
+
+        [Test]
         public async Task PostRequestWithCookie()
         {
             var cookie = new Cookie("name", "value");
