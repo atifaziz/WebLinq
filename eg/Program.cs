@@ -12,7 +12,6 @@ namespace WebLinq.Samples
     using System.Web;
     using System.Xml.Linq;
     using Text;
-    using TryParsers;
     using Html;
     using Modules;
     using Xsv;
@@ -69,7 +68,7 @@ namespace WebLinq.Samples
                                                                                .GetAttributeValue("href"));
                                return curr.Client.Get(new Uri(next)).Html();
                            })
-                           .TakeWhile(h => (TryParse.Int32(HttpUtility.ParseQueryString(h.Content.BaseUrl.Query)["start"]) ?? 1) < 30)
+                           .TakeWhile(h => (int.TryParse(HttpUtility.ParseQueryString(h.Content.BaseUrl.Query)["start"], out var n) ? n : 1) < 30)
             select sr.Content into sr
             from r in sr.QuerySelectorAll(".g")
             select new
@@ -117,7 +116,7 @@ namespace WebLinq.Samples
             {
                 e.Http,
                 e.Title,
-                Url = TryParse.Uri(e.Href, UriKind.Absolute),
+                Url = Uri.TryCreate(e.Href, UriKind.Absolute, out var url) ? url : null,
             }
             into e
             where !string.IsNullOrEmpty(e.Title) && e.Url != null
@@ -154,7 +153,7 @@ namespace WebLinq.Samples
             {
                 Album    = album.Title,
                 Title    = tds[his.Title],
-                Author   = his.Writers >= 0 ? tds[his.Writers] : null,
+                Author   = his.Writers >= 0 ? tds[his.Writers].Trim() : null,
                 Duration = tds[his.Length],
             };
 
@@ -194,7 +193,7 @@ namespace WebLinq.Samples
                 Http.Get(new Uri("https://msdn.microsoft.com/en-us/library/ms762271.aspx"))
                     .Html()
                     .Content()
-            select html.QuerySelector(".codeSnippetContainerCode").InnerText.TrimStart()
+            select html.QuerySelector("#main pre code.lang-xml").InnerText.TrimStart()
             into xml
             from book in ParseXml(xml).Descendants("book")
             select new
@@ -249,7 +248,7 @@ namespace WebLinq.Samples
         static IObservable<object> TeapotError() =>
 
             from e in Http.Get(new Uri("http://httpbin.org/status/418"))
-                          .ReturnErrorneousFetch()
+                          .ReturnErroneousFetch()
             select new { e.StatusCode, e.ReasonPhrase };
 
         static readonly Uri HttpbinBasicAuthUrl = new Uri("http://httpbin.org/basic-auth/user/passwd");
@@ -257,7 +256,7 @@ namespace WebLinq.Samples
         static IObservable<object> BasicAuth() =>
 
             from fst in Http.Get(HttpbinBasicAuthUrl)
-                            .ReturnErrorneousFetch()
+                            .ReturnErroneousFetch()
             from snd in fst.Client.WithConfig(fst.Client.Config.WithCredentials(new NetworkCredential("user", "passwd")))
                        .Get(HttpbinBasicAuthUrl)
             select new

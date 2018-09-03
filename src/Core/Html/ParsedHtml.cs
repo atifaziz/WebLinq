@@ -26,7 +26,6 @@ namespace WebLinq.Html
     using System.Reactive.Linq;
     using Mannex.Collections.Generic;
     using Mannex.Collections.Specialized;
-    using TryParsers;
 
     public abstract class ParsedHtml
     {
@@ -48,13 +47,8 @@ namespace WebLinq.Html
         Uri TryGetInlineBaseUrl()
         {
             var baseRef = QuerySelector("html > head > base[href]")?.GetAttributeValue("href");
-
-            if (baseRef == null)
-                return null;
-
-            var baseUrl = TryParse.Uri(baseRef, UriKind.Absolute);
-
-            return baseUrl.Scheme == Uri.UriSchemeHttp || baseUrl.Scheme == Uri.UriSchemeHttps
+            return Uri.TryCreate(baseRef, UriKind.Absolute, out var baseUrl)
+                   && (baseUrl.Scheme == Uri.UriSchemeHttp || baseUrl.Scheme == Uri.UriSchemeHttps)
                  ? baseUrl : null;
         }
 
@@ -72,9 +66,7 @@ namespace WebLinq.Html
         public abstract HtmlObject Root { get; }
 
         public string TryBaseHref(string href) =>
-            BaseUrl != null
-            ? TryParse.Uri(BaseUrl, href)?.OriginalString ?? href
-            : href;
+            Uri.TryCreate(BaseUrl, href, out var url) ? url.OriginalString : href;
 
         public override string ToString() => Root?.OuterHtml ?? string.Empty;
 
@@ -168,8 +160,8 @@ namespace WebLinq.Html
                         i += rspan.Cols;
                     }
 
-                    var colspan = TryParse.Int32(td.GetAttributeValue("colspan"), NumberStyles.Integer & ~NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture) ?? 1;
-                    var rowspan = TryParse.Int32(td.GetAttributeValue("rowspan"), NumberStyles.Integer & ~NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture) ?? 1;
+                    var colspan = int.TryParse(td.GetAttributeValue("colspan"), NumberStyles.Integer & ~NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var cn) ? cn : 1;
+                    var rowspan = int.TryParse(td.GetAttributeValue("rowspan"), NumberStyles.Integer & ~NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var rn) ? rn : 1;
                     var span = colspan > 1 || rowspan > 1 ? new CellSpan(colspan, rowspan) : CellSpan.One;
 
                     spans[i] = span;
