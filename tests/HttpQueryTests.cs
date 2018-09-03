@@ -454,11 +454,8 @@
         public async Task PostRequestWithCredentialsTest()
         {
             var credentials = new NetworkCredential("admin", "admin");
-            var tt = new TestTransport(HttpConfig.Default.WithCredentials(credentials),
-                new HttpResponseMessage
-                {
-                    Content = new ByteArrayContent(new byte[0]),
-                });
+            var tt = new TestTransport(HttpConfig.Default.WithCredentials(credentials))
+                .Enqueue(new byte[0]);
             var data = new NameValueCollection { ["name"] = "value" };
 
             var result = await tt.Http.Post(new Uri("https://www.example.com"), data);
