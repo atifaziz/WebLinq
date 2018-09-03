@@ -17,6 +17,7 @@
 namespace WebLinq.Text
 {
     using System;
+    using System.IO;
     using System.Net.Http;
     using System.Reactive.Linq;
     using System.Text;
@@ -35,7 +36,12 @@ namespace WebLinq.Text
             query.WithReader(f => f.Content.ReadAsStringAsync());
 
         public static IObservable<HttpFetch<string>> Text(this IHttpObservable query, Encoding encoding) =>
-            query.WithReader(async f => encoding.GetString(await f.Content.ReadAsByteArrayAsync()));
+            query.WithReader(async f =>
+            {
+                using (var stream = await f.Content.ReadAsStreamAsync().DontContinueOnCapturedContext())
+                using (var reader = new StreamReader(stream, encoding))
+                    return await reader.ReadToEndAsync().DontContinueOnCapturedContext();
+            });
 
         public static IObservable<HttpFetch<string>> Text(this IObservable<HttpFetch<HttpContent>> query) =>
             from fetch in query
