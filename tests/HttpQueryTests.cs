@@ -400,6 +400,28 @@
         }
 
         [Test]
+        public async Task SeparateRequestsWithCookie()
+        {
+            var cookie = new Cookie("name", "value");
+            var tt = new TestTransport(HttpConfig.Default.WithCookies(new[] { cookie }))
+                .Enqueue(new byte[0])
+                .Enqueue(new byte[0]);
+
+            var result1 = await tt.Http.Get(new Uri("https://www.example.com"));
+            var result2 = await tt.Http.Get(new Uri("https://www.example.com/page"));
+
+            var request1 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+            var request2 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+
+            Assert.That(request1.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com")));
+            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/page")));
+            Assert.That(request1.Config.Cookies.Single(), Is.SameAs(cookie));
+            Assert.That(request2.Config.Cookies.Single(), Is.SameAs(cookie));
+        }
+
+        [Test]
         public async Task PostRequestTest()
         {
             var tt = new TestTransport()
