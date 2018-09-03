@@ -248,7 +248,7 @@ namespace WebLinq.Samples
         static IObservable<object> TeapotError() =>
 
             from e in Http.Get(new Uri("http://httpbin.org/status/418"))
-                          .ReturnErrorneousFetch()
+                          .ReturnErroneousFetch()
             select new { e.StatusCode, e.ReasonPhrase };
 
         static readonly Uri HttpbinBasicAuthUrl = new Uri("http://httpbin.org/basic-auth/user/passwd");
@@ -256,7 +256,7 @@ namespace WebLinq.Samples
         static IObservable<object> BasicAuth() =>
 
             from fst in Http.Get(HttpbinBasicAuthUrl)
-                            .ReturnErrorneousFetch()
+                            .ReturnErroneousFetch()
             from snd in fst.Client.WithConfig(fst.Client.Config.WithCredentials(new NetworkCredential("user", "passwd")))
                        .Get(HttpbinBasicAuthUrl)
             select new

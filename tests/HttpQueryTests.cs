@@ -119,7 +119,7 @@
             var tt = new TestTransport().Enqueue(new byte[0], statusCode);
 
             var result = await tt.Http.Get(new Uri("https://www.example.com/"))
-                                   .ReturnErrorneousFetch();
+                                      .ReturnErroneousFetch();
 
             Assert.That(result.RequestUrl, Is.EqualTo(new Uri("https://www.example.com/")));
             Assert.That(result.StatusCode, Is.EqualTo(statusCode));

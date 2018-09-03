@@ -187,7 +187,7 @@ namespace WebLinq
                     }
                 }
 
-                if (!options.ReturnErrorneousFetch)
+                if (!options.ReturnErroneousFetch)
                     response.EnsureSuccessStatusCode();
 
                 var result = responseSelector(config, response);
