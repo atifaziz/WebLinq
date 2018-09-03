@@ -504,19 +504,18 @@
         [Test]
         public async Task SubmitNoFormNoInputTest()
         {
-            var action = "/action_page.php/";
             var tt = new TestTransport()
-                .EnqueueHtml(
-                    "<!DOCTYPE html>" +
-                    "<html>" +
-                    "<body>" +
-                    "<h2> HTML Forms </h2>" +
-                    "<form action=\"" + action + "\">" +
-                    "  <br><br>" +
-                    "  <input type=\"submit\" value=\"Submit\" >" +
-                    "</form>" +
-                    "</body>" +
-                    "</html>")
+                .EnqueueHtml(@"
+                    <!DOCTYPE html>
+                    <html>
+                    <body>
+                      <h2> HTML Forms </h2>
+                      <form action='action_page.php'>
+                        <br><br>
+                        <input type='submit' value='Submit' >
+                    </form>
+                    </body>
+                    </html>")
                 .Enqueue(new byte[0]);
 
             await tt.Http.Get(new Uri("https://www.example.com/"))
@@ -528,25 +527,24 @@
             Assert.That(request1.Message.Method, Is.EqualTo(HttpMethod.Get));
             Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
             Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Get));
-            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri(new Uri("https://www.example.com/"), action)));
+            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/action_page.php")));
         }
 
         [Test]
         public async Task SubmitDefaultMethodIsGetTest()
         {
-            var action = "/action_page.php/";
             var tt = new TestTransport()
-                .EnqueueHtml(
-                    "<!DOCTYPE html>" +
-                    "<html>" +
-                    "<body>" +
-                    "<h2> HTML Forms </h2>" +
-                    "<form action=\"" + action + "\">" +
-                    "  <br><br>" +
-                    "  <input type=\"submit\" value=\"Submit\" >" +
-                    "</form>" +
-                    "</body>" +
-                    "</html>")
+                .EnqueueHtml(@"
+                    <!DOCTYPE html>
+                    <html>
+                    <body>
+                      <h2> HTML Forms </h2>
+                      <form action='action_page.php'>
+                        <br><br>
+                        <input type='submit' value='Submit' >
+                    </form>
+                    </body>
+                    </html>")
                 .Enqueue(new byte[0]);
 
             var data = new NameValueCollection
@@ -564,30 +562,29 @@
             Assert.That(request1.Message.Method, Is.EqualTo(HttpMethod.Get));
             Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
             Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Get));
-            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri(new Uri("https://www.example.com/"), action + "?firstname=Mickey&lastname=Mouse")));
+            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/action_page.php?firstname=Mickey&lastname=Mouse")));
         }
 
         [Test]
         public async Task SubmitInputTest()
         {
-            var action = "/action_page.php/";
             var tt = new TestTransport()
-                .EnqueueHtml(
-                    "<!DOCTYPE html>" +
-                    "<html>" +
-                    "<body>" +
-                    "<h2> HTML Forms </h2>" +
-                    "<form action=\"" + action + "\">" +
-                    "  First name:<br>" +
-                    "  <input type=\"text\" name=\"firstname\" value=\"Mickey\" >" +
-                    "  <br >" +
-                    "  Last name:<br>" +
-                    "  <input type=\"text\" name=\"lastname\" value=\"Mouse\" >" +
-                    "  <br><br>" +
-                    "  <input type=\"submit\" value=\"Submit\" >" +
-                    "</form>" +
-                    "</body>" +
-                    "</html>")
+                .EnqueueHtml(@"
+                    <!DOCTYPE html>
+                    <html>
+                    <body>
+                      <h2> HTML Forms </h2>
+                      <form action='action_page.php'>
+                        First name:<br>
+                        <input type='text' name='firstname' value='Mickey' >
+                        <br >
+                        Last name:<br>
+                        <input type='text' name='lastname' value='Mouse' >
+                        <br><br>
+                        <input type='submit' value='Submit' >
+                      </form>
+                    </body>
+                    </html>")
                 .Enqueue(new byte[0]);
 
             await tt.Http.Get(new Uri("https://www.example.com/"))
@@ -599,31 +596,30 @@
             Assert.That(request1.Message.Method, Is.EqualTo(HttpMethod.Get));
             Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
             Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Get));
-            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri(new Uri("https://www.example.com/"), action + "?firstname=Mickey&lastname=Mouse")));
+            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/action_page.php?firstname=Mickey&lastname=Mouse")));
         }
 
 
         [Test]
         public async Task SubmitInputPostTest()
         {
-            var action = "/action_page.php/";
             var tt = new TestTransport()
-                .EnqueueHtml(
-                    "<!DOCTYPE html>" +
-                    "<html>" +
-                    "<body>" +
-                    "<h2> HTML Forms </h2>" +
-                    "<form method='post' action=\"" + action + "\">" +
-                    "  First name:<br>" +
-                    "  <input type=\"text\" name=\"firstname\" value=\"Mickey\" >" +
-                    "  <br >" +
-                    "  Last name:<br>" +
-                    "  <input type=\"text\" name=\"lastname\" value=\"Mouse\" >" +
-                    "  <br><br>" +
-                    "  <input type=\"submit\" value=\"Submit\" >" +
-                    "</form>" +
-                    "</body>" +
-                    "</html>")
+                .EnqueueHtml(@"
+                    <!DOCTYPE html>
+                    <html>
+                    <body>
+                      <h2> HTML Forms </h2>
+                      <form method='post' action='action_page.php'>
+                        First name:<br>
+                        <input type='text' name='firstname' value='Mickey' >
+                        <br >
+                        Last name:<br>
+                        <input type='text' name='lastname' value='Mouse' >
+                        <br><br>
+                        <input type='submit' value='Submit' >
+                      </form>
+                    </body>
+                    </html>")
                 .Enqueue(new byte[0]);
 
             await tt.Http.Get(new Uri("https://www.example.com/"))
@@ -635,7 +631,7 @@
             Assert.That(request1.Message.Method, Is.EqualTo(HttpMethod.Get));
             Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
             Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Post));
-            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri(new Uri("https://www.example.com/"), action)));
+            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/action_page.php")));
             Assert.That(await request2.Message.Content.ReadAsStringAsync(), Is.EqualTo("firstname=Mickey&lastname=Mouse"));
             Assert.That(request2.Message.Content.Headers.GetValues("Content-Type").Single(), Is.EqualTo("application/x-www-form-urlencoded"));
         }
@@ -643,19 +639,18 @@
         [Test]
         public async Task SubmitPostTest()
         {
-            var action = "/action_page.php/";
             var tt = new TestTransport()
-                .EnqueueHtml(
-                    "<!DOCTYPE html>" +
-                    "<html>" +
-                    "<body>" +
-                    "<h2> HTML Forms </h2>" +
-                    "<form method='post' action=\"" + action + "\">" +
-                    "  <br><br>" +
-                    "  <input type=\"submit\" value=\"Submit\" >" +
-                    "</form>" +
-                    "</body>" +
-                    "</html>")
+                .EnqueueHtml(@"
+                    <!DOCTYPE html>
+                    <html>
+                    <body>
+                      <h2> HTML Forms </h2>
+                      <form method='post' action='action_page.php'>
+                        <br><br>
+                        <input type='submit' value='Submit' >
+                      </form>
+                    </body>
+                    </html>")
                 .Enqueue(new byte[0]);
 
             var data = new NameValueCollection
@@ -673,7 +668,7 @@
             Assert.That(request1.Message.Method, Is.EqualTo(HttpMethod.Get));
             Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
             Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Post));
-            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri(new Uri("https://www.example.com/"), action)));
+            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/action_page.php")));
             Assert.That(await request2.Message.Content.ReadAsStringAsync(), Is.EqualTo("firstname=Mickey&lastname=Mouse"));
             Assert.That(request2.Message.Content.Headers.GetValues("Content-Type").Single(), Is.EqualTo("application/x-www-form-urlencoded"));
         }
@@ -681,22 +676,22 @@
         [Test]
         public async Task SubmitToInputTest()
         {
-            var action = "/action_page.php/";
-            var html = "<!DOCTYPE html>" +
-                                                 "<html>" +
-                                                 "<body>" +
-                                                 "<h2> HTML Forms </h2>" +
-                                                 "<form action=\"" + action + "\">" +
-                                                 "  First name:<br>" +
-                                                 "  <input type=\"text\" name=\"firstname\" value=\"Mickey\" >" +
-                                                 "  <br >" +
-                                                 "  Last name:<br>" +
-                                                 "  <input type=\"text\" name=\"lastname\" value=\"Mouse\" >" +
-                                                 "  <br><br>" +
-                                                 "  <input type=\"submit\" value=\"Submit\" >" +
-                                                 "</form>" +
-                                                 "</body>" +
-                                                 "</html>";
+            var html = @"
+                <!DOCTYPE html>
+                <html>
+                <body>
+                  <h2> HTML Forms </h2>
+                  <form action='action_page.php'>
+                    First name:<br>
+                    <input type='text' name='firstname' value='Mickey' >
+                    <br >
+                    Last name:<br>
+                    <input type='text' name='lastname' value='Mouse' >
+                    <br><br>
+                    <input type='submit' value='Submit' >
+                  </form>
+                </body>
+                </html>";
 
             var tt = new TestTransport().Enqueue(new byte[0]);
 
@@ -706,24 +701,24 @@
             var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
 
             Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Get));
-            Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.org/" + "?firstname=Mickey&lastname=Mouse")));
+            Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.org/?firstname=Mickey&lastname=Mouse")));
             Assert.That(request.Message.Headers, Is.Empty);
         }
 
         [Test]
         public async Task SubmitToNoInputTest()
         {
-            var action = "/action_page.php/";
-            var html = "<!DOCTYPE html>" +
-                                                 "<html>" +
-                                                 "<body>" +
-                                                 "<h2> HTML Forms </h2>" +
-                                                 "<form action=\"" + action + "\">" +
-                                                 "  <br><br>" +
-                                                 "  <input type=\"submit\" value=\"Submit\" >" +
-                                                 "</form>" +
-                                                 "</body>" +
-                                                 "</html>";
+            var html = @"
+                <!DOCTYPE html>
+                <html>
+                <body>
+                  <h2> HTML Forms </h2>
+                  <form action='action_page.php'>
+                    <br><br>
+                    <input type='submit' value='Submit' >
+                </form>
+                </body>
+                </html>";
             var tt = new TestTransport().Enqueue(new byte[0]);
 
             var data = new NameValueCollection
@@ -737,24 +732,24 @@
             var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
 
             Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Get));
-            Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.org/" + "?firstname=Mickey&lastname=Mouse")));
+            Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.org/?firstname=Mickey&lastname=Mouse")));
             Assert.That(request.Message.Headers, Is.Empty);
         }
 
         [Test]
         public async Task SubmitToPostRequestTest()
         {
-            var action = "/action_page.php/";
-            var html = "<!DOCTYPE html>" +
-                       "<html>" +
-                       "<body>" +
-                       "<h2> HTML Forms </h2>" +
-                       "<form method='post' action=\"" + action + "\">" +
-                       "  <br><br>" +
-                       "  <input type=\"submit\" value=\"Submit\" >" +
-                       "</form>" +
-                       "</body>" +
-                       "</html>";
+            var html = @"
+                <!DOCTYPE html>
+                <html>
+                <body>
+                  <h2> HTML Forms </h2>
+                  <form method='post' action='action_page.php'>
+                    <br><br>
+                    <input type='submit' value='Submit' >
+                </form>
+                </body>
+                </html>";
 
             var tt = new TestTransport().Enqueue(new byte[0]);
 
