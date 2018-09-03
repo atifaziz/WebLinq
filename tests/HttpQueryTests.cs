@@ -255,7 +255,7 @@
                 {
                     Headers =
                     {
-                        { "Set-Cookie", "foo=bar;Domain=example.com/" }
+                        { "Set-Cookie", "foo=bar;Domain=example.com" }
                     },
                     Content = new ByteArrayContent(new byte[0]),
                 });
