@@ -703,6 +703,183 @@
             Assert.That(message2.RequestUri, Is.EqualTo(new Uri("https://www.example.com/action_page.php?firstname=Mickey&lastname=Mouse")));
         }
 
+        [Test]
+        public async Task SubmitWithCookieTest()
+        {
+            var cookie = new Cookie("name", "value");
+            var tt = new TestTransport(HttpConfig.Default.WithCookies(new[] { cookie }))
+                .EnqueueHtml(@"
+                    <!DOCTYPE html>
+                    <html>
+                    <body>
+                      <h2> HTML Forms </h2>
+                      <form action='action_page.php'>
+                        First name:<br>
+                        <input type='text' name='firstname' value='Mickey' >
+                        <br >
+                        Last name:<br>
+                        <input type='text' name='lastname' value='Mouse' >
+                        <br><br>
+                        <input type='submit' value='Submit' >
+                      </form>
+                    </body>
+                    </html>")
+                .Enqueue(new byte[0]);
+
+            await tt.Http.Get(new Uri("https://www.example.com/"))
+                         .Submit(0, null);
+
+            var message1 = tt.DequeueRequestMessage();
+            var request2 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+
+            Assert.That(message1.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(message1.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
+            Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/action_page.php?firstname=Mickey&lastname=Mouse")));
+            Assert.That(request2.Config.Cookies.Single(), Is.SameAs(cookie));
+        }
+
+        [Test]
+        public async Task SubmitWithCredentialsTest()
+        {
+            var credentials = new NetworkCredential("name", "value");
+            var tt = new TestTransport(HttpConfig.Default.WithCredentials(credentials))
+                .EnqueueHtml(@"
+                    <!DOCTYPE html>
+                    <html>
+                    <body>
+                      <h2> HTML Forms </h2>
+                      <form action='action_page.php'>
+                        First name:<br>
+                        <input type='text' name='firstname' value='Mickey' >
+                        <br >
+                        Last name:<br>
+                        <input type='text' name='lastname' value='Mouse' >
+                        <br><br>
+                        <input type='submit' value='Submit' >
+                      </form>
+                    </body>
+                    </html>")
+                .Enqueue(new byte[0]);
+
+            await tt.Http.Get(new Uri("https://www.example.com/"))
+                         .Submit(0, null);
+
+            var message1 = tt.DequeueRequestMessage();
+            var request2 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+
+            Assert.That(message1.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(message1.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
+            Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/action_page.php?firstname=Mickey&lastname=Mouse")));
+            Assert.That(request2.Config.Credentials, Is.SameAs(credentials));
+        }
+
+        [Test]
+        public async Task SubmitWithUserAgentTest()
+        {
+            var tt = new TestTransport(HttpConfig.Default.WithUserAgent("Spider/1.0"))
+                .EnqueueHtml(@"
+                    <!DOCTYPE html>
+                    <html>
+                    <body>
+                      <h2> HTML Forms </h2>
+                      <form action='action_page.php'>
+                        First name:<br>
+                        <input type='text' name='firstname' value='Mickey' >
+                        <br >
+                        Last name:<br>
+                        <input type='text' name='lastname' value='Mouse' >
+                        <br><br>
+                        <input type='submit' value='Submit' >
+                      </form>
+                    </body>
+                    </html>")
+                .Enqueue(new byte[0]);
+
+            await tt.Http.Get(new Uri("https://www.example.com/"))
+                         .Submit(0, null);
+
+            var message1 = tt.DequeueRequestMessage();
+            var request2 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+
+            Assert.That(message1.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(message1.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
+            Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/action_page.php?firstname=Mickey&lastname=Mouse")));
+            Assert.That(request2.Config.UserAgent, Is.EqualTo("Spider/1.0"));
+        }
+
+        [Test]
+        public async Task SubmitWithHeaderTest()
+        {
+            var tt = new TestTransport(HttpConfig.Default.WithHeader("foo", "bar"))
+                .EnqueueHtml(@"
+                    <!DOCTYPE html>
+                    <html>
+                    <body>
+                      <h2> HTML Forms </h2>
+                      <form action='action_page.php'>
+                        First name:<br>
+                        <input type='text' name='firstname' value='Mickey' >
+                        <br >
+                        Last name:<br>
+                        <input type='text' name='lastname' value='Mouse' >
+                        <br><br>
+                        <input type='submit' value='Submit' >
+                      </form>
+                    </body>
+                    </html>")
+                .Enqueue(new byte[0]);
+
+            await tt.Http.Get(new Uri("https://www.example.com/"))
+                         .Submit(0, null);
+
+            var message1 = tt.DequeueRequestMessage();
+            var request2 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+
+            Assert.That(message1.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(message1.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
+            Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/action_page.php?firstname=Mickey&lastname=Mouse")));
+            Assert.That(request2.Config.Headers.Single().Key, Is.EqualTo("foo"));
+            Assert.That(request2.Config.Headers.Single().Value.Single(), Is.EqualTo("bar"));
+        }
+
+        [Test]
+        public async Task SubmitWithTimeoutTest()
+        {
+            var tt = new TestTransport(HttpConfig.Default.WithTimeout(new TimeSpan(0,1,0)))
+                .EnqueueHtml(@"
+                    <!DOCTYPE html>
+                    <html>
+                    <body>
+                      <h2> HTML Forms </h2>
+                      <form action='action_page.php'>
+                        First name:<br>
+                        <input type='text' name='firstname' value='Mickey' >
+                        <br >
+                        Last name:<br>
+                        <input type='text' name='lastname' value='Mouse' >
+                        <br><br>
+                        <input type='submit' value='Submit' >
+                      </form>
+                    </body>
+                    </html>")
+                .Enqueue(new byte[0]);
+
+            await tt.Http.Get(new Uri("https://www.example.com/"))
+                         .Submit(0, null);
+
+            var message1 = tt.DequeueRequestMessage();
+            var request2 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+
+            Assert.That(message1.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(message1.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
+            Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/action_page.php?firstname=Mickey&lastname=Mouse")));
+            Assert.That(request2.Config.Timeout, Is.EqualTo(new TimeSpan(0, 1, 0)));
+        }
 
         [Test]
         public async Task SubmitInputPostTest()
