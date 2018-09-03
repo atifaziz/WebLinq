@@ -205,10 +205,6 @@ namespace WebLinq
                 from first in query
                 select first.Client.Get(url));
 
-        [Obsolete("Use one of the " + nameof(WebLinq.Text.TextQuery.Text) + " method overloads instead.")]
-        public static IObservable<HttpFetch<string>> Text(this IHttpObservable query) =>
-            query.WithReader(f => f.Content.ReadAsStringAsync());
-
         public static IHttpObservable Get(this IHttpClient http, Uri url) =>
             HttpObservable.Return(ho =>
                 // TODO Use DeferAsync
