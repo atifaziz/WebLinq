@@ -499,11 +499,11 @@
             };
 
             await tt.Http.Post(new Uri("https://www.example.com/"), data);
-            var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+            var message = tt.DequeueRequestMessage();
 
-            Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Post));
-            Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
-            Assert.That(await request.Message.Content.ReadAsStringAsync(), Is.EqualTo("name1=value1&name2=value2"));
+            Assert.That(message.Method, Is.EqualTo(HttpMethod.Post));
+            Assert.That(message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
+            Assert.That(await message.Content.ReadAsStringAsync(), Is.EqualTo("name1=value1&name2=value2"));
         }
 
         [Test]
@@ -514,11 +514,11 @@
             var data = new NameValueCollection { ["foo&bar"] = "baz" };
 
             await tt.Http.Post(new Uri("https://www.example.com/"), data);
-            var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+            var message = tt.DequeueRequestMessage();
 
-            Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Post));
-            Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
-            Assert.That(await request.Message.Content.ReadAsStringAsync(), Is.EqualTo("foo%26bar=baz"));
+            Assert.That(message.Method, Is.EqualTo(HttpMethod.Post));
+            Assert.That(message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
+            Assert.That(await message.Content.ReadAsStringAsync(), Is.EqualTo("foo%26bar=baz"));
         }
 
         [Test]
@@ -576,13 +576,13 @@
             await tt.Http.Get(new Uri("https://www.example.com/"))
                                  .Submit(0, data);
 
-            var request1 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
-            var request2 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+            var message1 = tt.DequeueRequestMessage();
+            var message2 = tt.DequeueRequestMessage();
 
-            Assert.That(request1.Message.Method, Is.EqualTo(HttpMethod.Get));
-            Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
-            Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Get));
-            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/action_page.php?firstname=Mickey&lastname=Mouse")));
+            Assert.That(message1.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(message1.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
+            Assert.That(message2.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(message2.RequestUri, Is.EqualTo(new Uri("https://www.example.com/action_page.php?firstname=Mickey&lastname=Mouse")));
         }
 
         [Test]
@@ -610,13 +610,13 @@
             await tt.Http.Get(new Uri("https://www.example.com/"))
                          .Submit(0, null);
 
-            var request1 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
-            var request2 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+            var message1 = tt.DequeueRequestMessage();
+            var message2 = tt.DequeueRequestMessage();
 
-            Assert.That(request1.Message.Method, Is.EqualTo(HttpMethod.Get));
-            Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
-            Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Get));
-            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/action_page.php?firstname=Mickey&lastname=Mouse")));
+            Assert.That(message1.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(message1.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
+            Assert.That(message2.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(message2.RequestUri, Is.EqualTo(new Uri("https://www.example.com/action_page.php?firstname=Mickey&lastname=Mouse")));
         }
 
 
@@ -645,15 +645,15 @@
             await tt.Http.Get(new Uri("https://www.example.com/"))
                          .Submit(0, null);
 
-            var request1 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
-            var request2 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+            var message1 = tt.DequeueRequestMessage();
+            var message2 = tt.DequeueRequestMessage();
 
-            Assert.That(request1.Message.Method, Is.EqualTo(HttpMethod.Get));
-            Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
-            Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Post));
-            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/action_page.php")));
-            Assert.That(await request2.Message.Content.ReadAsStringAsync(), Is.EqualTo("firstname=Mickey&lastname=Mouse"));
-            Assert.That(request2.Message.Content.Headers.GetValues("Content-Type").Single(), Is.EqualTo("application/x-www-form-urlencoded"));
+            Assert.That(message1.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(message1.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
+            Assert.That(message2.Method, Is.EqualTo(HttpMethod.Post));
+            Assert.That(message2.RequestUri, Is.EqualTo(new Uri("https://www.example.com/action_page.php")));
+            Assert.That(await message2.Content.ReadAsStringAsync(), Is.EqualTo("firstname=Mickey&lastname=Mouse"));
+            Assert.That(message2.Content.Headers.GetValues("Content-Type").Single(), Is.EqualTo("application/x-www-form-urlencoded"));
         }
 
         [Test]
@@ -682,15 +682,15 @@
             await tt.Http.Get(new Uri("https://www.example.com/"))
                          .Submit(0, data);
 
-            var request1 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
-            var request2 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+            var message1 = tt.DequeueRequestMessage();
+            var message2 = tt.DequeueRequestMessage();
 
-            Assert.That(request1.Message.Method, Is.EqualTo(HttpMethod.Get));
-            Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
-            Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Post));
-            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/action_page.php")));
-            Assert.That(await request2.Message.Content.ReadAsStringAsync(), Is.EqualTo("firstname=Mickey&lastname=Mouse"));
-            Assert.That(request2.Message.Content.Headers.GetValues("Content-Type").Single(), Is.EqualTo("application/x-www-form-urlencoded"));
+            Assert.That(message1.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(message1.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
+            Assert.That(message2.Method, Is.EqualTo(HttpMethod.Post));
+            Assert.That(message2.RequestUri, Is.EqualTo(new Uri("https://www.example.com/action_page.php")));
+            Assert.That(await message2.Content.ReadAsStringAsync(), Is.EqualTo("firstname=Mickey&lastname=Mouse"));
+            Assert.That(message2.Content.Headers.GetValues("Content-Type").Single(), Is.EqualTo("application/x-www-form-urlencoded"));
         }
 
         [Test]
@@ -718,11 +718,11 @@
             await tt.Http.SubmitTo(new Uri("https://www.example.org/"),
                                    Html.HtmlParser.Default.Parse(html, new Uri("https://www.example.com/")),
                                    0, null);
-            var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+            var message = tt.DequeueRequestMessage();
 
-            Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Get));
-            Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.org/?firstname=Mickey&lastname=Mouse")));
-            Assert.That(request.Message.Headers, Is.Empty);
+            Assert.That(message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(message.RequestUri, Is.EqualTo(new Uri("https://www.example.org/?firstname=Mickey&lastname=Mouse")));
+            Assert.That(message.Headers, Is.Empty);
         }
 
         [Test]
@@ -749,11 +749,11 @@
             await tt.Http.SubmitTo(new Uri("https://www.example.org/"),
                                    Html.HtmlParser.Default.Parse(html, new Uri("https://www.example.com/")),
                                    0, data);
-            var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+            var message = tt.DequeueRequestMessage();
 
-            Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Get));
-            Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.org/?firstname=Mickey&lastname=Mouse")));
-            Assert.That(request.Message.Headers, Is.Empty);
+            Assert.That(message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(message.RequestUri, Is.EqualTo(new Uri("https://www.example.org/?firstname=Mickey&lastname=Mouse")));
+            Assert.That(message.Headers, Is.Empty);
         }
 
         [Test]
@@ -781,12 +781,12 @@
             await tt.Http.SubmitTo(new Uri("https://www.example.org/"),
                                    Html.HtmlParser.Default.Parse(html, new Uri("https://www.example.com/")),
                                    0, data);
-            var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+            var message = tt.DequeueRequestMessage();
 
-            Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Post));
-            Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.org/")));
-            Assert.That(request.Message.Content.Headers.GetValues("Content-Type").Single(), Is.EqualTo("application/x-www-form-urlencoded"));
-            Assert.That(await request.Message.Content.ReadAsStringAsync(), Is.EqualTo("firstname=Mickey&lastname=Mouse"));
+            Assert.That(message.Method, Is.EqualTo(HttpMethod.Post));
+            Assert.That(message.RequestUri, Is.EqualTo(new Uri("https://www.example.org/")));
+            Assert.That(message.Content.Headers.GetValues("Content-Type").Single(), Is.EqualTo("application/x-www-form-urlencoded"));
+            Assert.That(await message.Content.ReadAsStringAsync(), Is.EqualTo("firstname=Mickey&lastname=Mouse"));
         }
     }
 }
