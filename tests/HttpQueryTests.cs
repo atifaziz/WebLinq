@@ -321,6 +321,30 @@
             Assert.That(request2.Headers.Single().Value.Single(), Is.EqualTo("v2"));
         }
 
+        [Test, Ignore("https://github.com/weblinq/WebLinq/issues/18")]
+        public async Task ChainedGetRequestsWithDifferentHeaders2()
+        {
+            var tt = new TestTransport(HttpConfig.Default.WithHeader("h1","v1"))
+                .Enqueue(new byte[0])
+                .Enqueue(new byte[0]);
+
+            await tt.Http.Get(new Uri("https://www.example.com/"))
+                         .SetHeader("h2", "v2")
+                         .Get(new Uri("https://www.example.com/page"));
+
+            var request1 = tt.DequeueRequest((m, c) => new { Message = m, c.Headers });
+            var request2 = tt.DequeueRequest((m, c) => new { Message = m, c.Headers });
+
+            Assert.That(request1.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
+            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/page")));
+            Assert.That(request1.Headers.Single().Key, Is.EqualTo("h1"));
+            Assert.That(request1.Headers.Single().Value.Single(), Is.EqualTo("v1"));
+            Assert.That(request2.Headers.Keys, Is.EquivalentTo(new[] { "h1", "h2" }));
+            Assert.That(request2.Headers.Values, Is.EquivalentTo(new[] { "v1", "v2" }));
+        }
+
         [Test]
         public async Task GetRequestWithHeader()
         {
@@ -414,6 +438,93 @@
             Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/page")));
             Assert.That(request1.Config.Cookies.Single(), Is.SameAs(cookie));
             Assert.That(request2.Config.Cookies.Single(), Is.SameAs(cookie));
+        }
+
+        [Test]
+        public async Task ChainedGetRequestsWithCredentials()
+        {
+            var credentials = new NetworkCredential("admin", "admin");
+            var tt = new TestTransport(HttpConfig.Default.WithCredentials(credentials))
+                .Enqueue(new byte[0])
+                .Enqueue(new byte[0]);
+
+            await tt.Http.Get(new Uri("https://www.example.com/"))
+                         .Get(new Uri("https://www.example.com/page"));
+
+            var request1 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+            var request2 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+
+            Assert.That(request1.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
+            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/page")));
+            Assert.That(request1.Config.Credentials, Is.SameAs(credentials));
+            Assert.That(request2.Config.Credentials, Is.SameAs(credentials));
+        }
+
+        [Test]
+        public async Task ChainedGetRequestsWithHeader()
+        {
+            var tt = new TestTransport(HttpConfig.Default.WithHeader("name","value"))
+                .Enqueue(new byte[0])
+                .Enqueue(new byte[0]);
+
+            await tt.Http.Get(new Uri("https://www.example.com/"))
+                         .Get(new Uri("https://www.example.com/page"));
+
+            var request1 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+            var request2 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+
+            Assert.That(request1.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
+            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/page")));
+            Assert.That(request1.Config.Headers.Single().Key, Is.EqualTo("name"));
+            Assert.That(request2.Config.Headers.Single().Key, Is.EqualTo("name"));
+            Assert.That(request1.Config.Headers.Single().Value.Single(), Is.EqualTo("value"));
+            Assert.That(request2.Config.Headers.Single().Value.Single(), Is.EqualTo("value"));
+        }
+
+        [Test]
+        public async Task ChainedGetRequestsWithTimeout()
+        {
+            var tt = new TestTransport(HttpConfig.Default.WithTimeout(new TimeSpan(0,1,0)))
+                .Enqueue(new byte[0])
+                .Enqueue(new byte[0]);
+
+            await tt.Http.Get(new Uri("https://www.example.com/"))
+                         .Get(new Uri("https://www.example.com/page"));
+
+            var request1 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+            var request2 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+
+            Assert.That(request1.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
+            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/page")));
+            Assert.That(request1.Config.Timeout, Is.EqualTo(new TimeSpan(0, 1, 0)));
+            Assert.That(request2.Config.Timeout, Is.EqualTo(new TimeSpan(0, 1, 0)));
+        }
+
+        [Test]
+        public async Task ChainedGetRequestsWithUserAgent()
+        {
+            var tt = new TestTransport(HttpConfig.Default.WithUserAgent("Spider/1.0"))
+                .Enqueue(new byte[0])
+                .Enqueue(new byte[0]);
+
+            await tt.Http.Get(new Uri("https://www.example.com/"))
+                         .Get(new Uri("https://www.example.com/page"));
+
+            var request1 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+            var request2 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+
+            Assert.That(request1.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
+            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/page")));
+            Assert.That(request1.Config.UserAgent, Is.EqualTo("Spider/1.0"));
+            Assert.That(request2.Config.UserAgent, Is.EqualTo("Spider/1.0"));
         }
 
         [Test]
