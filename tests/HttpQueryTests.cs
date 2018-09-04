@@ -550,6 +550,70 @@
         }
 
         [Test]
+        public async Task SeparateRequestsWithCredentials()
+        {
+            var credentials = new NetworkCredential("admin", "admin");
+            var tt = new TestTransport(HttpConfig.Default.WithCredentials(credentials))
+                .Enqueue(new byte[0])
+                .Enqueue(new byte[0]);
+
+            var result1 = await tt.Http.Get(new Uri("https://www.example.com"));
+            var result2 = await tt.Http.Get(new Uri("https://www.example.com/page"));
+
+            var request1 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+            var request2 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+
+            Assert.That(request1.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com")));
+            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/page")));
+            Assert.That(request1.Config.Credentials, Is.SameAs(credentials));
+            Assert.That(request2.Config.Credentials, Is.SameAs(credentials));
+        }
+
+        [Test]
+        public async Task SeparateRequestsWithHeader()
+        {
+            var tt = new TestTransport(HttpConfig.Default.WithHeader("name","value"))
+                .Enqueue(new byte[0])
+                .Enqueue(new byte[0]);
+
+            var result1 = await tt.Http.Get(new Uri("https://www.example.com"));
+            var result2 = await tt.Http.Get(new Uri("https://www.example.com/page"));
+
+            var request1 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+            var request2 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+
+            Assert.That(request1.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com")));
+            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/page")));
+            Assert.That(request1.Config.Headers.Single().Key, Is.EqualTo("name"));
+            Assert.That(request2.Config.Headers.Single().Value.Single(), Is.EqualTo("value"));
+        }
+
+        [Test]
+        public async Task SeparateRequestsWithTimeout()
+        {
+            var tt = new TestTransport(HttpConfig.Default.WithTimeout(new TimeSpan(0,1,0)))
+                .Enqueue(new byte[0])
+                .Enqueue(new byte[0]);
+
+            var result1 = await tt.Http.Get(new Uri("https://www.example.com"));
+            var result2 = await tt.Http.Get(new Uri("https://www.example.com/page"));
+
+            var request1 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+            var request2 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+
+            Assert.That(request1.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com")));
+            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/page")));
+            Assert.That(request1.Config.Timeout, Is.EqualTo(new TimeSpan(0, 1, 0)));
+            Assert.That(request2.Config.Timeout, Is.EqualTo(new TimeSpan(0, 1, 0)));
+        }
+
+        [Test]
         public async Task PostRequestTest()
         {
             var tt = new TestTransport()
