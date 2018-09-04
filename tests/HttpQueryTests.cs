@@ -692,6 +692,70 @@
             Assert.That(await request.Message.Content.ReadAsStringAsync(), Is.EqualTo("name=value"));
             Assert.That(request.Config.Credentials, Is.SameAs(credentials));
         }
+        [Test, Ignore("https://github.com/weblinq/WebLinq/issues/18")]
+        public async Task ChainedPostRequestsWithDifferentHeaders()
+        {
+            var tt = new TestTransport()
+                .Enqueue(new byte[0])
+                .Enqueue(new byte[0]);
+            var data1 = new NameValueCollection { [""] = "" };
+            var data2 = new NameValueCollection { [""] = "" };
+
+            await tt.Http.SetHeader("h1","v1")
+                         .Post(new Uri("https://www.example.com/"), data1)
+                         .SetHeader("h2", "v2")
+                         .Post(new Uri("https://www.google.com/"), data2);
+            var request1 = tt.DequeueRequest((m, c) => new { Message = m, c.Headers });
+            var request2 = tt.DequeueRequest((m, c) => new { Message = m, c.Headers });
+
+            Assert.That(request1.Message.Method, Is.EqualTo(HttpMethod.Post));
+            Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
+            Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Post));
+            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.google.com/")));
+            Assert.That(request1.Headers.Single().Key, Is.EqualTo("h1"));
+            Assert.That(request2.Headers.Keys, Is.EquivalentTo(new[] { "h1", "h2" }));
+            Assert.That(request1.Headers.Single().Value.Single(), Is.EqualTo("v1"));
+            Assert.That(request2.Headers.Values.Select(v => v.Single()), Is.EquivalentTo(new[] { "v1", "v2" }));
+        }
+
+
+        [Test]
+        public async Task ChainedPostRequests()
+        {
+            var tt = new TestTransport()
+                .Enqueue(new byte[0])
+                .Enqueue(new byte[0]);
+            var data1 = new NameValueCollection { ["name1"] = "value1" };
+            var data2 = new NameValueCollection { ["name2"] = "value2" };
+
+            await tt.Http.Post(new Uri("https://www.example.com/"), data1)
+                .Post(new Uri("https://www.google.com/"), data2);
+            var message1 = tt.DequeueRequestMessage();
+            var message2 = tt.DequeueRequestMessage();
+
+            Assert.That(message1.Method, Is.EqualTo(HttpMethod.Post));
+            Assert.That(message1.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
+            Assert.That(message2.Method, Is.EqualTo(HttpMethod.Post));
+            Assert.That(message2.RequestUri, Is.EqualTo(new Uri("https://www.google.com/")));
+            Assert.That(await message1.Content.ReadAsStringAsync(), Is.EqualTo("name1=value1"));
+            Assert.That(await message2.Content.ReadAsStringAsync(), Is.EqualTo("name2=value2"));
+        }
+
+        [Test]
+        public async Task PostRequestWithHeader()
+        {
+            var tt = new TestTransport(HttpConfig.Default.WithHeader("foo", "bar"))
+                .Enqueue(new byte[0]);
+            var data = new NameValueCollection { ["name"] = "value" };
+
+            await tt.Http.Post(new Uri("https://www.example.com/"), data);
+            var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+
+            Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Post));
+            Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
+            Assert.That(request.Config.Headers.Single().Key, Is.EqualTo("foo"));
+            Assert.That(request.Config.Headers.Single().Value.Single(), Is.EqualTo("bar"));
+        }
 
         [Test]
         public async Task PostRequestWith2NameValuePairs()
