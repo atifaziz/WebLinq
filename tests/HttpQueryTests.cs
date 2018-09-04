@@ -322,7 +322,7 @@
         }
 
         [Test]
-        public async Task GetRequestWithHeaderTest()
+        public async Task GetRequestWithHeader()
         {
             var tt = new TestTransport(HttpConfig.Default.WithHeader("foo", "bar"))
                 .Enqueue(new byte[0]);
@@ -337,7 +337,7 @@
         }
 
         [Test]
-        public async Task GetRequestWithUserAgentTest()
+        public async Task GetRequestWithUserAgent()
         {
             var tt = new TestTransport(HttpConfig.Default.WithUserAgent("Spider/1.0"))
                 .Enqueue(new byte[0]);
@@ -351,7 +351,7 @@
         }
 
         [Test]
-        public async Task GetRequestWithCredentialsTest()
+        public async Task GetRequestWithCredentials()
         {
             var credentials = new NetworkCredential("admin", "admin");
             var tt = new TestTransport(HttpConfig.Default.WithCredentials(credentials))
@@ -470,7 +470,7 @@
         }
 
         [Test]
-        public async Task PostRequestWithUserAgentTest()
+        public async Task PostRequestWithUserAgent()
         {
             var tt = new TestTransport(HttpConfig.Default.WithUserAgent("Spider/1.0"))
                 .Enqueue(new byte[0]);
@@ -502,7 +502,7 @@
         }
 
         [Test]
-        public async Task PostRequestWithCredentialsTest()
+        public async Task PostRequestWithCredentials()
         {
             var credentials = new NetworkCredential("admin", "admin");
             var tt = new TestTransport(HttpConfig.Default.WithCredentials(credentials))
@@ -704,7 +704,7 @@
         }
 
         [Test]
-        public async Task SubmitWithCookieTest()
+        public async Task SubmitWithCookie()
         {
             var cookie = new Cookie("name", "value");
             var tt = new TestTransport(HttpConfig.Default.WithCookies(new[] { cookie }))
@@ -740,7 +740,7 @@
         }
 
         [Test]
-        public async Task SubmitWithCredentialsTest()
+        public async Task SubmitWithCredentials()
         {
             var credentials = new NetworkCredential("name", "value");
             var tt = new TestTransport(HttpConfig.Default.WithCredentials(credentials))
@@ -776,7 +776,7 @@
         }
 
         [Test]
-        public async Task SubmitWithUserAgentTest()
+        public async Task SubmitWithUserAgent()
         {
             var tt = new TestTransport(HttpConfig.Default.WithUserAgent("Spider/1.0"))
                 .EnqueueHtml(@"
@@ -811,7 +811,7 @@
         }
 
         [Test]
-        public async Task SubmitWithHeaderTest()
+        public async Task SubmitWithHeader()
         {
             var tt = new TestTransport(HttpConfig.Default.WithHeader("foo", "bar"))
                 .EnqueueHtml(@"
@@ -847,7 +847,7 @@
         }
 
         [Test]
-        public async Task SubmitWithTimeoutTest()
+        public async Task SubmitWithTimeout()
         {
             var tt = new TestTransport(HttpConfig.Default.WithTimeout(new TimeSpan(0,1,0)))
                 .EnqueueHtml(@"
