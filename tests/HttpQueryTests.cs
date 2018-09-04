@@ -128,7 +128,7 @@
         }
 
         [Test]
-        public async Task SetCookieHeaderTest()
+        public async Task SetCookieHeaderInResponseTest()
         {
             var tt = new TestTransport()
                 .Enqueue(new byte[0])
@@ -239,7 +239,7 @@
         }
 
         [Test]
-        public async Task GetRequestsSetSameHeaderTest()
+        public async Task GetRequestSetSameHeaderAsConfiguration()
         {
             var tt = new TestTransport(HttpConfig.Default.WithHeader("foo", "bar"))
                 .Enqueue(new byte[0]);
@@ -274,7 +274,7 @@
         }
 
         [Test, Ignore("https://github.com/weblinq/WebLinq/issues/18")]
-        public async Task ChainedRequestsWithDifferentHeaders()
+        public async Task ChainedGetRequestsWithDifferentHeaders()
         {
             var tt = new TestTransport()
                 .Enqueue(new byte[0])
