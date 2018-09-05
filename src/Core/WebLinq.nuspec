@@ -10,7 +10,7 @@
     <projectUrl>https://github.com/atifaziz/WebLinq</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Library enabling web scraping over LINQ.</description>
-    <copyright>Copyright &#xa9; 2016 Atif Aziz. All rights reserved.</copyright>
+    <copyright>Copyright &#xa9; 2016 Atif Aziz. Portions Copyright &#xa9; .NET Foundation and Contributors. All rights reserved.</copyright>
     <tags>linq web www query</tags>
     <releaseNotes>Commit @ $RepoCommit$</releaseNotes>
   </metadata>
