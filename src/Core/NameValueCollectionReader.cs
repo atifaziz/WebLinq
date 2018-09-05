@@ -21,12 +21,17 @@ namespace WebLinq
     using System.Collections.Specialized;
     using System.Linq;
     using System.Reactive;
+    using Html;
 
     public sealed class FormSubmissionContext
     {
-        public FormSubmissionContext(NameValueCollection data) =>
+        public FormSubmissionContext(HtmlForm form, NameValueCollection data)
+        {
+            Form = form ?? throw new ArgumentNullException(nameof(form));
             Data = data ?? throw new ArgumentNullException(nameof(data));
+        }
 
+        public HtmlForm Form { get; }
         public NameValueCollection Data { get; }
     }
 

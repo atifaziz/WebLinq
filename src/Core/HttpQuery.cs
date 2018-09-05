@@ -360,9 +360,9 @@ namespace WebLinq
                           : Enumerable.Empty<HtmlForm>()
                 select new
                 {
+                    Object = f,
                     Action = new Uri(html.TryBaseHref(f.Action), UriKind.Absolute),
-                    f.Method,
-                    f.EncType, // TODO validate
+                    // f.EncType, // TODO validate
                     Data = f.GetSubmissionData(),
                 };
 
@@ -370,9 +370,9 @@ namespace WebLinq
             if (form == null)
                 throw new Exception("No HTML form for submit.");
 
-            computer(new FormSubmissionContext(form.Data));
+            computer(new FormSubmissionContext(form.Object, form.Data));
 
-            return form.Method == HtmlFormMethod.Post
+            return form.Object.Method == HtmlFormMethod.Post
                  ? http.Post(actionUrl ?? form.Action, form.Data)
                  : http.Get(new UriBuilder(actionUrl ?? form.Action) { Query = form.Data.ToW3FormEncoded() }.Uri);
         }
