@@ -535,8 +535,8 @@
                 .Enqueue(new byte[0])
                 .Enqueue(new byte[0]);
 
-            var result1 = await tt.Http.Get(new Uri("https://www.example.com"));
-            var result2 = await tt.Http.Get(new Uri("https://www.example.com/page"));
+            await tt.Http.Get(new Uri("https://www.example.com"));
+            await tt.Http.Get(new Uri("https://www.example.com/page"));
 
             var request1 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
             var request2 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
@@ -557,8 +557,8 @@
                 .Enqueue(new byte[0])
                 .Enqueue(new byte[0]);
 
-            var result1 = await tt.Http.Get(new Uri("https://www.example.com"));
-            var result2 = await tt.Http.Get(new Uri("https://www.example.com/page"));
+            await tt.Http.Get(new Uri("https://www.example.com"));
+            await tt.Http.Get(new Uri("https://www.example.com/page"));
 
             var request1 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
             var request2 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
@@ -578,8 +578,8 @@
                 .Enqueue(new byte[0])
                 .Enqueue(new byte[0]);
 
-            var result1 = await tt.Http.Get(new Uri("https://www.example.com"));
-            var result2 = await tt.Http.Get(new Uri("https://www.example.com/page"));
+            await tt.Http.Get(new Uri("https://www.example.com"));
+            await tt.Http.Get(new Uri("https://www.example.com/page"));
 
             var request1 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
             var request2 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
@@ -599,8 +599,8 @@
                 .Enqueue(new byte[0])
                 .Enqueue(new byte[0]);
 
-            var result1 = await tt.Http.Get(new Uri("https://www.example.com"));
-            var result2 = await tt.Http.Get(new Uri("https://www.example.com/page"));
+            await tt.Http.Get(new Uri("https://www.example.com"));
+            await tt.Http.Get(new Uri("https://www.example.com/page"));
 
             var request1 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
             var request2 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
