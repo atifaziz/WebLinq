@@ -66,6 +66,7 @@
     <Compile Include="Collections\MapBase.cs" />
     <Compile Include="Collections\Map.cs" />
     <Compile Include="ArrayList.cs" />
+    <Compile Include="FormUrlEncodedContent.cs" />
     <Compile Include="Html\HtmlForm.cs" />
     <Compile Include="Html\HtmlFormControl.cs" />
     <Compile Include="Html\HtmlParser.cs" />

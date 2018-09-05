@@ -1381,6 +1381,19 @@
             Assert.That(await message.Content.ReadAsStringAsync(), Is.EqualTo("firstname=Mickey&lastname=Mouse"));
         }
 
+        [Test(Description = "https://github.com/weblinq/WebLinq/issues/19")]
+        public async Task PostLargeData()
+        {
+            var tt = new TestTransport().Enqueue(new byte[0]);
+
+            await tt.Http.Post(new Uri("https://www.example.com/"), new NameValueCollection
+            {
+                ["foo"] = new string('*', 70_000)
+            });
+
+            Assert.Pass();
+        }
+
         [TestCase(HttpStatusCode.Ambiguous)]
         [TestCase(HttpStatusCode.Moved)]
         [TestCase(HttpStatusCode.Redirect)]
