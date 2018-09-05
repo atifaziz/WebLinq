@@ -292,6 +292,23 @@ namespace WebLinq
         public static IHttpObservable SubmitTo(this IObservable<HttpFetch<ParsedHtml>> query, Uri url, int formIndex, NameValueCollection data) =>
             Submit(query, null, formIndex, url, data);
 
+        static IHttpObservable Submit(IObservable<HttpFetch<ParsedHtml>> query, string formSelector, int? formIndex, Uri url, WebCollectionComputer<Unit> data) =>
+            HttpObservable.Return(
+                from html in query
+                select Submit(html.Client, html.Content, formSelector, formIndex, url, data));
+
+        public static IHttpObservable Submit(this IHttpClient http, ParsedHtml html, string formSelector, WebCollectionComputer<Unit> data) =>
+            Submit(http, html, formSelector, null, null, data);
+
+        public static IHttpObservable Submit(this IHttpClient http, ParsedHtml html, int formIndex, WebCollectionComputer<Unit> data) =>
+            Submit(http, html, null, formIndex, null, data);
+
+        public static IHttpObservable SubmitTo(this IHttpClient http, Uri url, ParsedHtml html, string formSelector, WebCollectionComputer<Unit> data) =>
+            Submit(http, html, formSelector, null, url, data);
+
+        public static IHttpObservable SubmitTo(this IHttpClient http, Uri url, ParsedHtml html, int formIndex, WebCollectionComputer<Unit> data) =>
+            Submit(http, html, null, formIndex, url, data);
+
         static IHttpObservable Submit(IObservable<HttpFetch<ParsedHtml>> query, string formSelector, int? formIndex, Uri url, NameValueCollection data) =>
             HttpObservable.Return(
                 from html in query
@@ -314,7 +331,7 @@ namespace WebLinq
             string formSelector, int? formIndex, Uri actionUrl,
             NameValueCollection data)
         {
-            var reader = NameValueCollectionReader.Return(Unit.Default);
+            var reader = WebCollection.Return(Unit.Default);
 
             if (data != null)
             {
@@ -333,7 +350,7 @@ namespace WebLinq
         internal static IHttpObservable Submit<T>(IHttpClient http,
             ParsedHtml html,
             string formSelector, int? formIndex, Uri actionUrl,
-            Reader<NameValueCollection, T> reader)
+            WebCollectionComputer<T> computer)
         {
             var forms =
                 from f in formIndex == null
@@ -353,7 +370,7 @@ namespace WebLinq
             if (form == null)
                 throw new Exception("No HTML form for submit.");
 
-            reader(form.Data);
+            computer(form.Data.AsWebCollection());
 
             return form.Method == HtmlFormMethod.Post
                  ? http.Post(actionUrl ?? form.Action, form.Data)

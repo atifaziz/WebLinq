@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Title>LINQ to Web</Title>
     <Description>Library enabling web scraping over LINQ</Description>
-    <Copyright>Copyright &#169; 2016 Atif Aziz. All rights reserved.</Copyright>
+    <Copyright>Copyright © 2016 Atif Aziz. All rights reserved.</Copyright>
     <Authors>Atif Aziz</Authors>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -90,7 +90,6 @@
     <Compile Include="Mime\MimeMap.cs" />
     <Compile Include="HttpQuery.cs" />
     <Compile Include="Collections\ReadOnlyCollection.cs" />
-    <Compile Include="Reader.cs" />
     <Compile Include="Sys\Spawner.cs" />
     <Compile Include="Text\TextQuery.cs" />
     <Compile Include="TaskExtensions.cs" />
