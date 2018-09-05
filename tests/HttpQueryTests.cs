@@ -1382,13 +1382,18 @@
         }
 
         [Test(Description = "https://github.com/weblinq/WebLinq/issues/19")]
-        public async Task PostLargeData()
+        [TestCase(30_000)]
+        [TestCase(33_000)]
+        [TestCase(64_000)]
+        [TestCase(65_000)]
+        [TestCase(70_000)]
+        public async Task PostLargeData(int size)
         {
             var tt = new TestTransport().Enqueue(new byte[0]);
 
             await tt.Http.Post(new Uri("https://www.example.com/"), new NameValueCollection
             {
-                ["foo"] = new string('*', 70_000)
+                ["foo"] = new string('*', size)
             });
 
             Assert.Pass();
