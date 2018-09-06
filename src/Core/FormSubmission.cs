@@ -65,7 +65,7 @@ namespace WebLinq
             submission.Bind<T, T>(x => env => { action(env); return x; });
 
         public static FormSubmission<Unit> Do(Action<FormSubmissionContext> action) =>
-            env => { action(env); return new Unit(); };
+            env => { action(env); return Unit.Default; };
     }
 }
 
@@ -93,7 +93,7 @@ namespace WebLinq
 
         public static FormSubmission<Unit> Set(IEnumerable<string> keys, string value) =>
             from _ in For(keys, k => Set(k, value))
-            select new Unit();
+            select Unit.Default;
 
         static FormSubmission<string> TrySet(Func<IEnumerable<string>, string> matcher, string value) =>
             from ks in Keys()
