@@ -61,10 +61,10 @@ namespace WebLinq
             Func<T, FormSubmission<TResult>> f) =>
             context => source.Select(f).Select(e => e(context)).ToList();
 
-        public static FormSubmission<T> Do<T>(this FormSubmission<T> submission, Action<FormSubmissionContext> action) =>
+        internal static FormSubmission<T> Do<T>(this FormSubmission<T> submission, Action<FormSubmissionContext> action) =>
             submission.Bind<T, T>(x => env => { action(env); return x; });
 
-        public static FormSubmission<Unit> Do(Action<FormSubmissionContext> action) =>
+        internal static FormSubmission<Unit> Do(Action<FormSubmissionContext> action) =>
             env => { action(env); return Unit.Default; };
     }
 }
