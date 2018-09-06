@@ -146,7 +146,7 @@ namespace WebLinq
             context => new NameValueCollection(context.Data);
 
         public static FormSubmission<Unit> Clear() =>
-            context => { context.Data.Clear(); return Unit.Default; };
+            Do(context => context.Data.Clear());
 
         public static FormSubmission<Unit> Ignore<T>(this FormSubmission<T> submission) =>
             from _ in submission
