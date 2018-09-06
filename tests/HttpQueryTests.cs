@@ -1,4 +1,4 @@
-﻿namespace WebLinq.Tests
+namespace WebLinq.Tests
 {
     using System;
     using System.Linq;
@@ -65,7 +65,7 @@
 
             await tt.Http.Get(new Uri("https://www.example.com/"))
                          .Accept();
-            
+
             // Succeeds if it doesn't throw.
         }
 

@@ -1,4 +1,4 @@
-﻿namespace WebLinq.Tests
+namespace WebLinq.Tests
 {
     using System;
     using System.Collections.Generic;
