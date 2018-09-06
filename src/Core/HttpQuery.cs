@@ -25,6 +25,7 @@ namespace WebLinq
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Reactive;
     using System.Reactive.Linq;
     using System.Reactive.Threading.Tasks;
     using System.Threading.Tasks;
@@ -291,6 +292,23 @@ namespace WebLinq
         public static IHttpObservable SubmitTo(this IObservable<HttpFetch<ParsedHtml>> query, Uri url, int formIndex, NameValueCollection data) =>
             Submit(query, null, formIndex, url, data);
 
+        static IHttpObservable Submit(IObservable<HttpFetch<ParsedHtml>> query, string formSelector, int? formIndex, Uri url, FormSubmission<Unit> data) =>
+            HttpObservable.Return(
+                from html in query
+                select Submit(html.Client, html.Content, formSelector, formIndex, url, data));
+
+        public static IHttpObservable Submit(this IHttpClient http, ParsedHtml html, string formSelector, FormSubmission<Unit> data) =>
+            Submit(http, html, formSelector, null, null, data);
+
+        public static IHttpObservable Submit(this IHttpClient http, ParsedHtml html, int formIndex, FormSubmission<Unit> data) =>
+            Submit(http, html, null, formIndex, null, data);
+
+        public static IHttpObservable SubmitTo(this IHttpClient http, Uri url, ParsedHtml html, string formSelector, FormSubmission<Unit> data) =>
+            Submit(http, html, formSelector, null, url, data);
+
+        public static IHttpObservable SubmitTo(this IHttpClient http, Uri url, ParsedHtml html, int formIndex, FormSubmission<Unit> data) =>
+            Submit(http, html, null, formIndex, url, data);
+
         static IHttpObservable Submit(IObservable<HttpFetch<ParsedHtml>> query, string formSelector, int? formIndex, Uri url, NameValueCollection data) =>
             HttpObservable.Return(
                 from html in query
@@ -313,6 +331,27 @@ namespace WebLinq
             string formSelector, int? formIndex, Uri actionUrl,
             NameValueCollection data)
         {
+            var reader = FormSubmission.Return(Unit.Default);
+
+            if (data != null)
+            {
+                foreach (var e in data.AsEnumerable())
+                {
+                    reader = reader.Do(fsc => fsc.Data.Remove(e.Key));
+                    if (e.Value.Length == 1 && e.Value[0] == null)
+                        continue;
+                    reader = e.Value.Aggregate(reader, (current, value) => current.Do(fsc => fsc.Data.Add(e.Key, value)));
+                }
+            }
+
+            return Submit(http, html, formSelector, formIndex, actionUrl, reader);
+        }
+
+        internal static IHttpObservable Submit<T>(IHttpClient http,
+            ParsedHtml html,
+            string formSelector, int? formIndex, Uri actionUrl,
+            FormSubmission<T> computer)
+        {
             var forms =
                 from f in formIndex == null
                           ? html.QueryFormSelectorAll(formSelector)
@@ -321,9 +360,9 @@ namespace WebLinq
                           : Enumerable.Empty<HtmlForm>()
                 select new
                 {
+                    Object = f,
                     Action = new Uri(html.TryBaseHref(f.Action), UriKind.Absolute),
-                    f.Method,
-                    f.EncType, // TODO validate
+                    // f.EncType, // TODO validate
                     Data = f.GetSubmissionData(),
                 };
 
@@ -331,19 +370,9 @@ namespace WebLinq
             if (form == null)
                 throw new Exception("No HTML form for submit.");
 
-            if (data != null)
-            {
-                foreach (var e in data.AsEnumerable())
-                {
-                    form.Data.Remove(e.Key);
-                    if (e.Value.Length == 1 && e.Value[0] == null)
-                        continue;
-                    foreach (var value in e.Value)
-                        form.Data.Add(e.Key, value);
-                }
-            }
+            computer(new FormSubmissionContext(form.Object, form.Data));
 
-            return form.Method == HtmlFormMethod.Post
+            return form.Object.Method == HtmlFormMethod.Post
                  ? http.Post(actionUrl ?? form.Action, form.Data)
                  : http.Get(new UriBuilder(actionUrl ?? form.Action) { Query = form.Data.ToW3FormEncoded() }.Uri);
         }

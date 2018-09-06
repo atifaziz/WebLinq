@@ -1311,7 +1311,7 @@ namespace WebLinq.Tests
 
             await tt.Http.SubmitTo(new Uri("https://www.example.org/"),
                                    Html.HtmlParser.Default.Parse(html, new Uri("https://www.example.com/")),
-                                   0, null);
+                                   0, (NameValueCollection) null);
             var message = tt.DequeueRequestMessage();
 
             Assert.That(message.Method, Is.EqualTo(HttpMethod.Get));
