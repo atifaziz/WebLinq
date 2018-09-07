@@ -267,16 +267,5 @@ namespace WebLinq
             from _ in first
             from b in second
             select b;
-
-        public static FormSubmission<Unit> Collect(params FormSubmission<Unit>[] submissions) =>
-            submissions.AsEnumerable().Collect();
-
-        public static FormSubmission<Unit> Collect(this IEnumerable<FormSubmission<Unit>> submissions) =>
-            context =>
-            {
-                foreach (var other in submissions)
-                    other(context);
-                return Unit.Default;
-            };
     }
 }
