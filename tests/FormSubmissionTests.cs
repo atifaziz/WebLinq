@@ -1,6 +1,7 @@
 namespace WebLinq.Tests
 {
     using System;
+    using System.Collections.Specialized;
     using System.Linq;
     using NUnit.Framework;
     using static Modules.HtmlModule;
@@ -174,6 +175,27 @@ namespace WebLinq.Tests
             Assert.That(data["firstname"], Is.EqualTo("baz"));
             Assert.That(data["lastname"], Is.EqualTo("baz"));
             Assert.That(data["email"], Is.EqualTo("mickey@mouse.com"));
+        }
+
+        [Test]
+        public void Merge()
+        {
+            var other = new NameValueCollection() {
+                ["foo"] = "bar",
+                ["bar"] = "baz"
+            };
+
+            var submission = FormSubmission.Merge(other);
+
+            submission(_context);
+            var data = _context.Data;
+
+            Assert.That(data.Count, Is.EqualTo(5));
+            Assert.That(data["firstname"], Is.EqualTo("Mickey"));
+            Assert.That(data["lastname"], Is.EqualTo("Mouse"));
+            Assert.That(data["email"], Is.EqualTo("mickey@mouse.com"));
+            Assert.That(data["foo"], Is.EqualTo("bar"));
+            Assert.That(data["bar"], Is.EqualTo("baz"));
         }
     }
 }
