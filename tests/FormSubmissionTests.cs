@@ -145,5 +145,20 @@ namespace WebLinq.Tests
             Assert.That(data["lastname"], Is.EqualTo("Mouse"));
             Assert.That(data["email"], Is.EqualTo("mickey@mouse.com"));
         }
+
+        [Test]
+        public void SetFirstWhere()
+        {
+            var submission =
+                FormSubmission.SetFirstWhere(n => n.EndsWith("name", StringComparison.OrdinalIgnoreCase), "Minnie");
+
+            var name = submission(_context);
+            var data = _context.Data;
+
+            Assert.That(data.Count, Is.EqualTo(3));
+            Assert.That(data["firstname"], Is.EqualTo("Minnie"));
+            Assert.That(data["lastname"], Is.EqualTo("Mouse"));
+            Assert.That(data["email"], Is.EqualTo("mickey@mouse.com"));
+        }
     }
 }
