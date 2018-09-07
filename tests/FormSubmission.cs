@@ -1,5 +1,6 @@
 namespace WebLinq.Tests
 {
+    using System;
     using System.Linq;
     using NUnit.Framework;
     using static Modules.HtmlModule;
@@ -74,6 +75,22 @@ namespace WebLinq.Tests
 
             Assert.That(data.Count, Is.EqualTo(2));
             Assert.That(data["firstname"], Is.EqualTo("MICKEY"));
+            Assert.That(data["lastname"], Is.EqualTo("Mouse"));
+        }
+
+        [Test]
+        public void SetSingleWhere()
+        {
+            var submission =
+                FormSubmission.SetSingleWhere(n => n.StartsWith("first", StringComparison.OrdinalIgnoreCase),
+                                              "Minnie");
+
+            var name = submission(_context);
+            var data = _context.Data;
+
+            Assert.That(name, Is.EqualTo("firstname"));
+            Assert.That(data.Count, Is.EqualTo(2));
+            Assert.That(data["firstname"], Is.EqualTo("Minnie"));
             Assert.That(data["lastname"], Is.EqualTo("Mouse"));
         }
     }
