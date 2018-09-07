@@ -82,56 +82,56 @@ namespace WebLinq
 
     public static partial class FormSubmission
     {
-        public static FormSubmission<IReadOnlyCollection<string>> Keys() =>
+        public static FormSubmission<IReadOnlyCollection<string>> Names() =>
             context => context.Data.AllKeys;
 
-        public static FormSubmission<string> Get(string key) =>
-            context => context.Data[key];
+        public static FormSubmission<string> Get(string name) =>
+            context => context.Data[name];
 
-        public static FormSubmission<Unit> Set(string key, string value) =>
-            Do(context => context.Data[key] = value);
+        public static FormSubmission<Unit> Set(string name, string value) =>
+            Do(context => context.Data[name] = value);
 
-        public static FormSubmission<Unit> Set(IEnumerable<string> keys, string value) =>
-            from _ in For(keys, k => Set(k, value))
+        public static FormSubmission<Unit> Set(IEnumerable<string> names, string value) =>
+            from _ in For(names, n => Set(n, value))
             select Unit.Default;
 
         static FormSubmission<string> TrySet(Func<IEnumerable<string>, string> matcher, string value) =>
-            from ks in Keys()
-            select matcher(ks) into k
-            from r in k != null
-                    ? from _ in Set(k, value) select k
+            from ns in Names()
+            select matcher(ns) into n
+            from r in n != null
+                    ? from _ in Set(n, value) select n
                     : Return((string) null)
             select r;
 
         public static FormSubmission<string> SetSingleWhere(Func<string, bool> matcher, string value) =>
-            TrySet(ks => ks.Single(matcher), value);
+            TrySet(ns => ns.Single(matcher), value);
 
         public static FormSubmission<string> SetSingleMatching(string pattern, string value) =>
-            SetSingleWhere(k => Regex.IsMatch(k, pattern), value);
+            SetSingleWhere(n => Regex.IsMatch(n, pattern), value);
 
         public static FormSubmission<string> TrySetSingleWhere(Func<string, bool> matcher, string value) =>
-            TrySet(ks => ks.SingleOrDefault(matcher), value);
+            TrySet(ns => ns.SingleOrDefault(matcher), value);
 
         public static FormSubmission<string> TrySetSingleMatching(string pattern, string value) =>
-            TrySetSingleWhere(k => Regex.IsMatch(k, pattern), value);
+            TrySetSingleWhere(n => Regex.IsMatch(n, pattern), value);
 
         public static FormSubmission<string> SetFirstWhere(Func<string, bool> matcher, string value) =>
-            TrySet(ks => ks.First(matcher), value);
+            TrySet(ns => ns.First(matcher), value);
 
         public static FormSubmission<string> TrySetFirstWhere(Func<string, bool> matcher, string value) =>
-            TrySet(ks => ks.FirstOrDefault(matcher), value);
+            TrySet(ns => ns.FirstOrDefault(matcher), value);
 
         public static FormSubmission<string> TrySetFirstMatching(string pattern, string value) =>
-            TrySetFirstWhere(k => Regex.IsMatch(k, pattern), value);
+            TrySetFirstWhere(n => Regex.IsMatch(n, pattern), value);
 
         public static FormSubmission<IEnumerable<string>> SetWhere(Func<string, bool> matcher, string value) =>
-            from ks in Keys()
-            select ks.Where(matcher).ToArray() into ks
-            from _ in Set(ks, value)
-            select ks;
+            from ns in Names()
+            select ns.Where(matcher).ToArray() into ns
+            from _ in Set(ns, value)
+            select ns;
 
         public static FormSubmission<IEnumerable<string>> SetMatching(string pattern, string value) =>
-            SetWhere(k => Regex.IsMatch(k, pattern), value);
+            SetWhere(n => Regex.IsMatch(n, pattern), value);
 
         public static FormSubmission<Unit> Merge(NameValueCollection other) =>
             Do(context =>
