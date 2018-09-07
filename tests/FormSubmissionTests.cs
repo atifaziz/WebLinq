@@ -197,5 +197,16 @@ namespace WebLinq.Tests
             Assert.That(data["foo"], Is.EqualTo("bar"));
             Assert.That(data["bar"], Is.EqualTo("baz"));
         }
+
+        [Test]
+        public void Clear()
+        {
+            var submission = FormSubmission.Clear();
+            submission(_context);
+
+            var data = _context.Data;
+
+            Assert.That(data, Is.Empty);
+        }
     }
 }
