@@ -93,5 +93,21 @@ namespace WebLinq.Tests
             Assert.That(data["firstname"], Is.EqualTo("Minnie"));
             Assert.That(data["lastname"], Is.EqualTo("Mouse"));
         }
+
+        [Test]
+        public void TrySetSingleWhereNoneMatch()
+        {
+            var submission =
+                FormSubmission.TrySetSingleWhere(n => n.StartsWith("foo", StringComparison.OrdinalIgnoreCase),
+                                                 "bar");
+
+            var name = submission(_context);
+            var data = _context.Data;
+
+            Assert.That(name, Is.Null);
+            Assert.That(data.Count, Is.EqualTo(2));
+            Assert.That(data["firstname"], Is.EqualTo("Mickey"));
+            Assert.That(data["lastname"], Is.EqualTo("Mouse"));
+        }
     }
 }
