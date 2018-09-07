@@ -24,6 +24,8 @@ namespace WebLinq.Tests
                     <br >
                     Last name:<br>
                     <input type='text' name='lastname' value='Mouse' >
+                    Email:<br>
+                    <input type='text' name='email' value='mickey@mouse.com' >
                     <br><br>
                     <input type='submit' value='Submit' >
                   </form>
@@ -43,9 +45,10 @@ namespace WebLinq.Tests
             submission(_context);
             var data = _context.Data;
 
-            Assert.That(data.Count, Is.EqualTo(2));
+            Assert.That(data.Count, Is.EqualTo(3));
             Assert.That(data["firstname"], Is.EqualTo("Minnie"));
             Assert.That(data["lastname"], Is.EqualTo("Mouse"));
+            Assert.That(data["email"], Is.EqualTo("mickey@mouse.com"));
         }
 
         [Test]
@@ -56,9 +59,10 @@ namespace WebLinq.Tests
             submission(_context);
             var data = _context.Data;
 
-            Assert.That(data.Count, Is.EqualTo(3));
+            Assert.That(data.Count, Is.EqualTo(4));
             Assert.That(data["firstname"], Is.EqualTo("Mickey"));
             Assert.That(data["lastname"], Is.EqualTo("Mouse"));
+            Assert.That(data["email"], Is.EqualTo("mickey@mouse.com"));
             Assert.That(data["foo"], Is.EqualTo("bar"));
         }
 
@@ -73,9 +77,10 @@ namespace WebLinq.Tests
             submission(_context);
             var data = _context.Data;
 
-            Assert.That(data.Count, Is.EqualTo(2));
+            Assert.That(data.Count, Is.EqualTo(3));
             Assert.That(data["firstname"], Is.EqualTo("MICKEY"));
             Assert.That(data["lastname"], Is.EqualTo("Mouse"));
+            Assert.That(data["email"], Is.EqualTo("mickey@mouse.com"));
         }
 
         [Test]
@@ -89,9 +94,10 @@ namespace WebLinq.Tests
             var data = _context.Data;
 
             Assert.That(name, Is.EqualTo("firstname"));
-            Assert.That(data.Count, Is.EqualTo(2));
+            Assert.That(data.Count, Is.EqualTo(3));
             Assert.That(data["firstname"], Is.EqualTo("Minnie"));
             Assert.That(data["lastname"], Is.EqualTo("Mouse"));
+            Assert.That(data["email"], Is.EqualTo("mickey@mouse.com"));
         }
 
         [Test]
@@ -105,9 +111,10 @@ namespace WebLinq.Tests
             var data = _context.Data;
 
             Assert.That(name, Is.Null);
-            Assert.That(data.Count, Is.EqualTo(2));
+            Assert.That(data.Count, Is.EqualTo(3));
             Assert.That(data["firstname"], Is.EqualTo("Mickey"));
             Assert.That(data["lastname"], Is.EqualTo("Mouse"));
+            Assert.That(data["email"], Is.EqualTo("mickey@mouse.com"));
         }
     }
 }
