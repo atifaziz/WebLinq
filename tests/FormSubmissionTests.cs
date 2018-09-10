@@ -285,6 +285,21 @@ namespace WebLinq.Tests
         }
 
         [Test]
+        public void Collect()
+        {
+            var submission = FormSubmission.Collect();
+
+            var collection = submission(_context);
+            var data = _context.Data;
+
+            Assert.That(collection, Is.EqualTo(data));
+            Assert.That(data.Count, Is.EqualTo(3));
+            Assert.That(data["firstname"], Is.EqualTo("Mickey"));
+            Assert.That(data["lastname"], Is.EqualTo("Mouse"));
+            Assert.That(data["email"], Is.EqualTo("mickey@mouse.com"));
+        }
+
+        [Test]
         public void Clear()
         {
             var submission = FormSubmission.Clear();
