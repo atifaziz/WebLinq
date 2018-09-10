@@ -94,7 +94,7 @@ namespace WebLinq
         /// Gets the parsed underlying HTML form.
         /// </summary>
 
-        static FormSubmission<HtmlForm> Form() => context => context.Form;
+        public static FormSubmission<HtmlForm> Form() => context => context.Form;
 
         /// <summary>
         /// Gets the value of a field identified by its name.
