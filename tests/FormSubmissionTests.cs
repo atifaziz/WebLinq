@@ -82,6 +82,20 @@ namespace WebLinq.Tests
         }
 
         [Test]
+        public void SetNames()
+        {
+            var submission = FormSubmission.Set(new[] { "firstname", "lastname" }, "Minnie");
+
+            submission(_context);
+            var data = _context.Data;
+
+            Assert.That(data.Count, Is.EqualTo(3));
+            Assert.That(data["firstname"], Is.EqualTo("Minnie"));
+            Assert.That(data["lastname"], Is.EqualTo("Minnie"));
+            Assert.That(data["email"], Is.EqualTo("mickey@mouse.com"));
+        }
+
+        [Test]
         public void SetNonExistent()
         {
             var submission = FormSubmission.Set("foo", "bar");
