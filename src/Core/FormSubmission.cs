@@ -76,6 +76,7 @@ namespace WebLinq
     using System.Collections.Specialized;
     using System.Linq;
     using System.Text.RegularExpressions;
+    using Html;
     using Mannex.Collections.Generic;
     using Mannex.Collections.Specialized;
     using Unit = System.Reactive.Unit;
@@ -88,6 +89,12 @@ namespace WebLinq
 
         public static FormSubmission<IReadOnlyCollection<string>> Names() =>
             context => context.Data.AllKeys;
+
+        /// <summary>
+        /// Gets the parsed underlying HTML form.
+        /// </summary>
+
+        static FormSubmission<HtmlForm> Form() => context => context.Form;
 
         /// <summary>
         /// Gets the value of a field identified by its name.
