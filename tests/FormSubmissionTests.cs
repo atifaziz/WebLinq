@@ -145,6 +145,48 @@ namespace WebLinq.Tests
         }
 
         [Test]
+        public void SetSingleMatching()
+        {
+            var submission = FormSubmission.SetSingleMatching(@"^lastname$", "bar");
+
+            submission(_context);
+            var data = _context.Data;
+
+            Assert.That(data.Count, Is.EqualTo(3));
+            Assert.That(data["firstname"], Is.EqualTo("Mickey"));
+            Assert.That(data["lastname"], Is.EqualTo("bar"));
+            Assert.That(data["email"], Is.EqualTo("mickey@mouse.com"));
+        }
+
+        [Test]
+        public void SetSingleMatchingMultipleMatch()
+        {
+            var submission = FormSubmission.SetSingleMatching(@"^[first|last]name$", "bar");
+
+            var data = _context.Data;
+
+            Assert.Throws<InvalidOperationException>(() => submission(_context));
+            Assert.That(data.Count, Is.EqualTo(3));
+            Assert.That(data["firstname"], Is.EqualTo("Mickey"));
+            Assert.That(data["lastname"], Is.EqualTo("Mouse"));
+            Assert.That(data["email"], Is.EqualTo("mickey@mouse.com"));
+        }
+
+        [Test]
+        public void SetSingleMatchingNoneMatch()
+        {
+            var submission = FormSubmission.SetSingleMatching(@"^foo$", "bar");
+
+            var data = _context.Data;
+
+            Assert.Throws<InvalidOperationException>(() => submission(_context));
+            Assert.That(data.Count, Is.EqualTo(3));
+            Assert.That(data["firstname"], Is.EqualTo("Mickey"));
+            Assert.That(data["lastname"], Is.EqualTo("Mouse"));
+            Assert.That(data["email"], Is.EqualTo("mickey@mouse.com"));
+        }
+
+        [Test]
         public void TrySetSingleWhereMultipleMatch()
         {
             var submission =
