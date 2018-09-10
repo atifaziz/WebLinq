@@ -72,6 +72,17 @@ namespace WebLinq.Tests
             Assert.That(names, Is.EqualTo("42" + stars));
         }
 
+        [Test]
+        public void For()
+        {
+            var source = new[] { 3, 4, 5 };
+            var submission = FormSubmission.For(source, e => FormSubmission.Return(e*3));
+
+            var values = submission(_context);
+            Assert.That(values, Is.EqualTo(new[] { 9, 12, 15 }));
+        }
+
+        [Test]
         public void Names()
         {
             var submission = FormSubmission.Names();
