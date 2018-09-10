@@ -272,11 +272,6 @@ namespace WebLinq
             submissions.AsEnumerable().Collect();
 
         public static FormSubmission<Unit> Collect(this IEnumerable<FormSubmission<Unit>> submissions) =>
-            context =>
-            {
-                foreach (var other in submissions)
-                    other(context);
-                return Unit.Default;
-            };
+            For(submissions, s => s).Ignore();
     }
 }
