@@ -251,7 +251,7 @@ namespace WebLinq.Tests
         [Test]
         public void SetWhere()
         {
-            var submission = 
+            var submission =
                 FormSubmission.SetWhere(n => n.EndsWith("name", StringComparison.OrdinalIgnoreCase), "baz");
 
             submission(_context);
