@@ -12,6 +12,8 @@ install:
 - eclint check -n "**/*.{cs,tt,cmd,sh,md,txt,yml}"
 - eclint check -w "**/*.{cs,tt,cmd,sh,md,txt,yml,json,sln,csproj,shfbproj}"
 - git reset --hard
+- choco install opencover.portable
+- choco install codecov
 build_script:
 - ps: >-
     $id = $env:APPVEYOR_REPO_COMMIT_TIMESTAMP -replace '([-:]|\.0+Z)', ''
@@ -19,6 +21,9 @@ build_script:
     $id = $id.Substring(0, 13)
 
     .\pack.cmd ci-$id $env:APPVEYOR_REPO_COMMIT
+test_script:
+- OpenCover.Console.exe -register:user -target:"nunit3-console.exe" -targetargs:".\tests\bin\Debug\WebLinq.Tests.dll" -filter:"+[WebLinq*]* -[WebLinq.Tests*]*" -output:".\WebLinq_coverage.xml"
+- codecov -f "WebLinq_coverage.xml
 artifacts:
 - path: dist\*.nupkg
 deploy:
