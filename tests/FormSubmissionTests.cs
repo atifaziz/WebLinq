@@ -153,7 +153,7 @@ namespace WebLinq.Tests
             var submission =
                 FormSubmission.SetFirstWhere(n => n.EndsWith("name", StringComparison.OrdinalIgnoreCase), "Minnie");
 
-            var name = submission(_context);
+            submission(_context);
             var data = _context.Data;
 
             Assert.That(data.Count, Is.EqualTo(3));
@@ -168,7 +168,7 @@ namespace WebLinq.Tests
             var submission = 
                 FormSubmission.SetWhere(n => n.EndsWith("name", StringComparison.OrdinalIgnoreCase), "baz");
 
-            var name = submission(_context);
+            submission(_context);
             var data = _context.Data;
 
             Assert.That(data.Count, Is.EqualTo(3));
