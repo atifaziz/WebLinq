@@ -53,6 +53,21 @@ namespace WebLinq.Tests
         }
 
         [Test]
+        public void Get()
+        {
+            var submission1 = FormSubmission.Get("firstname");
+            var value1 = submission1(_context);
+            var submission2 = FormSubmission.Get("lastname");
+            var value2 = submission2(_context);
+            var submission3 = FormSubmission.Get("email");
+            var value3 = submission3(_context);
+
+            Assert.That(value1, Is.EqualTo("Mickey"));
+            Assert.That(value2, Is.EqualTo("Mouse"));
+            Assert.That(value3, Is.EqualTo("mickey@mouse.com"));
+        }
+
+        [Test]
         public void Set()
         {
             var submission = FormSubmission.Set("firstname", "Minnie");
