@@ -313,4 +313,122 @@ namespace WebLinq
         public static FormSubmission<Unit> Collect(this IEnumerable<FormSubmission<Unit>> submissions) =>
             For(submissions, s => s).Ignore();
     }
+
+    partial class FormSubmission
+    {
+        static FormSubmission<string> TrySet(this HtmlForm form, Func<IEnumerable<string>, string> matcher, string value) =>
+            from ns in Return(from c in form.Controls select c.Name)
+            select matcher(ns) into n
+            from r in n != null
+                ? from _ in Set(n, value) select n
+                : Return((string) null)
+            select r;
+
+        /// <summary>
+        /// Sets the value of a single field identified by a predicate function
+        /// otherwise throws an error.
+        /// </summary>
+        /// <returns>
+        /// The name of the field whose value was set.
+        /// </returns>
+
+        public static FormSubmission<string> SetSingleWhere(this HtmlForm form, Func<string, bool> matcher, string value) =>
+            form.TrySet(ns => ns.Single(matcher), value);
+
+        /// <summary>
+        /// Sets the value of a single field identified by a regular expression
+        /// pattern otherwise throws an error.
+        /// </summary>
+        /// <returns>
+        /// The name of the field whose value was set.
+        /// </returns>
+
+        public static FormSubmission<string> SetSingleMatching(this HtmlForm form, string pattern, string value) =>
+            form.SetSingleWhere(n => Regex.IsMatch(n, pattern), value);
+
+        /// <summary>
+        /// Attempts to set the value of a single field identified by a
+        /// predicate function otherwise has no effect.
+        /// </summary>
+        /// <returns>
+        /// The name of the field whose value was set or <c>null</c> if zero
+        /// or multiple fields were identified.
+        /// </returns>
+
+        public static FormSubmission<string> TrySetSingleWhere(this HtmlForm form, Func<string, bool> matcher, string value) =>
+            form.TrySet(ns => ns.SingleOrDefault(matcher), value);
+
+        /// <summary>
+        /// Attempts to Set the value of a single field identified by a
+        /// regular expression pattern otherwise has no effect.
+        /// </summary>
+        /// <returns>
+        /// The name of the field whose value was set or <c>null</c> if zero
+        /// or multiple fields were identified.
+        /// </returns>
+
+        public static FormSubmission<string> TrySetSingleMatching(this HtmlForm form, string pattern, string value) =>
+            form.TrySetSingleWhere(n => Regex.IsMatch(n, pattern), value);
+
+        /// <summary>
+        /// Sets the value of the first field identified by a predicate
+        /// function otherwise throws an error if no field was identified.
+        /// </summary>
+        /// <returns>
+        /// The name of the first field identified by the predicate function.
+        /// </returns>
+
+        public static FormSubmission<string> SetFirstWhere(this HtmlForm form, Func<string, bool> matcher, string value) =>
+            form.TrySet(ns => ns.First(matcher), value);
+
+        /// <summary>
+        /// Attempts to set the value of the first field identified by a
+        /// predicate function otherwise has no effect if no field was
+        /// identified.
+        /// </summary>
+        /// <returns>
+        /// The name of the first field identified by the predicate function.
+        /// </returns>
+
+        public static FormSubmission<string> TrySetFirstWhere(this HtmlForm form, Func<string, bool> matcher, string value) =>
+            form.TrySet(ns => ns.FirstOrDefault(matcher), value);
+
+        /// <summary>
+        /// Attempts to set the value of the first field identified by a
+        /// regular expression pattern otherwise has no effect if no field was
+        /// identified.
+        /// </summary>
+        /// <returns>
+        /// The name of the first field identified by the predicate function.
+        /// </returns>
+
+        public static FormSubmission<string> TrySetFirstMatching(this HtmlForm form, string pattern, string value) =>
+            form.TrySetFirstWhere(n => Regex.IsMatch(n, pattern), value);
+
+        /// <summary>
+        /// Sets the values of all fields identified by a predicate function
+        /// to the same value.
+        /// </summary>
+        /// <returns>
+        /// A sequence of field names that were identified by the predicate
+        /// function and affected.
+        /// </returns>
+
+        public static FormSubmission<IEnumerable<string>> SetWhere(this HtmlForm form, Func<string, bool> matcher, string value) =>
+            from ns in Return(from c in form.Controls select c.Name)
+            select ns.Where(matcher).ToArray() into ns
+            from _ in Set(ns, value)
+            select ns;
+
+        /// <summary>
+        /// Sets the values of all fields identified by a regular expression
+        /// pattern to the same value.
+        /// </summary>
+        /// <returns>
+        /// A sequence of field names that matched and were affected.
+        /// </returns>
+
+        public static FormSubmission<IEnumerable<string>> SetMatching(this HtmlForm form, string pattern, string value) =>
+            form.SetWhere(n => Regex.IsMatch(n, pattern), value);
+    }
 }
