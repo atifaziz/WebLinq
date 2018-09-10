@@ -366,5 +366,42 @@ namespace WebLinq.Tests
             Assert.That(data["lastname"], Is.EqualTo("Mouse"));
             Assert.That(data["email"], Is.EqualTo("minnie@mouse.com"));
         }
+
+        [Test]
+        public void Collect()
+        {
+            var submission =
+                FormSubmission.Collect(
+                    FormSubmission.Set("firstname", "Minnie"),
+                    FormSubmission.Set("email", "minnie@mouse.com"));
+
+            submission(_context);
+
+            var data = _context.Data;
+
+            Assert.That(data.Count, Is.EqualTo(3));
+            Assert.That(data["firstname"], Is.EqualTo("Minnie"));
+            Assert.That(data["lastname"], Is.EqualTo("Mouse"));
+            Assert.That(data["email"], Is.EqualTo("minnie@mouse.com"));
+        }
+
+        [Test]
+        public void CollectAsEnumerable()
+        {
+            var sets = new[]
+            {
+                FormSubmission.Set("firstname", "Minnie"),
+                FormSubmission.Set("email", "minnie@mouse.com"),
+            };
+            var submission = FormSubmission.Collect(sets.AsEnumerable());
+            submission(_context);
+
+            var data = _context.Data;
+
+            Assert.That(data.Count, Is.EqualTo(3));
+            Assert.That(data["firstname"], Is.EqualTo("Minnie"));
+            Assert.That(data["lastname"], Is.EqualTo("Mouse"));
+            Assert.That(data["email"], Is.EqualTo("minnie@mouse.com"));
+        }
     }
 }
