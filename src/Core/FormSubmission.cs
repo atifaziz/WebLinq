@@ -241,7 +241,7 @@ namespace WebLinq
         /// <see cref="NameValueCollection"/>.
         /// </summary>
 
-        public static FormSubmission<NameValueCollection> Collect() =>
+        public static FormSubmission<NameValueCollection> Data() =>
             context => new NameValueCollection(context.Data);
 
         /// <summary>
