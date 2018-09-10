@@ -285,14 +285,12 @@ namespace WebLinq.Tests
         }
 
         [Test]
-        public void Collect()
+        public void Data()
         {
-            var submission = FormSubmission.Collect();
+            var submission = FormSubmission.Data();
+            var data = submission(_context);
 
-            var collection = submission(_context);
-            var data = _context.Data;
-
-            Assert.That(collection, Is.EqualTo(data));
+            Assert.That(data, Is.EqualTo(_context.Data));
             Assert.That(data.Count, Is.EqualTo(3));
             Assert.That(data["firstname"], Is.EqualTo("Mickey"));
             Assert.That(data["lastname"], Is.EqualTo("Mouse"));
