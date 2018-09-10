@@ -289,6 +289,19 @@ namespace WebLinq
             from b in second
             select b;
 
+        /// <summary>
+        /// Combines the result of one submission with another.
+        /// </summary>
+
+        public static FormSubmission<TResult>
+            Zip<TFirst, TSecond, TResult>(
+                this FormSubmission<TFirst> first,
+                FormSubmission<TSecond> second,
+                Func<TFirst, TSecond, TResult> resultSelector) =>
+            from a in first
+            from b in second
+            select resultSelector(a, b);
+
         public static FormSubmission<Unit> Collect(params FormSubmission<Unit>[] submissions) =>
             submissions.AsEnumerable().Collect();
 
