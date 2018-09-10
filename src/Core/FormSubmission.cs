@@ -111,6 +111,13 @@ namespace WebLinq
             context => context.Data.GetValues(name);
 
         /// <summary>
+        /// Removes a field from submission.
+        /// </summary>
+
+        public static FormSubmission<Unit> Remove(string name) =>
+            Do(context => context.Data.Remove(name));
+
+        /// <summary>
         /// Sets the value of a field identified by its name.
         /// </summary>
 
