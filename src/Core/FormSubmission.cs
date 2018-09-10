@@ -57,6 +57,11 @@ namespace WebLinq
                 return resultSelector(t, secondSelector(t)(env));
             };
 
+        public static FormSubmission<TResult> SelectMany<T, TResult>(
+            this FormSubmission<T> submission,
+            Func<T, FormSubmission<TResult>> resultSelector) =>
+            submission.SelectMany(resultSelector, (_, r) => r);
+
         public static FormSubmission<IEnumerable<TResult>> For<T, TResult>(IEnumerable<T> source,
             Func<T, FormSubmission<TResult>> f) =>
             context => source.Select(f).Select(e => e(context)).ToList();
