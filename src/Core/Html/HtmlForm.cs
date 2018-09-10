@@ -32,6 +32,7 @@ namespace WebLinq.Html
     public sealed partial class HtmlForm
     {
         ReadOnlyCollection<HtmlFormControl> _controls;
+        Dictionary<HtmlObject, HtmlFormControl> _controlByElement;
 
         public HtmlObject Element { get; }
         public string Name { get; }
@@ -76,6 +77,21 @@ namespace WebLinq.Html
                             ?? HtmlInputType.Default
                             : null
             select new HtmlFormControl(this, e, name, controlType, inputType);
+
+        Dictionary<HtmlObject, HtmlFormControl> ControlByElement =>
+            _controlByElement ?? (_controlByElement = Controls.ToDictionary(c => c.Element, c => c));
+
+        public HtmlFormControl QuerySelector(string selector) =>
+            Element.QuerySelector(selector) is HtmlObject element
+            ? ControlByElement.TryGetValue(element, out var control) ? control : null
+            : null;
+
+        public IEnumerable<HtmlFormControl> QuerySelectorAll(string selector) =>
+            from element in Element.QuerySelectorAll(selector)
+            select ControlByElement.TryGetValue(element, out var control) ? control : null
+            into control
+            where control != null
+            select control;
 
         public NameValueCollection GetSubmissionData() =>
             GetFormCore(data => data);

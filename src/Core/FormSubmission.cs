@@ -97,28 +97,6 @@ namespace WebLinq
         static FormSubmission<HtmlForm> Form() => context => context.Form;
 
         /// <summary>
-        /// Finds the first HTML form control identified by a selector.
-        /// </summary>
-
-        public static FormSubmission<HtmlFormControl> QuerySelector(string selector) =>
-            from f in Form()
-            select f.Element.QuerySelector(selector) is HtmlObject e
-                 ? f.Controls.FirstOrDefault(c => c.Element == e)
-                 : null;
-
-        /// <summary>
-        /// Finds all the HTML form controls identified by a selector.
-        /// </summary>
-
-        public static FormSubmission<IEnumerable<HtmlFormControl>> QuerySelectorAll(string selector) =>
-            from f in Form()
-            select
-                from e in f.Element.QuerySelectorAll(selector)
-                select f.Controls.FirstOrDefault(c => c.Element == e) into c
-                where c != null
-                select c;
-
-        /// <summary>
         /// Gets the value of a field identified by its name.
         /// </summary>
 
