@@ -234,6 +234,21 @@ namespace WebLinq.Tests
         }
 
         [Test]
+        public void SetFirstWhereNoneMatch()
+        {
+            var submission =
+                FormSubmission.SetFirstWhere(n => n.StartsWith("foo", StringComparison.OrdinalIgnoreCase), "bar");
+
+            var data = _context.Data;
+
+            Assert.Throws<InvalidOperationException>(() => submission(_context));
+            Assert.That(data.Count, Is.EqualTo(3));
+            Assert.That(data["firstname"], Is.EqualTo("Mickey"));
+            Assert.That(data["lastname"], Is.EqualTo("Mouse"));
+            Assert.That(data["email"], Is.EqualTo("mickey@mouse.com"));
+        }
+
+        [Test]
         public void SetWhere()
         {
             var submission = 
