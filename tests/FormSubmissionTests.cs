@@ -309,5 +309,20 @@ namespace WebLinq.Tests
 
             Assert.That(data, Is.Empty);
         }
+
+        [Test]
+        public void Then()
+        {
+            var submission = FormSubmission.Set("firstname", "Minnie")
+                                           .Then(FormSubmission.Set("email", "minnie@mouse.com"));
+
+            submission(_context);
+            var data = _context.Data;
+
+            Assert.That(data.Count, Is.EqualTo(3));
+            Assert.That(data["firstname"], Is.EqualTo("Minnie"));
+            Assert.That(data["lastname"], Is.EqualTo("Mouse"));
+            Assert.That(data["email"], Is.EqualTo("minnie@mouse.com"));
+        }
     }
 }
