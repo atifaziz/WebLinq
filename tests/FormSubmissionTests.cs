@@ -39,6 +39,15 @@ namespace WebLinq.Tests
         }
 
         [Test]
+        public void Return()
+        {
+            var submission = FormSubmission.Return("foo");
+            var value = submission(_context);
+
+            Assert.That(value, Is.EqualTo("foo"));
+        }
+
+        [Test]
         public void Names()
         {
             var submission = FormSubmission.Names();
