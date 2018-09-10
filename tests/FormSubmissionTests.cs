@@ -58,6 +58,20 @@ namespace WebLinq.Tests
             Assert.That(names, Is.EqualTo(new string('*', 42)));
         }
 
+        [Test]
+        public void SelectMany()
+        {
+            var submission =
+                from n in FormSubmission.Return(42)
+                from s in FormSubmission.Return(new string((char) n, n))
+                select string.Concat(n, s);
+
+            var names = submission(_context);
+            var stars = new string('*', 42);
+
+            Assert.That(names, Is.EqualTo("42" + stars));
+        }
+
         public void Names()
         {
             var submission = FormSubmission.Names();
