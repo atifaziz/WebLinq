@@ -85,7 +85,7 @@ namespace WebLinq
                 return;
             _disposed = true;
             var disposable = Content as IDisposable;
-            Content = default(T);
+            Content = default;
             disposable?.Dispose();
         }
 

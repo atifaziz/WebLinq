@@ -161,7 +161,7 @@ namespace WebLinq.Html
             return selector3 != null ? selector3(all, form, submittables)
                  : selector2 != null ? selector2(form, submittables)
                  : selector1 != null ? selector1(form)
-                 : default(T);
+                 : default;
         }
     }
 }
