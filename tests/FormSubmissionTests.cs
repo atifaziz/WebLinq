@@ -48,6 +48,16 @@ namespace WebLinq.Tests
         }
 
         [Test]
+        public void Select()
+        {
+            var submission =
+                from n in FormSubmission.Return(42)
+                select new string((char) n, n);
+
+            var names = submission(_context);
+            Assert.That(names, Is.EqualTo(new string('*', 42)));
+        }
+
         public void Names()
         {
             var submission = FormSubmission.Names();
