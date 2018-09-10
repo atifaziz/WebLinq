@@ -46,7 +46,7 @@ namespace WebLinq.Tests
 
             var data = _context.Data;
 
-            Assert.That(names, Is.EqualTo(names));
+            Assert.That(names, Is.EqualTo(new [] {"firstname","lastname","email"}));
             Assert.That(data["firstname"], Is.EqualTo("Mickey"));
             Assert.That(data["lastname"], Is.EqualTo("Mouse"));
             Assert.That(data["email"], Is.EqualTo("mickey@mouse.com"));
