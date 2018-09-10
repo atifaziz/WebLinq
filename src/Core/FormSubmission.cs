@@ -104,6 +104,13 @@ namespace WebLinq
             context => context.Data[name];
 
         /// <summary>
+        /// Gets all the values of a field identified by its name.
+        /// </summary>
+
+        public static FormSubmission<IReadOnlyCollection<string>> GetValues(string name) =>
+            context => context.Data.GetValues(name);
+
+        /// <summary>
         /// Sets the value of a field identified by its name.
         /// </summary>
 
