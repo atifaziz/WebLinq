@@ -24,6 +24,7 @@ namespace WebLinq.Html
     using System.Collections.Specialized;
     using System.Linq;
     using System.Net.Mime;
+    using System.Text.RegularExpressions;
 
     #endregion
 
@@ -92,6 +93,22 @@ namespace WebLinq.Html
             into control
             where control != null
             select control;
+
+        public IEnumerable<HtmlFormControl> FindControls(string name) =>
+            FindControls(name, StringComparison.Ordinal);
+
+        public IEnumerable<HtmlFormControl> FindControls(string name, StringComparison comparison) =>
+            from c in Controls
+            where string.Equals(name, c.Name, comparison)
+            select c;
+
+        public IEnumerable<HtmlFormControl> MatchControls(string pattern) =>
+            MatchControls(pattern, RegexOptions.None);
+
+        public IEnumerable<HtmlFormControl> MatchControls(string pattern, RegexOptions options) =>
+            from c in Controls
+            where Regex.IsMatch(pattern, c.Name, options)
+            select c;
 
         public NameValueCollection GetSubmissionData() =>
             GetFormCore(data => data);
