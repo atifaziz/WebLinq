@@ -40,7 +40,7 @@ namespace WebLinq.Tests
         {
             var submission = FormSubmission.Set("firstname", "Minnie");
 
-            submission(_context);
+            submission.Run(_context);
             var data = _context.Data;
 
             Assert.That(data.Count, Is.EqualTo(2));
@@ -53,7 +53,7 @@ namespace WebLinq.Tests
         {
             var submission = FormSubmission.Set("foo", "bar");
 
-            submission(_context);
+            submission.Run(_context);
             var data = _context.Data;
 
             Assert.That(data.Count, Is.EqualTo(3));
@@ -70,7 +70,7 @@ namespace WebLinq.Tests
                 from _ in FormSubmission.Set("firstname", fn.ToUpperInvariant()).Ignore()
                 select _;
 
-            submission(_context);
+            submission.Run(_context);
             var data = _context.Data;
 
             Assert.That(data.Count, Is.EqualTo(2));
@@ -85,7 +85,7 @@ namespace WebLinq.Tests
                 FormSubmission.SetSingleWhere(n => n.StartsWith("first", StringComparison.OrdinalIgnoreCase),
                                               "Minnie");
 
-            var name = submission(_context);
+            var name = submission.Run(_context);
             var data = _context.Data;
 
             Assert.That(name, Is.EqualTo("firstname"));
@@ -101,7 +101,7 @@ namespace WebLinq.Tests
                 FormSubmission.TrySetSingleWhere(n => n.StartsWith("foo", StringComparison.OrdinalIgnoreCase),
                                                  "bar");
 
-            var name = submission(_context);
+            var name = submission.Run(_context);
             var data = _context.Data;
 
             Assert.That(name, Is.Null);

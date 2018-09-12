@@ -35,42 +35,59 @@ namespace WebLinq
         public NameValueCollection Data { get; }
     }
 
-    public delegate T FormSubmission<out T>(FormSubmissionContext context);
+    public interface IFormSubmission<out T>
+    {
+        T Run(FormSubmissionContext context);
+    }
 
     public static partial class FormSubmission
     {
-        public static FormSubmission<T> Return<T>(T value) => _ => value;
+        public static IFormSubmission<T> Create<T>(Func<FormSubmissionContext, T> runner) =>
+            new DelegatingFormSubmission<T>(runner);
 
-        public static FormSubmission<TResult> Bind<T, TResult>(this FormSubmission<T> submission, Func<T, FormSubmission<TResult>> selector) =>
-            env => selector(submission(env))(env);
+        sealed class DelegatingFormSubmission<T> : IFormSubmission<T>
+        {
+            readonly Func<FormSubmissionContext, T> _runner;
 
-        public static FormSubmission<TResult> Select<T, TResult>(this FormSubmission<T> submission, Func<T, TResult> selector) =>
-            env => selector(submission(env));
+            public DelegatingFormSubmission(Func<FormSubmissionContext, T> runner) =>
+                _runner = runner ?? throw new ArgumentNullException(nameof(runner));
 
-        public static FormSubmission<TResult> SelectMany<TFirst, TSecond, TResult>(
-            this FormSubmission<TFirst> submission,
-            Func<TFirst, FormSubmission<TSecond>> secondSelector,
+            public T Run(FormSubmissionContext context) =>
+                _runner(context ?? throw new ArgumentNullException(nameof(context)));
+        }
+
+        public static IFormSubmission<T> Return<T>(T value) => Create(_ => value);
+
+        public static IFormSubmission<TResult> Bind<T, TResult>(this IFormSubmission<T> submission, Func<T, IFormSubmission<TResult>> selector) =>
+            Create(env => selector(submission.Run(env)).Run(env));
+
+        public static IFormSubmission<TResult> Select<T, TResult>(this IFormSubmission<T> submission, Func<T, TResult> selector) =>
+            Create(env => selector(submission.Run(env)));
+
+        public static IFormSubmission<TResult> SelectMany<TFirst, TSecond, TResult>(
+            this IFormSubmission<TFirst> submission,
+            Func<TFirst, IFormSubmission<TSecond>> secondSelector,
             Func<TFirst, TSecond, TResult> resultSelector) =>
-            env =>
+            Create(env =>
             {
-                var t = submission(env);
-                return resultSelector(t, secondSelector(t)(env));
-            };
+                var t = submission.Run(env);
+                return resultSelector(t, secondSelector(t).Run(env));
+            });
 
-        public static FormSubmission<TResult> SelectMany<T, TResult>(
-            this FormSubmission<T> submission,
-            Func<T, FormSubmission<TResult>> resultSelector) =>
+        public static IFormSubmission<TResult> SelectMany<T, TResult>(
+            this IFormSubmission<T> submission,
+            Func<T, IFormSubmission<TResult>> resultSelector) =>
             submission.SelectMany(resultSelector, (_, r) => r);
 
-        public static FormSubmission<IEnumerable<TResult>> For<T, TResult>(IEnumerable<T> source,
-            Func<T, FormSubmission<TResult>> f) =>
-            context => source.Select(f).Select(e => e(context)).ToList();
+        public static IFormSubmission<IEnumerable<TResult>> For<T, TResult>(IEnumerable<T> source,
+            Func<T, IFormSubmission<TResult>> f) =>
+            Create(context => source.Select(f).Select(e => e.Run(context)).ToList());
 
-        internal static FormSubmission<T> Do<T>(this FormSubmission<T> submission, Action<FormSubmissionContext> action) =>
-            submission.Bind<T, T>(x => env => { action(env); return x; });
+        internal static IFormSubmission<T> Do<T>(this IFormSubmission<T> submission, Action<FormSubmissionContext> action) =>
+            submission.Bind(x => Create(env => { action(env); return x; }));
 
-        internal static FormSubmission<Unit> Do(Action<FormSubmissionContext> action) =>
-            env => { action(env); return Unit.Default; };
+        internal static IFormSubmission<Unit> Do(Action<FormSubmissionContext> action) =>
+            Create(env => { action(env); return Unit.Default; });
     }
 }
 
@@ -92,41 +109,42 @@ namespace WebLinq
         /// Get the names of all the fields.
         /// </summary>
 
-        public static FormSubmission<IReadOnlyCollection<string>> Names() =>
-            context => context.Data.AllKeys;
+        public static IFormSubmission<IReadOnlyCollection<string>> Names() =>
+            Create(context => context.Data.AllKeys);
 
         /// <summary>
         /// Gets the parsed underlying HTML form.
         /// </summary>
 
-        public static FormSubmission<HtmlForm> Form() => context => context.Form;
+        public static IFormSubmission<HtmlForm> Form() =>
+            Create(context => context.Form);
 
         /// <summary>
         /// Gets the value of a field identified by its name.
         /// </summary>
 
-        public static FormSubmission<string> Get(string name) =>
-            context => context.Data[name];
+        public static IFormSubmission<string> Get(string name) =>
+            Create(context => context.Data[name]);
 
         /// <summary>
         /// Gets all the values of a field identified by its name.
         /// </summary>
 
-        public static FormSubmission<IReadOnlyCollection<string>> GetValues(string name) =>
-            context => context.Data.GetValues(name);
+        public static IFormSubmission<IReadOnlyCollection<string>> GetValues(string name) =>
+            Create(context => context.Data.GetValues(name));
 
         /// <summary>
         /// Removes a field from submission.
         /// </summary>
 
-        public static FormSubmission<Unit> Remove(string name) =>
+        public static IFormSubmission<Unit> Remove(string name) =>
             Do(context => context.Data.Remove(name));
 
         /// <summary>
         /// Sets the value of a field identified by its name.
         /// </summary>
 
-        public static FormSubmission<Unit> Set(string name, string value) =>
+        public static IFormSubmission<Unit> Set(string name, string value) =>
             Do(context => context.Data[name] = value);
 
         /// <summary>
@@ -134,11 +152,11 @@ namespace WebLinq
         /// names to the same value.
         /// </summary>
 
-        public static FormSubmission<Unit> Set(IEnumerable<string> names, string value) =>
+        public static IFormSubmission<Unit> Set(IEnumerable<string> names, string value) =>
             from _ in For(names, n => Set(n, value))
             select Unit.Default;
 
-        static FormSubmission<string> TrySet(Func<IEnumerable<string>, string> matcher, string value) =>
+        static IFormSubmission<string> TrySet(Func<IEnumerable<string>, string> matcher, string value) =>
             from ns in Names()
             select matcher(ns) into n
             from r in n != null
@@ -154,7 +172,7 @@ namespace WebLinq
         /// The name of the field whose value was set.
         /// </returns>
 
-        public static FormSubmission<string> SetSingleWhere(Func<string, bool> matcher, string value) =>
+        public static IFormSubmission<string> SetSingleWhere(Func<string, bool> matcher, string value) =>
             TrySet(ns => ns.Single(matcher), value);
 
         /// <summary>
@@ -165,7 +183,7 @@ namespace WebLinq
         /// The name of the field whose value was set.
         /// </returns>
 
-        public static FormSubmission<string> SetSingleMatching(string pattern, string value) =>
+        public static IFormSubmission<string> SetSingleMatching(string pattern, string value) =>
             SetSingleWhere(n => Regex.IsMatch(n, pattern), value);
 
         /// <summary>
@@ -177,7 +195,7 @@ namespace WebLinq
         /// or multiple fields were identified.
         /// </returns>
 
-        public static FormSubmission<string> TrySetSingleWhere(Func<string, bool> matcher, string value) =>
+        public static IFormSubmission<string> TrySetSingleWhere(Func<string, bool> matcher, string value) =>
             TrySet(ns => ns.SingleOrDefault(matcher), value);
 
         /// <summary>
@@ -189,7 +207,7 @@ namespace WebLinq
         /// or multiple fields were identified.
         /// </returns>
 
-        public static FormSubmission<string> TrySetSingleMatching(string pattern, string value) =>
+        public static IFormSubmission<string> TrySetSingleMatching(string pattern, string value) =>
             TrySetSingleWhere(n => Regex.IsMatch(n, pattern), value);
 
         /// <summary>
@@ -200,7 +218,7 @@ namespace WebLinq
         /// The name of the first field identified by the predicate function.
         /// </returns>
 
-        public static FormSubmission<string> SetFirstWhere(Func<string, bool> matcher, string value) =>
+        public static IFormSubmission<string> SetFirstWhere(Func<string, bool> matcher, string value) =>
             TrySet(ns => ns.First(matcher), value);
 
         /// <summary>
@@ -212,7 +230,7 @@ namespace WebLinq
         /// The name of the first field identified by the predicate function.
         /// </returns>
 
-        public static FormSubmission<string> TrySetFirstWhere(Func<string, bool> matcher, string value) =>
+        public static IFormSubmission<string> TrySetFirstWhere(Func<string, bool> matcher, string value) =>
             TrySet(ns => ns.FirstOrDefault(matcher), value);
 
         /// <summary>
@@ -224,7 +242,7 @@ namespace WebLinq
         /// The name of the first field identified by the predicate function.
         /// </returns>
 
-        public static FormSubmission<string> TrySetFirstMatching(string pattern, string value) =>
+        public static IFormSubmission<string> TrySetFirstMatching(string pattern, string value) =>
             TrySetFirstWhere(n => Regex.IsMatch(n, pattern), value);
 
         /// <summary>
@@ -236,7 +254,7 @@ namespace WebLinq
         /// function and affected.
         /// </returns>
 
-        public static FormSubmission<IEnumerable<string>> SetWhere(Func<string, bool> matcher, string value) =>
+        public static IFormSubmission<IEnumerable<string>> SetWhere(Func<string, bool> matcher, string value) =>
             from ns in Names()
             select ns.Where(matcher).ToArray() into ns
             from _ in Set(ns, value)
@@ -250,10 +268,10 @@ namespace WebLinq
         /// A sequence of field names that matched and were affected.
         /// </returns>
 
-        public static FormSubmission<IEnumerable<string>> SetMatching(string pattern, string value) =>
+        public static IFormSubmission<IEnumerable<string>> SetMatching(string pattern, string value) =>
             SetWhere(n => Regex.IsMatch(n, pattern), value);
 
-        public static FormSubmission<Unit> Merge(NameValueCollection other) =>
+        public static IFormSubmission<Unit> Merge(NameValueCollection other) =>
             Do(context =>
             {
                 var entries = from e in other.AsEnumerable()
@@ -267,21 +285,21 @@ namespace WebLinq
         /// <see cref="NameValueCollection"/>.
         /// </summary>
 
-        public static FormSubmission<NameValueCollection> Data() =>
-            context => new NameValueCollection(context.Data);
+        public static IFormSubmission<NameValueCollection> Data() =>
+            Create(context => new NameValueCollection(context.Data));
 
         /// <summary>
         /// Clears all form data.
         /// </summary>
 
-        public static FormSubmission<Unit> Clear() =>
+        public static IFormSubmission<Unit> Clear() =>
             Do(context => context.Data.Clear());
 
         /// <summary>
         /// Changes the type of the submission to <seealso cref="Unit"/>.
         /// </summary>
 
-        public static FormSubmission<Unit> Ignore<T>(this FormSubmission<T> submission) =>
+        public static IFormSubmission<Unit> Ignore<T>(this IFormSubmission<T> submission) =>
             from _ in submission
             select Unit.Default;
 
@@ -289,7 +307,7 @@ namespace WebLinq
         /// Continues one submission after another.
         /// </summary>
 
-        public static FormSubmission<T> Then<T>(this FormSubmission<Unit> first, FormSubmission<T> second) =>
+        public static IFormSubmission<T> Then<T>(this IFormSubmission<Unit> first, IFormSubmission<T> second) =>
             from _ in first
             from b in second
             select b;
@@ -298,25 +316,25 @@ namespace WebLinq
         /// Combines the result of one submission with another.
         /// </summary>
 
-        public static FormSubmission<TResult>
+        public static IFormSubmission<TResult>
             Zip<TFirst, TSecond, TResult>(
-                this FormSubmission<TFirst> first,
-                FormSubmission<TSecond> second,
+                this IFormSubmission<TFirst> first,
+                IFormSubmission<TSecond> second,
                 Func<TFirst, TSecond, TResult> resultSelector) =>
             from a in first
             from b in second
             select resultSelector(a, b);
 
-        public static FormSubmission<Unit> Collect(params FormSubmission<Unit>[] submissions) =>
+        public static IFormSubmission<Unit> Collect(params IFormSubmission<Unit>[] submissions) =>
             submissions.AsEnumerable().Collect();
 
-        public static FormSubmission<Unit> Collect(this IEnumerable<FormSubmission<Unit>> submissions) =>
+        public static IFormSubmission<Unit> Collect(this IEnumerable<IFormSubmission<Unit>> submissions) =>
             For(submissions, s => s).Ignore();
     }
 
     partial class FormSubmission
     {
-        static FormSubmission<string> TrySet(this HtmlForm form, Func<IEnumerable<string>, string> matcher, string value) =>
+        static IFormSubmission<string> TrySet(this HtmlForm form, Func<IEnumerable<string>, string> matcher, string value) =>
             from ns in Return(from c in form.Controls select c.Name)
             select matcher(ns) into n
             from r in n != null
@@ -332,7 +350,7 @@ namespace WebLinq
         /// The name of the field whose value was set.
         /// </returns>
 
-        public static FormSubmission<string> SetSingleWhere(this HtmlForm form, Func<string, bool> matcher, string value) =>
+        public static IFormSubmission<string> SetSingleWhere(this HtmlForm form, Func<string, bool> matcher, string value) =>
             form.TrySet(ns => ns.Single(matcher), value);
 
         /// <summary>
@@ -343,7 +361,7 @@ namespace WebLinq
         /// The name of the field whose value was set.
         /// </returns>
 
-        public static FormSubmission<string> SetSingleMatching(this HtmlForm form, string pattern, string value) =>
+        public static IFormSubmission<string> SetSingleMatching(this HtmlForm form, string pattern, string value) =>
             form.SetSingleWhere(n => Regex.IsMatch(n, pattern), value);
 
         /// <summary>
@@ -355,7 +373,7 @@ namespace WebLinq
         /// or multiple fields were identified.
         /// </returns>
 
-        public static FormSubmission<string> TrySetSingleWhere(this HtmlForm form, Func<string, bool> matcher, string value) =>
+        public static IFormSubmission<string> TrySetSingleWhere(this HtmlForm form, Func<string, bool> matcher, string value) =>
             form.TrySet(ns => ns.SingleOrDefault(matcher), value);
 
         /// <summary>
@@ -367,7 +385,7 @@ namespace WebLinq
         /// or multiple fields were identified.
         /// </returns>
 
-        public static FormSubmission<string> TrySetSingleMatching(this HtmlForm form, string pattern, string value) =>
+        public static IFormSubmission<string> TrySetSingleMatching(this HtmlForm form, string pattern, string value) =>
             form.TrySetSingleWhere(n => Regex.IsMatch(n, pattern), value);
 
         /// <summary>
@@ -378,7 +396,7 @@ namespace WebLinq
         /// The name of the first field identified by the predicate function.
         /// </returns>
 
-        public static FormSubmission<string> SetFirstWhere(this HtmlForm form, Func<string, bool> matcher, string value) =>
+        public static IFormSubmission<string> SetFirstWhere(this HtmlForm form, Func<string, bool> matcher, string value) =>
             form.TrySet(ns => ns.First(matcher), value);
 
         /// <summary>
@@ -390,7 +408,7 @@ namespace WebLinq
         /// The name of the first field identified by the predicate function.
         /// </returns>
 
-        public static FormSubmission<string> TrySetFirstWhere(this HtmlForm form, Func<string, bool> matcher, string value) =>
+        public static IFormSubmission<string> TrySetFirstWhere(this HtmlForm form, Func<string, bool> matcher, string value) =>
             form.TrySet(ns => ns.FirstOrDefault(matcher), value);
 
         /// <summary>
@@ -402,7 +420,7 @@ namespace WebLinq
         /// The name of the first field identified by the predicate function.
         /// </returns>
 
-        public static FormSubmission<string> TrySetFirstMatching(this HtmlForm form, string pattern, string value) =>
+        public static IFormSubmission<string> TrySetFirstMatching(this HtmlForm form, string pattern, string value) =>
             form.TrySetFirstWhere(n => Regex.IsMatch(n, pattern), value);
 
         /// <summary>
@@ -414,7 +432,7 @@ namespace WebLinq
         /// function and affected.
         /// </returns>
 
-        public static FormSubmission<IEnumerable<string>> SetWhere(this HtmlForm form, Func<string, bool> matcher, string value) =>
+        public static IFormSubmission<IEnumerable<string>> SetWhere(this HtmlForm form, Func<string, bool> matcher, string value) =>
             from ns in Return(from c in form.Controls select c.Name)
             select ns.Where(matcher).ToArray() into ns
             from _ in Set(ns, value)
@@ -428,7 +446,7 @@ namespace WebLinq
         /// A sequence of field names that matched and were affected.
         /// </returns>
 
-        public static FormSubmission<IEnumerable<string>> SetMatching(this HtmlForm form, string pattern, string value) =>
+        public static IFormSubmission<IEnumerable<string>> SetMatching(this HtmlForm form, string pattern, string value) =>
             form.SetWhere(n => Regex.IsMatch(n, pattern), value);
     }
 }
