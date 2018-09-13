@@ -20,8 +20,7 @@ build_script:
 
     .\pack.cmd ci-$id $env:APPVEYOR_REPO_COMMIT
 test_script:
-- dotnet test --no-restore --no-build -c Debug tests
-- dotnet test --no-restore --no-build -c Release tests
+- test.cmd
 artifacts:
 - path: dist\*.nupkg
 deploy:
