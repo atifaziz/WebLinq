@@ -8,7 +8,7 @@ skip_commits:
     - '*.txt'
 skip_tags: true
 install:
-- ps: Install-Product node 6
+- ps: if ($isWindows) { Install-Product node 6 }
 - npm install -g eclint
 - git rm .editorconfig
 - eclint check -n "**/*.{cs,tt,cmd,sh,md,txt,yml}"
