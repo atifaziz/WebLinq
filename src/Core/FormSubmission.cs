@@ -21,23 +21,10 @@ namespace WebLinq
     using System.Collections.Specialized;
     using System.Linq;
     using System.Reactive;
-    using Html;
-
-    public sealed class FormSubmissionContext
-    {
-        public FormSubmissionContext(HtmlForm form, NameValueCollection data)
-        {
-            Form = form ?? throw new ArgumentNullException(nameof(form));
-            Data = data ?? throw new ArgumentNullException(nameof(data));
-        }
-
-        public HtmlForm Form { get; }
-        public NameValueCollection Data { get; }
-    }
 
     public interface IFormSubmission<out T>
     {
-        T Run(FormSubmissionContext context);
+        T Run(NameValueCollection data);
     }
 
     public interface IFormSubmissionAction<out T> : IFormSubmission<Unit>
@@ -58,9 +45,9 @@ namespace WebLinq
         public FormSubmissionAction(IFormSubmission<T> submission) =>
             _submission = submission ?? throw new ArgumentNullException(nameof(submission));
 
-        public Unit Run(FormSubmissionContext context)
+        public Unit Run(NameValueCollection data)
         {
-            _submission.Run(context);
+            _submission.Run(data);
             return Unit.Default;
         }
 
@@ -69,18 +56,18 @@ namespace WebLinq
 
     public static partial class FormSubmission
     {
-        public static IFormSubmission<T> Create<T>(Func<FormSubmissionContext, T> runner) =>
+        public static IFormSubmission<T> Create<T>(Func<NameValueCollection, T> runner) =>
             new DelegatingFormSubmission<T>(runner);
 
         sealed class DelegatingFormSubmission<T> : IFormSubmission<T>
         {
-            readonly Func<FormSubmissionContext, T> _runner;
+            readonly Func<NameValueCollection, T> _runner;
 
-            public DelegatingFormSubmission(Func<FormSubmissionContext, T> runner) =>
+            public DelegatingFormSubmission(Func<NameValueCollection, T> runner) =>
                 _runner = runner ?? throw new ArgumentNullException(nameof(runner));
 
-            public T Run(FormSubmissionContext context) =>
-                _runner(context ?? throw new ArgumentNullException(nameof(context)));
+            public T Run(NameValueCollection data) =>
+                _runner(data ?? throw new ArgumentNullException(nameof(data)));
         }
 
         public static IFormSubmission<T> Return<T>(T value) => Create(_ => value);
@@ -108,12 +95,12 @@ namespace WebLinq
 
         public static IFormSubmission<IEnumerable<TResult>> For<T, TResult>(IEnumerable<T> source,
             Func<T, IFormSubmission<TResult>> f) =>
-            Create(context => source.Select(f).Select(e => e.Run(context)).ToList());
+            Create(data => source.Select(f).Select(e => e.Run(data)).ToList());
 
-        internal static IFormSubmission<T> Do<T>(this IFormSubmission<T> submission, Action<FormSubmissionContext> action) =>
+        internal static IFormSubmission<T> Do<T>(this IFormSubmission<T> submission, Action<NameValueCollection> action) =>
             submission.Bind(x => Create(env => { action(env); return x; }));
 
-        internal static IFormSubmission<Unit> Do(Action<FormSubmissionContext> action) =>
+        internal static IFormSubmission<Unit> Do(Action<NameValueCollection> action) =>
             Create(env => { action(env); return Unit.Default; });
     }
 }
@@ -137,42 +124,35 @@ namespace WebLinq
         /// </summary>
 
         public static IFormSubmission<IReadOnlyCollection<string>> Names() =>
-            Create(context => context.Data.AllKeys);
-
-        /// <summary>
-        /// Gets the parsed underlying HTML form.
-        /// </summary>
-
-        public static IFormSubmission<HtmlForm> Form() =>
-            Create(context => context.Form);
+            Create(data => data.AllKeys);
 
         /// <summary>
         /// Gets the value of a field identified by its name.
         /// </summary>
 
         public static IFormSubmission<string> Get(string name) =>
-            Create(context => context.Data[name]);
+            Create(data => data[name]);
 
         /// <summary>
         /// Gets all the values of a field identified by its name.
         /// </summary>
 
         public static IFormSubmission<IReadOnlyCollection<string>> GetValues(string name) =>
-            Create(context => context.Data.GetValues(name));
+            Create(data => data.GetValues(name));
 
         /// <summary>
         /// Removes a field from submission.
         /// </summary>
 
         public static IFormSubmission<Unit> Remove(string name) =>
-            Do(context => context.Data.Remove(name));
+            Do(data => data.Remove(name));
 
         /// <summary>
         /// Sets the value of a field identified by its name.
         /// </summary>
 
         public static IFormSubmission<Unit> Set(string name, string value) =>
-            Do(context => context.Data[name] = value);
+            Do(data => data[name] = value);
 
         /// <summary>
         /// Sets the values of all fields identified by a collection of
@@ -301,12 +281,12 @@ namespace WebLinq
             SetWhere(n => Regex.IsMatch(n, pattern), value);
 
         public static IFormSubmission<Unit> Merge(NameValueCollection other) =>
-            Do(context =>
+            Do(data =>
             {
                 var entries = from e in other.AsEnumerable()
                               from v in e.Value select e.Key.AsKeyTo(v);
                 foreach (var e in entries)
-                    context.Data.Add(e.Key, e.Value);
+                    data.Add(e.Key, e.Value);
             });
 
         /// <summary>
@@ -315,14 +295,14 @@ namespace WebLinq
         /// </summary>
 
         public static IFormSubmission<NameValueCollection> Data() =>
-            Create(context => new NameValueCollection(context.Data));
+            Create(data => new NameValueCollection(data));
 
         /// <summary>
         /// Clears all form data.
         /// </summary>
 
         public static IFormSubmission<Unit> Clear() =>
-            Do(context => context.Data.Clear());
+            Do(data => data.Clear());
 
         /// <summary>
         /// Changes the type of the submission to <seealso cref="Unit"/>.

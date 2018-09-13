@@ -349,10 +349,10 @@ namespace WebLinq
             {
                 foreach (var e in data.AsEnumerable())
                 {
-                    submission = submission.Do(fsc => fsc.Data.Remove(e.Key));
+                    submission = submission.Do(fsc => fsc.Remove(e.Key));
                     if (e.Value.Length == 1 && e.Value[0] == null)
                         continue;
-                    submission = e.Value.Aggregate(submission, (current, value) => current.Do(fsc => fsc.Data.Add(e.Key, value)));
+                    submission = e.Value.Aggregate(submission, (current, value) => current.Do(fsc => fsc.Add(e.Key, value)));
                 }
             }
 
@@ -382,7 +382,7 @@ namespace WebLinq
             if (form == null)
                 throw new Exception("No HTML form for submit.");
 
-            submissions(form.Object).Run(new FormSubmissionContext(form.Object, form.Data));
+            submissions(form.Object).Run(form.Data);
 
             return form.Object.Method == HtmlFormMethod.Post
                  ? http.Post(actionUrl ?? form.Action, form.Data)
