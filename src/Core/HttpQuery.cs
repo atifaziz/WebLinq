@@ -292,33 +292,33 @@ namespace WebLinq
         public static IHttpObservable SubmitTo(this IObservable<HttpFetch<ParsedHtml>> query, Uri url, int formIndex, NameValueCollection data) =>
             Submit(query, null, formIndex, url, data);
 
-        static IHttpObservable Submit(IObservable<HttpFetch<ParsedHtml>> query, string formSelector, int? formIndex, Uri url, IFormSubmission<Unit> data) =>
+        static IHttpObservable Submit(IObservable<HttpFetch<ParsedHtml>> query, string formSelector, int? formIndex, Uri url, ISubmissionData<Unit> data) =>
             HttpObservable.Return(
                 from html in query
                 select Submit(html.Client, html.Content, formSelector, formIndex, url, _ => data));
 
-        public static IHttpObservable Submit(this IHttpClient http, ParsedHtml html, string formSelector, IFormSubmission<Unit> data) =>
+        public static IHttpObservable Submit(this IHttpClient http, ParsedHtml html, string formSelector, ISubmissionData<Unit> data) =>
             Submit(http, html, formSelector, null, null, _ => data);
 
-        public static IHttpObservable Submit(this IHttpClient http, ParsedHtml html, int formIndex, IFormSubmission<Unit> data) =>
+        public static IHttpObservable Submit(this IHttpClient http, ParsedHtml html, int formIndex, ISubmissionData<Unit> data) =>
             Submit(http, html, null, formIndex, null, _ => data);
 
-        public static IHttpObservable SubmitTo(this IHttpClient http, Uri url, ParsedHtml html, string formSelector, IFormSubmission<Unit> data) =>
+        public static IHttpObservable SubmitTo(this IHttpClient http, Uri url, ParsedHtml html, string formSelector, ISubmissionData<Unit> data) =>
             Submit(http, html, formSelector, null, url, _ => data);
 
-        public static IHttpObservable SubmitTo(this IHttpClient http, Uri url, ParsedHtml html, int formIndex, IFormSubmission<Unit> data) =>
+        public static IHttpObservable SubmitTo(this IHttpClient http, Uri url, ParsedHtml html, int formIndex, ISubmissionData<Unit> data) =>
             Submit(http, html, null, formIndex, url, _ => data);
 
-        public static IHttpObservable Submit(this IHttpClient http, ParsedHtml html, string formSelector, Func<HtmlForm, IFormSubmission<Unit>> data) =>
+        public static IHttpObservable Submit(this IHttpClient http, ParsedHtml html, string formSelector, Func<HtmlForm, ISubmissionData<Unit>> data) =>
             Submit(http, html, formSelector, null, null, data);
 
-        public static IHttpObservable Submit(this IHttpClient http, ParsedHtml html, int formIndex, Func<HtmlForm, IFormSubmission<Unit>> data) =>
+        public static IHttpObservable Submit(this IHttpClient http, ParsedHtml html, int formIndex, Func<HtmlForm, ISubmissionData<Unit>> data) =>
             Submit(http, html, null, formIndex, null, data);
 
-        public static IHttpObservable SubmitTo(this IHttpClient http, Uri url, ParsedHtml html, string formSelector, Func<HtmlForm, IFormSubmission<Unit>> data) =>
+        public static IHttpObservable SubmitTo(this IHttpClient http, Uri url, ParsedHtml html, string formSelector, Func<HtmlForm, ISubmissionData<Unit>> data) =>
             Submit(http, html, formSelector, null, url, data);
 
-        public static IHttpObservable SubmitTo(this IHttpClient http, Uri url, ParsedHtml html, int formIndex, Func<HtmlForm, IFormSubmission<Unit>> data) =>
+        public static IHttpObservable SubmitTo(this IHttpClient http, Uri url, ParsedHtml html, int formIndex, Func<HtmlForm, ISubmissionData<Unit>> data) =>
             Submit(http, html, null, formIndex, url, data);
 
         static IHttpObservable Submit(IObservable<HttpFetch<ParsedHtml>> query, string formSelector, int? formIndex, Uri url, NameValueCollection data) =>
@@ -343,7 +343,7 @@ namespace WebLinq
             string formSelector, int? formIndex, Uri actionUrl,
             NameValueCollection data)
         {
-            var submission = FormSubmission.Return(Unit.Default);
+            var submission = SubmissionData.Return(Unit.Default);
 
             if (data != null)
             {
@@ -362,7 +362,7 @@ namespace WebLinq
         internal static IHttpObservable Submit<T>(IHttpClient http,
             ParsedHtml html,
             string formSelector, int? formIndex, Uri actionUrl,
-            Func<HtmlForm, IFormSubmission<T>> submissions)
+            Func<HtmlForm, ISubmissionData<T>> submissions)
         {
             var forms =
                 from f in formIndex == null

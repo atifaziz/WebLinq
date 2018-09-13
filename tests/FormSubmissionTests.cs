@@ -38,7 +38,7 @@ namespace WebLinq.Tests
         [Test]
         public void Set()
         {
-            var submission = FormSubmission.Set("firstname", "Minnie");
+            var submission = SubmissionData.Set("firstname", "Minnie");
 
             var data = _data;
             submission.Run(data);
@@ -51,7 +51,7 @@ namespace WebLinq.Tests
         [Test]
         public void SetNonExistent()
         {
-            var submission = FormSubmission.Set("foo", "bar");
+            var submission = SubmissionData.Set("foo", "bar");
 
             var data = _data;
             submission.Run(_data);
@@ -66,8 +66,8 @@ namespace WebLinq.Tests
         public void Update()
         {
             var submission =
-                from fn in FormSubmission.Get("firstname")
-                from _ in FormSubmission.Set("firstname", fn.ToUpperInvariant()).Ignore()
+                from fn in SubmissionData.Get("firstname")
+                from _ in SubmissionData.Set("firstname", fn.ToUpperInvariant()).Ignore()
                 select _;
 
             var data = _data;
@@ -82,7 +82,7 @@ namespace WebLinq.Tests
         public void SetSingleWhere()
         {
             var submission =
-                FormSubmission.SetSingleWhere(n => n.StartsWith("first", StringComparison.OrdinalIgnoreCase),
+                SubmissionData.SetSingleWhere(n => n.StartsWith("first", StringComparison.OrdinalIgnoreCase),
                                               "Minnie")
                               .Return();
 
@@ -99,7 +99,7 @@ namespace WebLinq.Tests
         public void TrySetSingleWhereNoneMatch()
         {
             var submission =
-                FormSubmission.TrySetSingleWhere(n => n.StartsWith("foo", StringComparison.OrdinalIgnoreCase),
+                SubmissionData.TrySetSingleWhere(n => n.StartsWith("foo", StringComparison.OrdinalIgnoreCase),
                                                  "bar")
                               .Return();
 
