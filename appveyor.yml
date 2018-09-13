@@ -1,5 +1,7 @@
 version: '{build}'
-image: Visual Studio 2017
+image:
+  - Visual Studio 2017
+  - Ubuntu
 skip_commits:
   files:
     - '*.md'
@@ -18,9 +20,13 @@ build_script:
 
     $id = $id.Substring(0, 13)
 
-    .\pack.cmd ci-$id $env:APPVEYOR_REPO_COMMIT
+    if ($isWindows) {
+        .\pack.cmd ci-$id $env:APPVEYOR_REPO_COMMIT
+    } else {
+        ./pack.sh  ci-$id $env:APPVEYOR_REPO_COMMIT
+    }
 test_script:
-- test.cmd
+- ps: if ($isWindows) { .\test.cmd } else { ./test.sh }
 artifacts:
 - path: dist\*.nupkg
 deploy:
