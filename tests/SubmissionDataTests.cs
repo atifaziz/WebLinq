@@ -105,6 +105,34 @@ namespace WebLinq.Tests
         }
 
         [Test]
+        public void GetValues()
+        {
+            var submission =
+                from fn in SubmissionData.GetValues("firstname")
+                from ln in SubmissionData.GetValues("lastname")
+                from email in SubmissionData.GetValues("email")
+                from gender in SubmissionData.GetValues("gender")
+                from vehicle in SubmissionData.GetValues("vehicle")
+                select new
+                {
+                    FirstName = fn,
+                    LastName = ln,
+                    Email = email,
+                    Gender = gender,
+                    Vehicle = vehicle
+                };
+
+            var data = _data;
+            var result = submission.Run(data);
+
+            Assert.That(result.FirstName.Single(), Is.EqualTo("Mickey"));
+            Assert.That(result.LastName.Single(), Is.EqualTo("Mouse"));
+            Assert.That(result.Email.Single(), Is.EqualTo("mickey@mouse.com"));
+            Assert.That(result.Gender.Single(), Is.EqualTo("Female"));
+            Assert.That(result.Vehicle, Is.EqualTo(new[] { "Bike", "Car"}));
+        }
+
+        [Test]
         public void Get()
         {
             var submission =
