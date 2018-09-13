@@ -65,7 +65,7 @@
   <ItemGroup>
     <Compile Include="Extensions.cs" />
     <Compile Include="HttpConfigTests.cs" />
-    <Compile Include="FormSubmissionTests.cs" />
+    <Compile Include="SubmissionDataTests.cs" />
     <Compile Include="HttpQueryTests.cs" />
     <Compile Include="TestTransport.cs" />
   </ItemGroup>
