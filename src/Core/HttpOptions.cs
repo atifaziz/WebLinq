@@ -18,16 +18,16 @@ namespace WebLinq
 {
     public sealed class HttpOptions
     {
-        public static readonly HttpOptions Default = new HttpOptions(returnErrorneousFetch: false);
+        public static readonly HttpOptions Default = new HttpOptions(returnErroneousFetch: false);
 
-        public bool ReturnErrorneousFetch { get; }
+        public bool ReturnErroneousFetch { get; }
 
-        HttpOptions(bool returnErrorneousFetch)
+        HttpOptions(bool returnErroneousFetch)
         {
-            ReturnErrorneousFetch = returnErrorneousFetch;
+            ReturnErroneousFetch = returnErroneousFetch;
         }
 
-        public HttpOptions WithReturnErrorneousFetch(bool value) =>
-            ReturnErrorneousFetch == value ? this : new HttpOptions(value);
+        public HttpOptions WithReturnErroneousFetch(bool value) =>
+            ReturnErroneousFetch == value ? this : new HttpOptions(value);
     }
 }

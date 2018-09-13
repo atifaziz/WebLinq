@@ -34,8 +34,12 @@ namespace WebLinq
 
     public static class HttpObservable
     {
+        public static IHttpObservable ReturnErroneousFetch(this IHttpObservable query) =>
+            query.WithOptions(query.Options.WithReturnErroneousFetch(true));
+
+        [Obsolete("Use " + nameof(ReturnErroneousFetch) + " instead.")]
         public static IHttpObservable ReturnErrorneousFetch(this IHttpObservable query) =>
-            query.WithOptions(query.Options.WithReturnErrorneousFetch(true));
+            query.WithOptions(query.Options.WithReturnErroneousFetch(true));
 
         public static IHttpObservable SetHeader(this IHttpObservable query, string name, string value) =>
             query.WithConfigurer(c => query.Configurer(c).WithHeader(name, value));

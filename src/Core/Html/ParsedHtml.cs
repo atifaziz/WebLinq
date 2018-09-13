@@ -115,7 +115,7 @@ namespace WebLinq.Html
             from e in self.QuerySelectorAll(selector ?? "table")
             where "table".Equals(e.Name, StringComparison.OrdinalIgnoreCase)
             select e;
-        
+
         public static IEnumerable<T> TableRows<T>(this HtmlObject table, Func<HtmlObject, IEnumerable<HtmlObject>, T> rowSelector)
         {
             if (table == null) throw new ArgumentNullException(nameof(table));

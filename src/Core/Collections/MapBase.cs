@@ -37,7 +37,7 @@ namespace WebLinq.Collections
         Dictionary<TKey, TValue> _cache;
 
         protected MapBase(IEqualityComparer<TKey> comparer) :
-            this(default(TKey), default(TValue), comparer) {}
+            this(default, default, comparer) {}
 
         protected MapBase(TKey key, TValue value) :
             this(key, value, null) {}
@@ -95,7 +95,7 @@ namespace WebLinq.Collections
         {
             if (IsEmpty)
             {
-                value = default(TValue);
+                value = default;
                 return false;
             }
             if (!HasCache && IsKey(key))
@@ -107,7 +107,7 @@ namespace WebLinq.Collections
         }
 
         public TValue TryGetValue(TKey key) =>
-            TryGetValue(key, (found, value) => found ? value : default(TValue));
+            TryGetValue(key, (found, value) => found ? value : default);
 
         public T TryGetValue<T>(TKey key, Func<bool, TValue, T> selector)
         {
@@ -115,7 +115,7 @@ namespace WebLinq.Collections
             TValue value;
             return TryGetValue(key, out value)
                  ? selector(true, value)
-                 : selector(false, default(TValue));
+                 : selector(false, default);
         }
 
         public TValue this[TKey key]
