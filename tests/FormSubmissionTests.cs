@@ -1,14 +1,16 @@
 namespace WebLinq.Tests
 {
     using System;
+    using System.Collections.Specialized;
     using System.Linq;
+    using Html;
     using NUnit.Framework;
     using static Modules.HtmlModule;
 
     [TestFixture]
     public class FormSubmissionTests
     {
-        FormSubmissionContext _context;
+        NameValueCollection _data;
 
         [SetUp]
         public void Init()
@@ -30,18 +32,16 @@ namespace WebLinq.Tests
                 </body>
                 </html>");
 
-            var form = html.Forms.Single();
-            var data = form.GetSubmissionData();
-            _context = new FormSubmissionContext(form, data);
+            _data = html.Forms.Single().GetSubmissionData();
         }
 
         [Test]
         public void Set()
         {
-            var submission = FormSubmission.Set("firstname", "Minnie");
+            var submission = SubmissionData.Set("firstname", "Minnie");
 
-            submission(_context);
-            var data = _context.Data;
+            var data = _data;
+            submission.Run(data);
 
             Assert.That(data.Count, Is.EqualTo(2));
             Assert.That(data["firstname"], Is.EqualTo("Minnie"));
@@ -51,10 +51,10 @@ namespace WebLinq.Tests
         [Test]
         public void SetNonExistent()
         {
-            var submission = FormSubmission.Set("foo", "bar");
+            var submission = SubmissionData.Set("foo", "bar");
 
-            submission(_context);
-            var data = _context.Data;
+            var data = _data;
+            submission.Run(_data);
 
             Assert.That(data.Count, Is.EqualTo(3));
             Assert.That(data["firstname"], Is.EqualTo("Mickey"));
@@ -66,12 +66,12 @@ namespace WebLinq.Tests
         public void Update()
         {
             var submission =
-                from fn in FormSubmission.Get("firstname")
-                from _ in FormSubmission.Set("firstname", fn.ToUpperInvariant()).Ignore()
+                from fn in SubmissionData.Get("firstname")
+                from _ in SubmissionData.Set("firstname", fn.ToUpperInvariant()).Ignore()
                 select _;
 
-            submission(_context);
-            var data = _context.Data;
+            var data = _data;
+            submission.Run(data);
 
             Assert.That(data.Count, Is.EqualTo(2));
             Assert.That(data["firstname"], Is.EqualTo("MICKEY"));
@@ -82,11 +82,12 @@ namespace WebLinq.Tests
         public void SetSingleWhere()
         {
             var submission =
-                FormSubmission.SetSingleWhere(n => n.StartsWith("first", StringComparison.OrdinalIgnoreCase),
-                                              "Minnie");
+                SubmissionData.SetSingleWhere(n => n.StartsWith("first", StringComparison.OrdinalIgnoreCase),
+                                              "Minnie")
+                              .Return();
 
-            var name = submission(_context);
-            var data = _context.Data;
+            var data = _data;
+            var name = submission.Run(data);
 
             Assert.That(name, Is.EqualTo("firstname"));
             Assert.That(data.Count, Is.EqualTo(2));
@@ -98,11 +99,12 @@ namespace WebLinq.Tests
         public void TrySetSingleWhereNoneMatch()
         {
             var submission =
-                FormSubmission.TrySetSingleWhere(n => n.StartsWith("foo", StringComparison.OrdinalIgnoreCase),
-                                                 "bar");
+                SubmissionData.TrySetSingleWhere(n => n.StartsWith("foo", StringComparison.OrdinalIgnoreCase),
+                                                 "bar")
+                              .Return();
 
-            var name = submission(_context);
-            var data = _context.Data;
+            var data = _data;
+            var name = submission.Run(data);
 
             Assert.That(name, Is.Null);
             Assert.That(data.Count, Is.EqualTo(2));
