@@ -171,7 +171,7 @@ namespace WebLinq.Html
                 var value = field.IsSelect
                           ? (field.Element.QuerySelector("option[selected]") ?? field.Element.QuerySelector("option"))?.GetAttributeValue("value") ?? string.Empty
                           : field.InputType == HtmlInputType.Radio || field.InputType == HtmlInputType.Checkbox
-                          ? field.Element.HasAttribute("checked") ? "on" : null
+                          ? field.Element.HasAttribute("checked") ? field.Element.GetAttributeValue("value") ?? "on" : null
                           : field.Element.GetAttributeValue("value") ?? string.Empty;
 
                 all?.Add(field.Name, value);
