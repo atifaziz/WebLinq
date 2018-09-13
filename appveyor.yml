@@ -2,6 +2,7 @@ version: '{build}'
 image:
   - Visual Studio 2017
   - Ubuntu
+stack: node 6
 skip_commits:
   files:
     - '*.md'
