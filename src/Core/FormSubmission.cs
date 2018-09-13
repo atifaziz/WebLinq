@@ -57,6 +57,11 @@ namespace WebLinq
                 return resultSelector(t, secondSelector(t)(env));
             };
 
+        public static FormSubmission<TResult> SelectMany<T, TResult>(
+            this FormSubmission<T> submission,
+            Func<T, FormSubmission<TResult>> resultSelector) =>
+            submission.SelectMany(resultSelector, (_, r) => r);
+
         public static FormSubmission<IEnumerable<TResult>> For<T, TResult>(IEnumerable<T> source,
             Func<T, FormSubmission<TResult>> f) =>
             context => source.Select(f).Select(e => e(context)).ToList();
@@ -94,29 +99,7 @@ namespace WebLinq
         /// Gets the parsed underlying HTML form.
         /// </summary>
 
-        static FormSubmission<HtmlForm> Form() => context => context.Form;
-
-        /// <summary>
-        /// Finds the first HTML form control identified by a selector.
-        /// </summary>
-
-        public static FormSubmission<HtmlFormControl> QuerySelector(string selector) =>
-            from f in Form()
-            select f.Element.QuerySelector(selector) is HtmlObject e
-                 ? f.Controls.FirstOrDefault(c => c.Element == e)
-                 : null;
-
-        /// <summary>
-        /// Finds all the HTML form controls identified by a selector.
-        /// </summary>
-
-        public static FormSubmission<IEnumerable<HtmlFormControl>> QuerySelectorAll(string selector) =>
-            from f in Form()
-            select
-                from e in f.Element.QuerySelectorAll(selector)
-                select f.Controls.FirstOrDefault(c => c.Element == e) into c
-                where c != null
-                select c;
+        public static FormSubmission<HtmlForm> Form() => context => context.Form;
 
         /// <summary>
         /// Gets the value of a field identified by its name.
@@ -124,6 +107,20 @@ namespace WebLinq
 
         public static FormSubmission<string> Get(string name) =>
             context => context.Data[name];
+
+        /// <summary>
+        /// Gets all the values of a field identified by its name.
+        /// </summary>
+
+        public static FormSubmission<IReadOnlyCollection<string>> GetValues(string name) =>
+            context => context.Data.GetValues(name);
+
+        /// <summary>
+        /// Removes a field from submission.
+        /// </summary>
+
+        public static FormSubmission<Unit> Remove(string name) =>
+            Do(context => context.Data.Remove(name));
 
         /// <summary>
         /// Sets the value of a field identified by its name.
@@ -296,6 +293,19 @@ namespace WebLinq
             from _ in first
             from b in second
             select b;
+
+        /// <summary>
+        /// Combines the result of one submission with another.
+        /// </summary>
+
+        public static FormSubmission<TResult>
+            Zip<TFirst, TSecond, TResult>(
+                this FormSubmission<TFirst> first,
+                FormSubmission<TSecond> second,
+                Func<TFirst, TSecond, TResult> resultSelector) =>
+            from a in first
+            from b in second
+            select resultSelector(a, b);
 
         public static FormSubmission<Unit> Collect(params FormSubmission<Unit>[] submissions) =>
             submissions.AsEnumerable().Collect();
