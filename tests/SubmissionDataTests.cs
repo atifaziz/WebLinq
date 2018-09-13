@@ -252,7 +252,7 @@ namespace WebLinq.Tests
             var submission = SubmissionData.SetSingleMatching(@"^[first|last]name$", "bar");
 
             var data = _data;
-            
+
             Assert.Throws<InvalidOperationException>(() => submission.Run(data));
             Assert.That(data.Count, Is.EqualTo(5));
             Assert.That(data["firstname"], Is.EqualTo("Mickey"));
@@ -266,7 +266,7 @@ namespace WebLinq.Tests
             var submission = SubmissionData.SetSingleMatching(@"^foo$", "bar");
 
             var data = _data;
-            
+
             Assert.Throws<InvalidOperationException>(() => submission.Run(data));
             Assert.That(data.Count, Is.EqualTo(5));
             Assert.That(data["firstname"], Is.EqualTo("Mickey"));
