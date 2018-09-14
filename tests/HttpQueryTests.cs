@@ -622,62 +622,6 @@ namespace WebLinq.Tests
         }
 
         [Test]
-        public async Task SubmitNoDataTest()
-        {
-            var tt = new TestTransport()
-                .EnqueueHtml(@"
-                    <!DOCTYPE html>
-                    <html>
-                    <body>
-                      <h2> HTML Forms </h2>
-                      <form action='action_page.php'>
-                        <br><br>
-                    </form>
-                    </body>
-                    </html>")
-                .Enqueue(new byte[0]);
-
-            await tt.Http.Get(new Uri("https://www.example.com/"))
-                         .Submit(0, null);
-
-            var message1 = tt.DequeueRequestMessage();
-            var message2 = tt.DequeueRequestMessage();
-
-            Assert.That(message1.Method, Is.EqualTo(HttpMethod.Get));
-            Assert.That(message1.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
-            Assert.That(message2.Method, Is.EqualTo(HttpMethod.Get));
-            Assert.That(message2.RequestUri, Is.EqualTo(new Uri("https://www.example.com/action_page.php")));
-        }
-
-        [Test]
-        public async Task SubmitPostNoDataTest()
-        {
-            var tt = new TestTransport()
-                .EnqueueHtml(@"
-                    <!DOCTYPE html>
-                    <html>
-                    <body>
-                      <h2> HTML Forms </h2>
-                      <form method='post' action='action_page.php'>
-                        <br><br>
-                    </form>
-                    </body>
-                    </html>")
-                .Enqueue(new byte[0]);
-
-            await tt.Http.Get(new Uri("https://www.example.com/"))
-                         .Submit(0, null);
-
-            var message1 = tt.DequeueRequestMessage();
-            var message2 = tt.DequeueRequestMessage();
-
-            Assert.That(message1.Method, Is.EqualTo(HttpMethod.Get));
-            Assert.That(message1.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
-            Assert.That(message2.Method, Is.EqualTo(HttpMethod.Post));
-            Assert.That(message2.RequestUri, Is.EqualTo(new Uri("https://www.example.com/action_page.php")));
-        }
-
-        [Test]
         public void PostNullDataTest()
         {
             var tt = new TestTransport()
@@ -969,42 +913,6 @@ namespace WebLinq.Tests
         }
 
         [Test]
-        public async Task SubmitPostTest()
-        {
-            var tt = new TestTransport()
-                .EnqueueHtml(@"
-                    <!DOCTYPE html>
-                    <html>
-                    <body>
-                      <h2> HTML Forms </h2>
-                      <form method='post' action='action_page.php'>
-                        <br><br>
-                      </form>
-                    </body>
-                    </html>")
-                .Enqueue(new byte[0]);
-
-            var data = new NameValueCollection
-            {
-                ["firstname"] = "Mickey",
-                ["lastname"] = "Mouse"
-            };
-
-            await tt.Http.Get(new Uri("https://www.example.com/"))
-                         .Submit(0, data);
-
-            var message1 = tt.DequeueRequestMessage();
-            var message2 = tt.DequeueRequestMessage();
-
-            Assert.That(message1.Method, Is.EqualTo(HttpMethod.Get));
-            Assert.That(message1.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
-            Assert.That(message2.Method, Is.EqualTo(HttpMethod.Post));
-            Assert.That(message2.RequestUri, Is.EqualTo(new Uri("https://www.example.com/action_page.php")));
-            Assert.That(await message2.Content.ReadAsStringAsync(), Is.EqualTo("firstname=Mickey&lastname=Mouse"));
-            Assert.That(message2.Content.Headers.GetValues("Content-Type").Single(), Is.EqualTo("application/x-www-form-urlencoded"));
-        }
-
-        [Test]
         public async Task SubmitToInputTest()
         {
             var html = @"
@@ -1064,38 +972,6 @@ namespace WebLinq.Tests
             Assert.That(message.Method, Is.EqualTo(HttpMethod.Get));
             Assert.That(message.RequestUri, Is.EqualTo(new Uri("https://www.example.org/?firstname=Mickey&lastname=Mouse")));
             Assert.That(message.Headers, Is.Empty);
-        }
-
-        [Test]
-        public async Task SubmitToPostRequestTest()
-        {
-            var html = @"
-                <!DOCTYPE html>
-                <html>
-                <body>
-                  <h2> HTML Forms </h2>
-                  <form method='post' action='action_page.php'>
-                    <br><br>
-                </form>
-                </body>
-                </html>";
-
-            var tt = new TestTransport().Enqueue(new byte[0]);
-
-            var data = new NameValueCollection
-            {
-                ["firstname"] = "Mickey",
-                ["lastname"] = "Mouse"
-            };
-            await tt.Http.SubmitTo(new Uri("https://www.example.org/"),
-                                   Html.HtmlParser.Default.Parse(html, new Uri("https://www.example.com/")),
-                                   0, data);
-            var message = tt.DequeueRequestMessage();
-
-            Assert.That(message.Method, Is.EqualTo(HttpMethod.Post));
-            Assert.That(message.RequestUri, Is.EqualTo(new Uri("https://www.example.org/")));
-            Assert.That(message.Content.Headers.GetValues("Content-Type").Single(), Is.EqualTo("application/x-www-form-urlencoded"));
-            Assert.That(await message.Content.ReadAsStringAsync(), Is.EqualTo("firstname=Mickey&lastname=Mouse"));
         }
 
         [Test(Description = "https://github.com/weblinq/WebLinq/issues/19")]
