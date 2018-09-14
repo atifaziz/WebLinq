@@ -9,12 +9,42 @@ namespace WebLinq.Tests
     [TestFixture]
     public class SubmissionDataTests
     {
-        NameValueCollection _data;
-
-        [SetUp]
-        public void Init()
+        interface ISample<T>
         {
-            var html = ParseHtml(@"
+            (T Result, NameValueCollection Data) Exercise();
+            (TException Error, NameValueCollection Data) AssertThrows<TException>()
+                where TException : Exception;
+        }
+
+        sealed class Sample<T> : ISample<T>
+        {
+            readonly ISubmissionData<T> _submission;
+            readonly NameValueCollection _data;
+
+            public Sample(ISubmissionData<T> submission, NameValueCollection data) =>
+                (_submission, _data) = (submission, data);
+
+            public (T Result, NameValueCollection Data) Exercise() =>
+                (_submission.Run(_data), _data);
+
+            public (TException Error, NameValueCollection Data) AssertThrows<TException>()
+                where TException : Exception =>
+                (Assert.Throws<TException>(() => Exercise()), _data);
+        }
+
+        static class Sample
+        {
+            public static (T Result, NameValueCollection Data)
+                Exercise<T>(ISubmissionData<T> submission) =>
+                    Run(submission, t => t.Exercise());
+
+            public static ISample<T> Create<T>(ISubmissionData<T> submission) =>
+                Run(submission, t => t);
+
+            static TResult Run<T, TResult>(ISubmissionData<T> submission,
+                Func<Sample<T>, TResult> selector)
+            {
+                var html = ParseHtml(@"
                 <!DOCTYPE html>
                 <html>
                 <body>
@@ -37,15 +67,16 @@ namespace WebLinq.Tests
                 </body>
                 </html>");
 
-            _data = html.Forms.Single().GetSubmissionData();
+                var data = html.Forms.Single().GetSubmissionData();
+                return selector(new Sample<T>(submission, data));
+            }
         }
 
         [Test]
         public void Return()
         {
-            var submission = SubmissionData.Return("foo");
-            var data = _data;
-            var value = submission.Run(data);
+            var value = SubmissionData.Return("foo")
+                                      .Run(new NameValueCollection());
 
             Assert.That(value, Is.EqualTo("foo"));
         }
@@ -57,8 +88,8 @@ namespace WebLinq.Tests
                 from n in SubmissionData.Return(42)
                 select new string((char) n, n);
 
-            var data = _data;
-            var names = submission.Run(data);
+            var names = submission.Run(new NameValueCollection());
+
             Assert.That(names, Is.EqualTo(new string('*', 42)));
         }
 
@@ -70,21 +101,20 @@ namespace WebLinq.Tests
                 from s in SubmissionData.Return(new string((char) n, n))
                 select string.Concat(n, s);
 
-            var data = _data;
-            var names = submission.Run(data);
-            var stars = new string('*', 42);
+            var names = submission.Run(new NameValueCollection());
 
+            var stars = new string('*', 42);
             Assert.That(names, Is.EqualTo("42" + stars));
         }
 
         [Test]
         public void For()
         {
-            var source = new[] { 3, 4, 5 };
-            var submission = SubmissionData.For(source, e => SubmissionData.Return(e * 3));
+            var submission =
+                SubmissionData.For(new[] { 3, 4, 5 },
+                                   e => SubmissionData.Return(e * 3));
 
-            var data = _data;
-            var values = submission.Run(data);
+            var values = submission.Run(new NameValueCollection());
 
             Assert.That(values, Is.EqualTo(new[] { 9, 12, 15 }));
         }
@@ -94,8 +124,7 @@ namespace WebLinq.Tests
         {
             var submission = SubmissionData.Names();
 
-            var data = _data;
-            var names = submission.Run(data);
+            var (names, data) = Sample.Exercise(submission);
 
             Assert.That(names, Is.EqualTo(new[] { "firstname", "lastname", "email", "gender", "vehicle" }));
             Assert.That(data["firstname"], Is.EqualTo("Mickey"));
@@ -121,8 +150,7 @@ namespace WebLinq.Tests
                     Vehicle = vehicle
                 };
 
-            var data = _data;
-            var result = submission.Run(data);
+            var (result, _) = Sample.Exercise(submission);
 
             Assert.That(result.FirstName.Single(), Is.EqualTo("Mickey"));
             Assert.That(result.LastName.Single(), Is.EqualTo("Mouse"));
@@ -145,8 +173,7 @@ namespace WebLinq.Tests
                     Email = email,
                 };
 
-            var data = _data;
-            var result = submission.Run(data);
+            var (result, _) = Sample.Exercise(submission);
 
             Assert.That(result.FirstName, Is.EqualTo("Mickey"));
             Assert.That(result.LastName, Is.EqualTo("Mouse"));
@@ -158,8 +185,7 @@ namespace WebLinq.Tests
         {
             var submission = SubmissionData.Set("firstname", "Minnie");
 
-            var data = _data;
-            submission.Run(data);
+            var (_, data) = Sample.Exercise(submission);
 
             Assert.That(data.Count, Is.EqualTo(5));
             Assert.That(data["firstname"], Is.EqualTo("Minnie"));
@@ -172,8 +198,7 @@ namespace WebLinq.Tests
         {
             var submission = SubmissionData.Set(new[] { "firstname", "lastname" }, "Minnie");
 
-            var data = _data;
-            submission.Run(data);
+            var (_, data) = Sample.Exercise(submission);
 
             Assert.That(data.Count, Is.EqualTo(5));
             Assert.That(data["firstname"], Is.EqualTo("Minnie"));
@@ -186,8 +211,7 @@ namespace WebLinq.Tests
         {
             var submission = SubmissionData.Set("foo", "bar");
 
-            var data = _data;
-            submission.Run(_data);
+            var (_, data) = Sample.Exercise(submission);
 
             Assert.That(data.Count, Is.EqualTo(6));
             Assert.That(data["firstname"], Is.EqualTo("Mickey"));
@@ -204,8 +228,7 @@ namespace WebLinq.Tests
                 from _ in SubmissionData.Set("firstname", fn.ToUpperInvariant()).Ignore()
                 select _;
 
-            var data = _data;
-            submission.Run(data);
+            var (_, data) = Sample.Exercise(submission);
 
             Assert.That(data.Count, Is.EqualTo(5));
             Assert.That(data["firstname"], Is.EqualTo("MICKEY"));
@@ -221,8 +244,7 @@ namespace WebLinq.Tests
                                               "Minnie")
                               .Return();
 
-            var data = _data;
-            var name = submission.Run(data);
+            var (name, data) = Sample.Exercise(submission);
 
             Assert.That(name, Is.EqualTo("firstname"));
             Assert.That(data.Count, Is.EqualTo(5));
@@ -236,8 +258,7 @@ namespace WebLinq.Tests
         {
             var submission = SubmissionData.SetSingleMatching(@"^lastname$", "bar");
 
-            var data = _data;
-            submission.Run(data);
+            var (_, data) = Sample.Exercise(submission);
 
             Assert.That(data.Count, Is.EqualTo(5));
             Assert.That(data["firstname"], Is.EqualTo("Mickey"));
@@ -250,9 +271,8 @@ namespace WebLinq.Tests
         {
             var submission = SubmissionData.SetSingleMatching(@"^[first|last]name$", "bar");
 
-            var data = _data;
+            var (_, data) = Sample.Create(submission).AssertThrows<InvalidOperationException>();
 
-            Assert.Throws<InvalidOperationException>(() => submission.Run(data));
             Assert.That(data.Count, Is.EqualTo(5));
             Assert.That(data["firstname"], Is.EqualTo("Mickey"));
             Assert.That(data["lastname"], Is.EqualTo("Mouse"));
@@ -264,9 +284,8 @@ namespace WebLinq.Tests
         {
             var submission = SubmissionData.SetSingleMatching(@"^foo$", "bar");
 
-            var data = _data;
+            var (_, data) = Sample.Create(submission).AssertThrows<InvalidOperationException>();
 
-            Assert.Throws<InvalidOperationException>(() => submission.Run(data));
             Assert.That(data.Count, Is.EqualTo(5));
             Assert.That(data["firstname"], Is.EqualTo("Mickey"));
             Assert.That(data["lastname"], Is.EqualTo("Mouse"));
@@ -279,9 +298,8 @@ namespace WebLinq.Tests
             var submission =
                 SubmissionData.TrySetSingleWhere(n => n.EndsWith("name", StringComparison.OrdinalIgnoreCase),
                                                  "bar");
-            var data = _data;
+            var (_, data) = Sample.Create(submission).AssertThrows<InvalidOperationException>();
 
-            Assert.Throws<InvalidOperationException>(() => submission.Run(data));
             Assert.That(data.Count, Is.EqualTo(5));
             Assert.That(data["firstname"], Is.EqualTo("Mickey"));
             Assert.That(data["lastname"], Is.EqualTo("Mouse"));
@@ -296,8 +314,7 @@ namespace WebLinq.Tests
                                                  "bar")
                               .Return();
 
-            var data = _data;
-            var name = submission.Run(data);
+            var (name, data) = Sample.Exercise(submission);
 
             Assert.That(name, Is.Null);
             Assert.That(data.Count, Is.EqualTo(5));
@@ -312,8 +329,7 @@ namespace WebLinq.Tests
             var submission =
                 SubmissionData.SetFirstWhere(n => n.EndsWith("name", StringComparison.OrdinalIgnoreCase), "Minnie");
 
-            var data = _data;
-            submission.Run(data);
+            var (_, data) = Sample.Exercise(submission);
 
             Assert.That(data.Count, Is.EqualTo(5));
             Assert.That(data["firstname"], Is.EqualTo("Minnie"));
@@ -327,9 +343,8 @@ namespace WebLinq.Tests
             var submission =
                 SubmissionData.SetFirstWhere(n => n.StartsWith("foo", StringComparison.OrdinalIgnoreCase), "bar");
 
-            var data = _data;
+            var (_, data) = Sample.Create(submission).AssertThrows<InvalidOperationException>();
 
-            Assert.Throws<InvalidOperationException>(() => submission.Run(data));
             Assert.That(data.Count, Is.EqualTo(5));
             Assert.That(data["firstname"], Is.EqualTo("Mickey"));
             Assert.That(data["lastname"], Is.EqualTo("Mouse"));
@@ -342,8 +357,7 @@ namespace WebLinq.Tests
             var submission =
                 SubmissionData.SetWhere(n => n.EndsWith("name", StringComparison.OrdinalIgnoreCase), "baz");
 
-            var data = _data;
-            submission.Run(data);
+            var (_, data) = Sample.Exercise(submission);
 
             Assert.That(data.Count, Is.EqualTo(5));
             Assert.That(data["firstname"], Is.EqualTo("baz"));
@@ -362,8 +376,7 @@ namespace WebLinq.Tests
 
             var submission = SubmissionData.Merge(other);
 
-            var data = _data;
-            submission.Run(data);
+            var (_, data) = Sample.Exercise(submission);
 
             Assert.That(data.Count, Is.EqualTo(7));
             Assert.That(data["firstname"], Is.EqualTo("Mickey"));
@@ -377,9 +390,10 @@ namespace WebLinq.Tests
         public void Data()
         {
             var submission = SubmissionData.Data();
-            var data = submission.Run(_data);
 
-            Assert.That(data, Is.EqualTo(_data));
+            var (_, data) = Sample.Exercise(submission);
+
+            Assert.That(data, Is.EqualTo(data));
             Assert.That(data.Count, Is.EqualTo(5));
             Assert.That(data["firstname"], Is.EqualTo("Mickey"));
             Assert.That(data["lastname"], Is.EqualTo("Mouse"));
@@ -390,9 +404,7 @@ namespace WebLinq.Tests
         public void Clear()
         {
             var submission = SubmissionData.Clear();
-            var data = _data;
-            submission.Run(data);
-
+            var (_, data) = Sample.Exercise(submission);
             Assert.That(data, Is.Empty);
         }
 
@@ -402,8 +414,7 @@ namespace WebLinq.Tests
             var submission = SubmissionData.Set("firstname", "Minnie")
                                            .Then(SubmissionData.Set("email", "minnie@mouse.com"));
 
-            var data = _data;
-            submission.Run(data);
+            var (_, data) = Sample.Exercise(submission);
 
             Assert.That(data.Count, Is.EqualTo(5));
             Assert.That(data["firstname"], Is.EqualTo("Minnie"));
@@ -414,10 +425,11 @@ namespace WebLinq.Tests
         [Test]
         public void Zip()
         {
-            var submission = SubmissionData.Return(42).Zip(SubmissionData.Return('a'), (a, b) => (a, b));
+            var submission =
+                SubmissionData.Return(42)
+                              .Zip(SubmissionData.Return('a'), ValueTuple.Create);
 
-            var data = _data;
-            var names = submission.Run(data);
+            var names = submission.Run(new NameValueCollection());
 
             Assert.That(names, Is.EqualTo((42, 'a')));
         }
@@ -430,8 +442,7 @@ namespace WebLinq.Tests
                     SubmissionData.Set("firstname", "Minnie"),
                     SubmissionData.Set("email", "minnie@mouse.com"));
 
-            var data = _data;
-            submission.Run(data);
+            var (_, data) = Sample.Exercise(submission);
 
             Assert.That(data.Count, Is.EqualTo(5));
             Assert.That(data["firstname"], Is.EqualTo("Minnie"));
@@ -447,9 +458,10 @@ namespace WebLinq.Tests
                 SubmissionData.Set("firstname", "Minnie"),
                 SubmissionData.Set("email", "minnie@mouse.com"),
             };
+
             var submission = SubmissionData.Collect(sets.AsEnumerable());
-            var data = _data;
-            submission.Run(data);
+
+            var (_, data) = Sample.Exercise(submission);
 
             Assert.That(data.Count, Is.EqualTo(5));
             Assert.That(data["firstname"], Is.EqualTo("Minnie"));
