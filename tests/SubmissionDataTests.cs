@@ -422,14 +422,8 @@ namespace WebLinq.Tests
         public void Data()
         {
             var submission = SubmissionData.Data();
-
-            var (_, data) = Sample.Exercise(submission);
-
-            Assert.That(data, Is.EqualTo(data));
-            Assert.That(data.Count, Is.EqualTo(5));
-            Assert.That(data["firstname"], Is.EqualTo("Mickey"));
-            Assert.That(data["lastname"], Is.EqualTo("Mouse"));
-            Assert.That(data["email"], Is.EqualTo("mickey@mouse.com"));
+            var (result, data) = Sample.Exercise(submission);
+            Assert.That(result, Is.EqualTo(data));
         }
 
         [Test]
