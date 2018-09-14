@@ -3,7 +3,6 @@ namespace WebLinq.Tests
     using System;
     using System.Collections.Specialized;
     using System.Linq;
-    using Html;
     using NUnit.Framework;
     using static Modules.HtmlModule;
 

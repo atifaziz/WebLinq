@@ -23,7 +23,6 @@ namespace WebLinq.Html
     using System.Globalization;
     using System.Linq;
     using System.Net.Mime;
-    using System.Reactive.Linq;
     using Mannex.Collections.Generic;
     using Mannex.Collections.Specialized;
 
