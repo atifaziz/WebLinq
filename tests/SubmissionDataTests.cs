@@ -81,7 +81,7 @@ namespace WebLinq.Tests
         public void For()
         {
             var source = new[] { 3, 4, 5 };
-            var submission = SubmissionData.For(source, e => SubmissionData.Return(e*3));
+            var submission = SubmissionData.For(source, e => SubmissionData.Return(e * 3));
 
             var data = _data;
             var values = submission.Run(data);
@@ -97,7 +97,7 @@ namespace WebLinq.Tests
             var data = _data;
             var names = submission.Run(data);
 
-            Assert.That(names, Is.EqualTo(new [] {"firstname","lastname","email", "gender", "vehicle"}));
+            Assert.That(names, Is.EqualTo(new[] { "firstname", "lastname", "email", "gender", "vehicle" }));
             Assert.That(data["firstname"], Is.EqualTo("Mickey"));
             Assert.That(data["lastname"], Is.EqualTo("Mouse"));
             Assert.That(data["email"], Is.EqualTo("mickey@mouse.com"));
@@ -128,7 +128,7 @@ namespace WebLinq.Tests
             Assert.That(result.LastName.Single(), Is.EqualTo("Mouse"));
             Assert.That(result.Email.Single(), Is.EqualTo("mickey@mouse.com"));
             Assert.That(result.Gender.Single(), Is.EqualTo("Female"));
-            Assert.That(result.Vehicle, Is.EqualTo(new[] { "Bike", "Car"}));
+            Assert.That(result.Vehicle, Is.EqualTo(new[] { "Bike", "Car" }));
         }
 
         [Test]
@@ -354,7 +354,8 @@ namespace WebLinq.Tests
         [Test]
         public void Merge()
         {
-            var other = new NameValueCollection() {
+            var other = new NameValueCollection()
+            {
                 ["foo"] = "bar",
                 ["bar"] = "baz"
             };
@@ -418,7 +419,7 @@ namespace WebLinq.Tests
             var data = _data;
             var names = submission.Run(data);
 
-            Assert.That(names, Is.EqualTo((42,'a')));
+            Assert.That(names, Is.EqualTo((42, 'a')));
         }
 
         [Test]
