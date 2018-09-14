@@ -1,6 +1,7 @@
 namespace WebLinq.Tests
 {
     using System;
+    using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.Linq;
     using NUnit.Framework;
@@ -416,10 +417,12 @@ namespace WebLinq.Tests
 
             var (_, data) = Sample.Exercise(submission);
 
-            Assert.That(data.Count, Is.EqualTo(5));
-            Assert.That(data["firstname"], Is.EqualTo("Minnie"));
-            Assert.That(data["lastname"], Is.EqualTo("Mouse"));
-            Assert.That(data["email"], Is.EqualTo("minnie@mouse.com"));
+            AssertData(data,
+                ExpectedField("firstname", "Minnie"),
+                ExpectedField("lastname" , "Mouse"),
+                ExpectedField("email"    , "minnie@mouse.com"),
+                ExpectedField("vehicle"  , "Bike", "Car"),
+                ExpectedField("gender"   , "Female"));
         }
 
         [Test]
@@ -467,6 +470,28 @@ namespace WebLinq.Tests
             Assert.That(data["firstname"], Is.EqualTo("Minnie"));
             Assert.That(data["lastname"], Is.EqualTo("Mouse"));
             Assert.That(data["email"], Is.EqualTo("minnie@mouse.com"));
+        }
+
+        static (string Name, IEnumerable<string> Values)
+            ExpectedField(string name, params string[] values) =>
+            (name, values);
+
+        static void AssertData(NameValueCollection data,
+            params (string Name, IEnumerable<string> Values)[] expectedFields)
+        {
+            Assert.That(data.Count, Is.EqualTo(expectedFields.Length),
+                        "Field count mismatch.");
+
+            foreach (var (name, expected) in expectedFields)
+            {
+                var actual = data.GetValues(name);
+
+                Assert.That(actual, Is.Not.Null,
+                            "Field '{0}' is absent.", name);
+
+                Assert.That(actual, Is.EqualTo(expected),
+                            "Field '{0}' value mismatch.", name);
+            }
         }
     }
 }
