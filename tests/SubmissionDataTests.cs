@@ -354,7 +354,7 @@ namespace WebLinq.Tests
         [Test]
         public void Merge()
         {
-            var other = new NameValueCollection()
+            var other = new NameValueCollection
             {
                 ["foo"] = "bar",
                 ["bar"] = "baz"
