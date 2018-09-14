@@ -520,69 +520,6 @@ namespace WebLinq.Tests
             Assert.That(await request.Message.Content.ReadAsStringAsync(), Is.EqualTo("name=value"));
         }
 
-        [Test]
-        public async Task PostRequestWithTimeout()
-        {
-            var tt = new TestTransport(HttpConfig.Default.WithTimeout(new TimeSpan(0, 1, 0)))
-                .Enqueue(new byte[0]);
-            var data = new NameValueCollection { ["name"] = "value" };
-
-            await tt.Http.Post(new Uri("https://www.example.com/"), data);
-            var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
-
-            Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Post));
-            Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
-            Assert.That(request.Config.Timeout, Is.EqualTo(new TimeSpan(0, 1, 0)));
-        }
-
-        [Test]
-        public async Task PostRequestWithUserAgent()
-        {
-            var tt = new TestTransport(HttpConfig.Default.WithUserAgent("Spider/1.0"))
-                .Enqueue(new byte[0]);
-            var data = new NameValueCollection { ["name"] = "value" };
-
-            await tt.Http.Post(new Uri("https://www.example.com/"), data);
-            var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
-
-            Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Post));
-            Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
-            Assert.That(request.Config.UserAgent, Is.EqualTo("Spider/1.0"));
-        }
-
-        [Test]
-        public async Task PostRequestWithCookie()
-        {
-            var cookie = new Cookie("name", "value");
-            var tt = new TestTransport(HttpConfig.Default.WithCookies(new[] { cookie }))
-                .Enqueue(new byte[0]);
-            var data = new NameValueCollection { ["name"] = "value" };
-
-            await tt.Http.Post(new Uri("https://www.example.com/"), data);
-            var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
-
-            Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Post));
-            Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
-            Assert.That(await request.Message.Content.ReadAsStringAsync(), Is.EqualTo("name=value"));
-            Assert.That(request.Config.Cookies.Single(), Is.SameAs(cookie));
-        }
-
-        [Test]
-        public async Task PostRequestWithCredentials()
-        {
-            var credentials = new NetworkCredential("admin", "admin");
-            var tt = new TestTransport(HttpConfig.Default.WithCredentials(credentials))
-                .Enqueue(new byte[0]);
-            var data = new NameValueCollection { ["name"] = "value" };
-
-            await tt.Http.Post(new Uri("https://www.example.com/"), data);
-            var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
-
-            Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Post));
-            Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
-            Assert.That(await request.Message.Content.ReadAsStringAsync(), Is.EqualTo("name=value"));
-            Assert.That(request.Config.Credentials, Is.SameAs(credentials));
-        }
         [Test, Ignore("https://github.com/weblinq/WebLinq/issues/18")]
         public async Task ChainedPostRequestsWithDifferentHeaders()
         {
@@ -725,22 +662,6 @@ namespace WebLinq.Tests
             Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.google.com/")));
             Assert.That(request1.Config.Timeout, Is.EqualTo(new TimeSpan(0, 1, 0)));
             Assert.That(request2.Config.Timeout, Is.EqualTo(new TimeSpan(0, 1, 0)));
-        }
-
-        [Test]
-        public async Task PostRequestWithHeader()
-        {
-            var tt = new TestTransport(HttpConfig.Default.WithHeader("foo", "bar"))
-                .Enqueue(new byte[0]);
-            var data = new NameValueCollection { ["name"] = "value" };
-
-            await tt.Http.Post(new Uri("https://www.example.com/"), data);
-            var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
-
-            Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Post));
-            Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
-            Assert.That(request.Config.Headers.Single().Key, Is.EqualTo("foo"));
-            Assert.That(request.Config.Headers.Single().Value.Single(), Is.EqualTo("bar"));
         }
 
         [Test]
