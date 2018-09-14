@@ -1,29 +1,41 @@
 version: '{build}'
-image: Visual Studio 2017
+image:
+  - Visual Studio 2017
+  - Ubuntu
+stack: node 6
 skip_commits:
   files:
     - '*.md'
     - '*.txt'
 skip_tags: true
 install:
-- ps: Install-Product node 6
-- npm install -g eclint
-- git rm .editorconfig
-- eclint check -n "**/*.{cs,tt,cmd,sh,md,txt,yml}"
-- eclint check -w "**/*.{cs,tt,cmd,sh,md,txt,yml,json,sln,csproj,shfbproj}"
-- git reset --hard
-- choco install opencover.portable
-- choco install codecov
+- ps: if ($isWindows) { Install-Product node 6 }
+- cmd: npm install -g eclint
+- cmd: git rm .editorconfig
+- cmd: eclint check -n "**/*.{cs,tt,cmd,sh,md,txt,yml}"
+- cmd: eclint check -w "**/*.{cs,tt,cmd,sh,md,txt,yml,json,sln,csproj,shfbproj}"
+- cmd: git reset --hard
 build_script:
 - ps: >-
     $id = $env:APPVEYOR_REPO_COMMIT_TIMESTAMP -replace '([-:]|\.0+Z)', ''
 
     $id = $id.Substring(0, 13)
 
-    .\pack.cmd ci-$id $env:APPVEYOR_REPO_COMMIT
+    if ($isWindows) {
+        .\pack.cmd ci-$id $env:APPVEYOR_REPO_COMMIT
+    } else {
+        ./pack.sh  ci-$id $env:APPVEYOR_REPO_COMMIT
+    }
 test_script:
-- OpenCover.Console.exe -register:user -target:"nunit3-console.exe" -targetargs:".\tests\bin\Debug\WebLinq.Tests.dll" -filter:"+[WebLinq*]* -[WebLinq.Tests*]*" -output:".\WebLinq_coverage.xml"
-- codecov -f "WebLinq_coverage.xml
+- ps: |
+      if ($isWindows) {
+          .\test.cmd
+      } else {
+          ./test.sh
+          curl -s https://codecov.io/bash > codecov
+          chmod +x codecov
+          ./codecov -f ./tests/coverage.opencover.xml
+      }
 artifacts:
 - path: dist\*.nupkg
 deploy:

@@ -18,6 +18,7 @@ namespace WebLinq.Samples
     using static Modules.HttpModule;
     using static Modules.SpawnModule;
     using static Modules.XmlModule;
+    using System.Runtime.InteropServices;
 
     #endregion
 
@@ -31,19 +32,21 @@ namespace WebLinq.Samples
             var samples =
                 from s in new[]
                 {
-                    new { Title = nameof(GoogleSearch)          , Query = GoogleSearch()           },
-                    new { Title = nameof(QueenSongs)            , Query = QueenSongs()             },
-                    new { Title = nameof(ScheduledTasksViaSpawn), Query = ScheduledTasksViaSpawn() },
-                    new { Title = nameof(TopHackerNews)         , Query = TopHackerNews(100)       },
-                    new { Title = nameof(MsdnBooksXmlSample)    , Query = MsdnBooksXmlSample()     },
-                    new { Title = nameof(MockarooCsv)           , Query = MockarooCsv()            },
-                    new { Title = nameof(TeapotError)           , Query = TeapotError()            },
-                    new { Title = nameof(BasicAuth)             , Query = BasicAuth()              },
-                    new { Title = nameof(AutoRedirection)       , Query = AutoRedirection()        },
-                    new { Title = nameof(FormPost)              , Query = FormPost()               },
+                    new { Title = nameof(GoogleSearch)          , Query = GoogleSearch()          , IsWindowsOnly = false },
+                    new { Title = nameof(QueenSongs)            , Query = QueenSongs()            , IsWindowsOnly = false },
+                    new { Title = nameof(ScheduledTasksViaSpawn), Query = ScheduledTasksViaSpawn(), IsWindowsOnly = true  },
+                    new { Title = nameof(TopHackerNews)         , Query = TopHackerNews(100)      , IsWindowsOnly = false },
+                    new { Title = nameof(MsdnBooksXmlSample)    , Query = MsdnBooksXmlSample()    , IsWindowsOnly = false },
+                    new { Title = nameof(MockarooCsv)           , Query = MockarooCsv()           , IsWindowsOnly = false },
+                    new { Title = nameof(TeapotError)           , Query = TeapotError()           , IsWindowsOnly = false },
+                    new { Title = nameof(BasicAuth)             , Query = BasicAuth()             , IsWindowsOnly = false },
+                    new { Title = nameof(AutoRedirection)       , Query = AutoRedirection()       , IsWindowsOnly = false },
+                    new { Title = nameof(FormPost)              , Query = FormPost()              , IsWindowsOnly = false },
                 }
                 where args.Length == 0
                    || args.Any(a => s.Title.Equals(a, StringComparison.OrdinalIgnoreCase))
+                where !s.IsWindowsOnly
+                   || RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
                 select s;
 
             foreach (var sample in samples)
@@ -214,16 +217,6 @@ namespace WebLinq.Samples
 
         static IObservable<object> MockarooCsv() =>
 
-            from cols in Observable.Return(new
-            {
-                Id        = new DataColumn("id", typeof(int)),
-                FirstName = new DataColumn("first_name"),
-                LastName  = new DataColumn("last_name"),
-                Email     = new DataColumn("email"),
-                Gender    = new DataColumn("gender"),
-                IpAddress = new DataColumn("ip_address"),
-            })
-
             from t in Http.Get(new Uri("https://www.mockaroo.com/"))
                           .SubmitTo(new Uri("https://www.mockaroo.com/schemas/download"), "#schema_form", new NameValueCollection
                           {
@@ -231,18 +224,24 @@ namespace WebLinq.Samples
                               ["schema[file_format]"] = "csv",
                           })
                           .Accept("text/csv")
-                          .CsvToDataTable(cols.Id, cols.FirstName, cols.LastName, cols.Gender, cols.Email, cols.IpAddress)
+                          .CsvToDataTable(
+                              new DataColumn("id", typeof(int)),
+                              new DataColumn("first_name"),
+                              new DataColumn("last_name"),
+                              new DataColumn("email"),
+                              new DataColumn("gender"),
+                              new DataColumn("ip_address"))
                           .Content()
 
-            from row in t.AsEnumerable()
+            from DataRow row in t.Rows
             select new
             {
-                Id        = row[cols.Id       ],
-                FirstName = row[cols.FirstName],
-                LastName  = row[cols.LastName ],
-                Email     = row[cols.Email    ],
-                Gender    = row[cols.Gender   ],
-                IpAddress = row[cols.IpAddress],
+                Id        = row["id"        ],
+                FirstName = row["first_name"],
+                LastName  = row["last_name" ],
+                Email     = row["email"     ],
+                Gender    = row["gender"    ],
+                IpAddress = row["ip_address"],
             };
 
         static IObservable<object> TeapotError() =>
