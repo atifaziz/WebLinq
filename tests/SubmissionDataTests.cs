@@ -154,10 +154,10 @@ namespace WebLinq.Tests
             var (result, _) = Sample.Exercise(submission);
 
             Assert.That(result.FirstName.Single(), Is.EqualTo("Mickey"));
-            Assert.That(result.LastName.Single(), Is.EqualTo("Mouse"));
-            Assert.That(result.Email.Single(), Is.EqualTo("mickey@mouse.com"));
-            Assert.That(result.Gender.Single(), Is.EqualTo("Female"));
-            Assert.That(result.Vehicle, Is.EqualTo(new[] { "Bike", "Car" }));
+            Assert.That(result.LastName.Single() , Is.EqualTo("Mouse"));
+            Assert.That(result.Email.Single()    , Is.EqualTo("mickey@mouse.com"));
+            Assert.That(result.Gender.Single()   , Is.EqualTo("Female"));
+            Assert.That(result.Vehicle           , Is.EqualTo(new[] { "Bike", "Car" }));
         }
 
         [Test]
@@ -177,8 +177,8 @@ namespace WebLinq.Tests
             var (result, _) = Sample.Exercise(submission);
 
             Assert.That(result.FirstName, Is.EqualTo("Mickey"));
-            Assert.That(result.LastName, Is.EqualTo("Mouse"));
-            Assert.That(result.Email, Is.EqualTo("mickey@mouse.com"));
+            Assert.That(result.LastName , Is.EqualTo("Mouse"));
+            Assert.That(result.Email    , Is.EqualTo("mickey@mouse.com"));
         }
 
         [Test]
