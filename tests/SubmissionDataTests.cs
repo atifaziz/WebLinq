@@ -128,9 +128,12 @@ namespace WebLinq.Tests
             var (names, data) = Sample.Exercise(submission);
 
             Assert.That(names, Is.EqualTo(new[] { "firstname", "lastname", "email", "gender", "vehicle" }));
-            Assert.That(data["firstname"], Is.EqualTo("Mickey"));
-            Assert.That(data["lastname"], Is.EqualTo("Mouse"));
-            Assert.That(data["email"], Is.EqualTo("mickey@mouse.com"));
+            AssertData(data,
+                ExpectedField("firstname", "Mickey"),
+                ExpectedField("lastname" , "Mouse"),
+                ExpectedField("email"    , "mickey@mouse.com"),
+                ExpectedField("vehicle"  , "Bike", "Car"),
+                ExpectedField("gender"   , "Female"));
         }
 
         [Test]
@@ -188,10 +191,12 @@ namespace WebLinq.Tests
 
             var (_, data) = Sample.Exercise(submission);
 
-            Assert.That(data.Count, Is.EqualTo(5));
-            Assert.That(data["firstname"], Is.EqualTo("Minnie"));
-            Assert.That(data["lastname"], Is.EqualTo("Mouse"));
-            Assert.That(data["email"], Is.EqualTo("mickey@mouse.com"));
+            AssertData(data,
+                ExpectedField("firstname", "Minnie"),
+                ExpectedField("lastname" , "Mouse"),
+                ExpectedField("email"    , "mickey@mouse.com"),
+                ExpectedField("vehicle"  , "Bike", "Car"),
+                ExpectedField("gender"   , "Female"));
         }
 
         [Test]
@@ -201,10 +206,12 @@ namespace WebLinq.Tests
 
             var (_, data) = Sample.Exercise(submission);
 
-            Assert.That(data.Count, Is.EqualTo(5));
-            Assert.That(data["firstname"], Is.EqualTo("Minnie"));
-            Assert.That(data["lastname"], Is.EqualTo("Minnie"));
-            Assert.That(data["email"], Is.EqualTo("mickey@mouse.com"));
+            AssertData(data,
+                ExpectedField("firstname", "Minnie"),
+                ExpectedField("lastname" , "Minnie"),
+                ExpectedField("email"    , "mickey@mouse.com"),
+                ExpectedField("vehicle"  , "Bike", "Car"),
+                ExpectedField("gender"   , "Female"));
         }
 
         [Test]
@@ -214,11 +221,13 @@ namespace WebLinq.Tests
 
             var (_, data) = Sample.Exercise(submission);
 
-            Assert.That(data.Count, Is.EqualTo(6));
-            Assert.That(data["firstname"], Is.EqualTo("Mickey"));
-            Assert.That(data["lastname"], Is.EqualTo("Mouse"));
-            Assert.That(data["email"], Is.EqualTo("mickey@mouse.com"));
-            Assert.That(data["foo"], Is.EqualTo("bar"));
+            AssertData(data,
+                ExpectedField("firstname", "Mickey"),
+                ExpectedField("lastname" , "Mouse"),
+                ExpectedField("email"    , "mickey@mouse.com"),
+                ExpectedField("vehicle"  , "Bike", "Car"),
+                ExpectedField("gender"   , "Female"),
+                ExpectedField("foo"      , "bar"));
         }
 
         [Test]
@@ -231,10 +240,12 @@ namespace WebLinq.Tests
 
             var (_, data) = Sample.Exercise(submission);
 
-            Assert.That(data.Count, Is.EqualTo(5));
-            Assert.That(data["firstname"], Is.EqualTo("MICKEY"));
-            Assert.That(data["lastname"], Is.EqualTo("Mouse"));
-            Assert.That(data["email"], Is.EqualTo("mickey@mouse.com"));
+            AssertData(data,
+                ExpectedField("firstname", "MICKEY"),
+                ExpectedField("lastname" , "Mouse"),
+                ExpectedField("email"    , "mickey@mouse.com"),
+                ExpectedField("vehicle"  , "Bike", "Car"),
+                ExpectedField("gender"   , "Female"));
         }
 
         [Test]
@@ -248,10 +259,12 @@ namespace WebLinq.Tests
             var (name, data) = Sample.Exercise(submission);
 
             Assert.That(name, Is.EqualTo("firstname"));
-            Assert.That(data.Count, Is.EqualTo(5));
-            Assert.That(data["firstname"], Is.EqualTo("Minnie"));
-            Assert.That(data["lastname"], Is.EqualTo("Mouse"));
-            Assert.That(data["email"], Is.EqualTo("mickey@mouse.com"));
+            AssertData(data,
+                ExpectedField("firstname", "Minnie"),
+                ExpectedField("lastname" , "Mouse"),
+                ExpectedField("email"    , "mickey@mouse.com"),
+                ExpectedField("vehicle"  , "Bike", "Car"),
+                ExpectedField("gender"   , "Female"));
         }
 
         [Test]
@@ -261,10 +274,12 @@ namespace WebLinq.Tests
 
             var (_, data) = Sample.Exercise(submission);
 
-            Assert.That(data.Count, Is.EqualTo(5));
-            Assert.That(data["firstname"], Is.EqualTo("Mickey"));
-            Assert.That(data["lastname"], Is.EqualTo("bar"));
-            Assert.That(data["email"], Is.EqualTo("mickey@mouse.com"));
+            AssertData(data,
+                ExpectedField("firstname", "Mickey"),
+                ExpectedField("lastname" , "bar"),
+                ExpectedField("email"    , "mickey@mouse.com"),
+                ExpectedField("vehicle"  , "Bike", "Car"),
+                ExpectedField("gender"   , "Female"));
         }
 
         [Test]
@@ -274,10 +289,12 @@ namespace WebLinq.Tests
 
             var (_, data) = Sample.Create(submission).AssertThrows<InvalidOperationException>();
 
-            Assert.That(data.Count, Is.EqualTo(5));
-            Assert.That(data["firstname"], Is.EqualTo("Mickey"));
-            Assert.That(data["lastname"], Is.EqualTo("Mouse"));
-            Assert.That(data["email"], Is.EqualTo("mickey@mouse.com"));
+            AssertData(data,
+                ExpectedField("firstname", "Mickey"),
+                ExpectedField("lastname" , "Mouse"),
+                ExpectedField("email"    , "mickey@mouse.com"),
+                ExpectedField("vehicle"  , "Bike", "Car"),
+                ExpectedField("gender"   , "Female"));
         }
 
         [Test]
@@ -287,10 +304,12 @@ namespace WebLinq.Tests
 
             var (_, data) = Sample.Create(submission).AssertThrows<InvalidOperationException>();
 
-            Assert.That(data.Count, Is.EqualTo(5));
-            Assert.That(data["firstname"], Is.EqualTo("Mickey"));
-            Assert.That(data["lastname"], Is.EqualTo("Mouse"));
-            Assert.That(data["email"], Is.EqualTo("mickey@mouse.com"));
+            AssertData(data,
+                ExpectedField("firstname", "Mickey"),
+                ExpectedField("lastname" , "Mouse"),
+                ExpectedField("email"    , "mickey@mouse.com"),
+                ExpectedField("vehicle"  , "Bike", "Car"),
+                ExpectedField("gender"   , "Female"));
         }
 
         [Test]
@@ -301,10 +320,12 @@ namespace WebLinq.Tests
                                                  "bar");
             var (_, data) = Sample.Create(submission).AssertThrows<InvalidOperationException>();
 
-            Assert.That(data.Count, Is.EqualTo(5));
-            Assert.That(data["firstname"], Is.EqualTo("Mickey"));
-            Assert.That(data["lastname"], Is.EqualTo("Mouse"));
-            Assert.That(data["email"], Is.EqualTo("mickey@mouse.com"));
+            AssertData(data,
+                ExpectedField("firstname", "Mickey"),
+                ExpectedField("lastname" , "Mouse"),
+                ExpectedField("email"    , "mickey@mouse.com"),
+                ExpectedField("vehicle"  , "Bike", "Car"),
+                ExpectedField("gender"   , "Female"));
         }
 
         [Test]
@@ -318,10 +339,12 @@ namespace WebLinq.Tests
             var (name, data) = Sample.Exercise(submission);
 
             Assert.That(name, Is.Null);
-            Assert.That(data.Count, Is.EqualTo(5));
-            Assert.That(data["firstname"], Is.EqualTo("Mickey"));
-            Assert.That(data["lastname"], Is.EqualTo("Mouse"));
-            Assert.That(data["email"], Is.EqualTo("mickey@mouse.com"));
+            AssertData(data,
+                ExpectedField("firstname", "Mickey"),
+                ExpectedField("lastname" , "Mouse"),
+                ExpectedField("email"    , "mickey@mouse.com"),
+                ExpectedField("vehicle"  , "Bike", "Car"),
+                ExpectedField("gender"   , "Female"));
         }
 
         [Test]
@@ -332,10 +355,12 @@ namespace WebLinq.Tests
 
             var (_, data) = Sample.Exercise(submission);
 
-            Assert.That(data.Count, Is.EqualTo(5));
-            Assert.That(data["firstname"], Is.EqualTo("Minnie"));
-            Assert.That(data["lastname"], Is.EqualTo("Mouse"));
-            Assert.That(data["email"], Is.EqualTo("mickey@mouse.com"));
+            AssertData(data,
+                ExpectedField("firstname", "Minnie"),
+                ExpectedField("lastname" , "Mouse"),
+                ExpectedField("email"    , "mickey@mouse.com"),
+                ExpectedField("vehicle"  , "Bike", "Car"),
+                ExpectedField("gender"   , "Female"));
         }
 
         [Test]
@@ -346,10 +371,12 @@ namespace WebLinq.Tests
 
             var (_, data) = Sample.Create(submission).AssertThrows<InvalidOperationException>();
 
-            Assert.That(data.Count, Is.EqualTo(5));
-            Assert.That(data["firstname"], Is.EqualTo("Mickey"));
-            Assert.That(data["lastname"], Is.EqualTo("Mouse"));
-            Assert.That(data["email"], Is.EqualTo("mickey@mouse.com"));
+            AssertData(data,
+                ExpectedField("firstname", "Mickey"),
+                ExpectedField("lastname" , "Mouse"),
+                ExpectedField("email"    , "mickey@mouse.com"),
+                ExpectedField("vehicle"  , "Bike", "Car"),
+                ExpectedField("gender"   , "Female"));
         }
 
         [Test]
@@ -360,10 +387,12 @@ namespace WebLinq.Tests
 
             var (_, data) = Sample.Exercise(submission);
 
-            Assert.That(data.Count, Is.EqualTo(5));
-            Assert.That(data["firstname"], Is.EqualTo("baz"));
-            Assert.That(data["lastname"], Is.EqualTo("baz"));
-            Assert.That(data["email"], Is.EqualTo("mickey@mouse.com"));
+            AssertData(data,
+               ExpectedField("firstname", "baz"),
+               ExpectedField("lastname" , "baz"),
+               ExpectedField("email"    , "mickey@mouse.com"),
+               ExpectedField("vehicle"  , "Bike", "Car"),
+               ExpectedField("gender"   , "Female"));
         }
 
         [Test]
@@ -379,12 +408,14 @@ namespace WebLinq.Tests
 
             var (_, data) = Sample.Exercise(submission);
 
-            Assert.That(data.Count, Is.EqualTo(7));
-            Assert.That(data["firstname"], Is.EqualTo("Mickey"));
-            Assert.That(data["lastname"], Is.EqualTo("Mouse"));
-            Assert.That(data["email"], Is.EqualTo("mickey@mouse.com"));
-            Assert.That(data["foo"], Is.EqualTo("bar"));
-            Assert.That(data["bar"], Is.EqualTo("baz"));
+            AssertData(data,
+                ExpectedField("firstname", "Mickey"),
+                ExpectedField("lastname" , "Mouse"),
+                ExpectedField("email"    , "mickey@mouse.com"),
+                ExpectedField("vehicle"  , "Bike", "Car"),
+                ExpectedField("gender"   , "Female"),
+                ExpectedField("foo"      , "bar"),
+                ExpectedField("bar"      , "baz"));
         }
 
         [Test]
@@ -447,10 +478,12 @@ namespace WebLinq.Tests
 
             var (_, data) = Sample.Exercise(submission);
 
-            Assert.That(data.Count, Is.EqualTo(5));
-            Assert.That(data["firstname"], Is.EqualTo("Minnie"));
-            Assert.That(data["lastname"], Is.EqualTo("Mouse"));
-            Assert.That(data["email"], Is.EqualTo("minnie@mouse.com"));
+            AssertData(data,
+                ExpectedField("firstname", "Minnie"),
+                ExpectedField("lastname" , "Mouse"),
+                ExpectedField("email"    , "minnie@mouse.com"),
+                ExpectedField("vehicle"  , "Bike", "Car"),
+                ExpectedField("gender"   , "Female"));
         }
 
         [Test]
@@ -466,10 +499,12 @@ namespace WebLinq.Tests
 
             var (_, data) = Sample.Exercise(submission);
 
-            Assert.That(data.Count, Is.EqualTo(5));
-            Assert.That(data["firstname"], Is.EqualTo("Minnie"));
-            Assert.That(data["lastname"], Is.EqualTo("Mouse"));
-            Assert.That(data["email"], Is.EqualTo("minnie@mouse.com"));
+            AssertData(data,
+                ExpectedField("firstname", "Minnie"),
+                ExpectedField("lastname" , "Mouse"),
+                ExpectedField("email"    , "minnie@mouse.com"),
+                ExpectedField("vehicle"  , "Bike", "Car"),
+                ExpectedField("gender"   , "Female"));
         }
 
         static (string Name, IEnumerable<string> Values)
