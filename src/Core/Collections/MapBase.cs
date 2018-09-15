@@ -112,8 +112,7 @@ namespace WebLinq.Collections
         public T TryGetValue<T>(TKey key, Func<bool, TValue, T> selector)
         {
             if (selector == null) throw new ArgumentNullException(nameof(selector));
-            TValue value;
-            return TryGetValue(key, out value)
+            return TryGetValue(key, out var value)
                  ? selector(true, value)
                  : selector(false, default);
         }

@@ -101,8 +101,7 @@ namespace WebLinq
                 response = await http.SendAsync(request, config)
                     .DontContinueOnCapturedContext();
 
-                IEnumerable<string> setCookies;
-                if (response.Headers.TryGetValues("Set-Cookie", out setCookies))
+                if (response.Headers.TryGetValues("Set-Cookie", out var setCookies))
                 {
                     var cc = new CookieContainer();
                     foreach (var cookie in setCookies)

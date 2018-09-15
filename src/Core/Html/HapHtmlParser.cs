@@ -52,8 +52,7 @@ namespace WebLinq.Html
 
             HtmlObject GetPublicObject(HtmlNode node)
             {
-                HtmlObject obj;
-                if (!_map.TryGetValue(node, out obj))
+                if (!_map.TryGetValue(node, out var obj))
                     _map.Add(node, obj = "option".Equals(node.Name, StringComparison.Ordinal)
                                          ? new HapOptionElement(node, this)
                                          : new HapHtmlObject(node, this));
