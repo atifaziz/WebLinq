@@ -18,7 +18,135 @@ namespace WebLinq
 {
     using System;
     using System.Diagnostics;
+    using System.Linq;
     using System.Net;
+    using System.Net.Http;
+    using System.Reactive;
+    using System.Threading.Tasks;
+    using System.Xml.Linq;
+    using RxUnit = System.Reactive.Unit;
+
+    public interface IHttpContentReader<T>
+    {
+        Task<HttpFetch<T>> Read(HttpFetch<HttpContent> fetch);
+    }
+
+    public interface IHttpFetchReader<out T>
+    {
+        T Read(IHttpFetch fetch);
+    }
+
+    public static class HttpFetchReader
+    {
+        public static IHttpFetchReader<T> Create<T>(Func<IHttpFetch, T> f) =>
+            new Reader<T>(f);
+
+        public static IHttpFetchReader<T> Return<T>(T value) =>
+            Create(_ => value);
+
+        public static IHttpFetchReader<TResult>
+            Bind<T, TResult>(this IHttpFetchReader<T> source, Func<T, IHttpFetchReader<TResult>> fun) =>
+            Create(f => fun(source.Read(f)).Read(f));
+
+        public static IHttpFetchReader<TResult>
+            Select<T, TResult>(this IHttpFetchReader<T> source, Func<T, TResult> selector) =>
+            source.Bind(x => Return(selector(x)));
+
+        public static IHttpFetchReader<HttpHeaderCollection> ContentHeaders() =>
+            Create(f => f.ContentHeaders);
+
+        public static IHttpFetchReader<string> MediaType() =>
+            from hs in ContentHeaders()
+            select hs.TryGetValue("Content-Type", out var v) ? v : null into v
+            select v.FirstOrDefault() is string s
+                 ? new System.Net.Mime.ContentType(s).MediaType
+                 : null;
+
+        sealed class Reader<T> : IHttpFetchReader<T>
+        {
+            readonly Func<IHttpFetch, T> _f;
+            public Reader(Func<IHttpFetch, T> f) => _f = f;
+            public T Read(IHttpFetch fetch) => _f(fetch);
+        }
+    }
+
+    static class X
+    {
+        public static ChoiceOf3<T1, T2, T3>
+            Choose<T1, T2, T3>(bool f1, Func<T1> c1,
+                bool f2, Func<T2> c2,
+                Func<T3> c3)
+            => f1 ? ChoiceOf3<T1, T2, T3>.Choice1(c1())
+             : f2 ? ChoiceOf3<T1, T2, T3>.Choice2(c2())
+             : ChoiceOf3<T1, T2, T3>.Choice3(c3());
+
+        public static void Test1()
+        {
+            var q =
+                from t in HttpFetchReader.MediaType()
+                select "text/plain".Equals(t, StringComparison.OrdinalIgnoreCase)
+                     ? ChoiceOf3<IHttpContentReader<string>,
+                                 IHttpContentReader<XDocument>,
+                                 IHttpContentReader<Unit>>.Choice1(HttpContentReader.Text())
+                     : t.StartsWith("application/xml", StringComparison.OrdinalIgnoreCase)
+                     ? ChoiceOf3<IHttpContentReader<string>,
+                                 IHttpContentReader<XDocument>,
+                                 IHttpContentReader<Unit>>.Choice2(HttpContentReader.Xml())
+                     : ChoiceOf3<IHttpContentReader<string>,
+                                 IHttpContentReader<XDocument>,
+                                 IHttpContentReader<Unit>>.Choice3(HttpContentReader.Unit());
+        }
+
+        public static void Test2()
+        {
+            var q =
+                from t in HttpFetchReader.MediaType()
+                select Choose("text/plain".Equals(t, StringComparison.OrdinalIgnoreCase),
+                                  () => HttpContentReader.Text().Select(f => f.WithContent(new { f.Content })),
+                              t.StartsWith("application/xml", StringComparison.OrdinalIgnoreCase),
+                                  HttpContentReader.Xml,
+                              HttpContentReader.Unit);
+        }
+    }
+
+    public static class HttpContentReader
+    {
+        public static IHttpContentReader<TResult>
+            Select<T, TResult>(this IHttpContentReader<T> reader,
+                               Func<HttpFetch<T>, HttpFetch<TResult>> selector) =>
+            Create(async f => selector(await reader.Read(f).DontContinueOnCapturedContext()));
+
+        public static IHttpContentReader<string> Text() => Text(_ => _);
+
+        public static IHttpContentReader<T> Text<T>(Func<string, T> selector) =>
+            Text().Select(f => f.WithContent(selector(f.Content)));
+
+        public static IHttpContentReader<XDocument> Xml() => Xml(_ => _);
+
+        public static IHttpContentReader<T> Xml<T>(Func<XDocument, T> selector) =>
+            Create(async f => f.WithContent(selector(XDocument.Load(await f.Content.ReadAsStreamAsync().ConfigureAwait(false)))));
+
+        public static IHttpContentReader<Unit> Unit() =>
+            Create(f => { f.Content.Dispose(); return Task.FromResult(f.WithContent(RxUnit.Default)); });
+
+
+        public static IHttpContentReader<T> Create<T>(Func<HttpFetch<HttpContent>, Task<HttpFetch<T>>> f) =>
+            new Reader<T>(f);
+
+        sealed class Reader<T> : IHttpContentReader<T>
+        {
+            readonly Func<HttpFetch<HttpContent>, Task<HttpFetch<T>>> _impl;
+
+            public Reader(Func<HttpFetch<HttpContent>, Task<HttpFetch<T>>> impl) =>
+                _impl = impl ?? throw new ArgumentNullException(nameof(impl));
+
+            public Task<HttpFetch<T>> Read(HttpFetch<HttpContent> fetch) =>
+                _impl(fetch ?? throw new ArgumentNullException(nameof(fetch)));
+        }
+
+        public static IHttpContentReader<T> Return<T>(T value) =>
+            Create(_ => Task.FromResult(value));
+    }
 
     public static class HttpFetch
     {
@@ -37,8 +165,21 @@ namespace WebLinq
                              requestUrl, requestHeaders);
     }
 
+    public interface IHttpFetch
+    {
+        int Id                              { get; }
+        IHttpClient Client                  { get; }
+        Version HttpVersion                 { get; }
+        HttpStatusCode StatusCode           { get; }
+        string ReasonPhrase                 { get; }
+        HttpHeaderCollection Headers        { get; }
+        HttpHeaderCollection ContentHeaders { get; }
+        Uri RequestUrl                      { get; }
+        HttpHeaderCollection RequestHeaders { get; }
+    }
+
     [DebuggerDisplay("Id = {Id}, StatusCode = {StatusCode} ({ReasonPhrase}), Content = {Content}")]
-    public partial class HttpFetch<T> : IDisposable
+    public partial class HttpFetch<T> : IHttpFetch, IDisposable
     {
         bool _disposed;
 
