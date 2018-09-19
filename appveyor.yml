@@ -22,14 +22,14 @@ build_script:
     $id = $id.Substring(0, 13)
 
     if ($isWindows) {
-        .\pack.cmd ci-$id $env:APPVEYOR_REPO_COMMIT
+        cmd /c call .\pack.cmd ci-$id $env:APPVEYOR_REPO_COMMIT
     } else {
         ./pack.sh  ci-$id $env:APPVEYOR_REPO_COMMIT
     }
 test_script:
 - ps: |
       if ($isWindows) {
-          .\test.cmd
+          cmd /c call .\test.cmd
       } else {
           ./test.sh
           curl -s https://codecov.io/bash > codecov
