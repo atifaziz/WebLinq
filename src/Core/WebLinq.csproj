@@ -21,7 +21,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Dsv" Version="1.0.0-beta-1" />
+    <PackageReference Include="Dsv" Version="1.1.0" />
     <PackageReference Include="Fizzler.Systems.HtmlAgilityPack" Version="1.2.0" />
     <PackageReference Include="HtmlAgilityPack" Version="1.5.1" />
     <PackageReference Include="Mannex" Version="3.0.0-rc1" />
