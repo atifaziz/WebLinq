@@ -32,17 +32,17 @@ namespace WebLinq.Xsv
 
         public static IObservable<HttpFetch<DataTable>> XsvToDataTable(this IObservable<HttpFetch<HttpContent>> query, string delimiter, bool quoted, params DataColumn[] columns) =>
             from fetch in query.Text()
-            select fetch.WithContent(fetch.Content.Read().ParseXsvAsDataTable(delimiter, quoted, columns));
+            select fetch.WithContent(fetch.Content.ParseXsvAsDataTable(delimiter, quoted, columns));
 
         public static IObservable<DataTable> XsvToDataTable(this IObservable<string> query, string delimiter, bool quoted, params DataColumn[] columns) =>
             from xsv in query
-            select xsv.Read().ParseXsvAsDataTable(delimiter, quoted, columns);
+            select xsv.ParseXsvAsDataTable(delimiter, quoted, columns);
 
         // TODO return plain DataTable
         public static IObservable<DataTable> XsvToDataTable(string text, string delimiter, bool quoted, params DataColumn[] columns)
         {
             DataTable dt = null;
-            return Observable.Defer(() => Observable.Return(dt ?? (dt = text.Read().ParseXsvAsDataTable(delimiter, quoted, columns))));
+            return Observable.Defer(() => Observable.Return(dt ?? (dt = text.ParseXsvAsDataTable(delimiter, quoted, columns))));
         }
 
         public static IObservable<HttpFetch<DataTable>> CsvToDataTable(this IHttpObservable query, params DataColumn[] columns) =>
