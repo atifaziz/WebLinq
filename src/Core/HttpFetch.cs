@@ -25,6 +25,7 @@ namespace WebLinq
     using System.Threading.Tasks;
     using System.Xml.Linq;
     using RxUnit = System.Reactive.Unit;
+    using Choices;
 
     public interface IHttpContentReader<T>
     {
@@ -52,8 +53,17 @@ namespace WebLinq
             Select<T, TResult>(this IHttpFetchReader<T> source, Func<T, TResult> selector) =>
             source.Bind(x => Return(selector(x)));
 
+        public static IHttpFetchReader<TResult>
+            SelectMany<TFirst, TSecond, TResult>(this IHttpFetchReader<TFirst> first,
+                Func<TFirst, IHttpFetchReader<TSecond>> secondSelector,
+                Func<TFirst, TSecond, TResult> resultSelector) =>
+            first.Bind(x => secondSelector(x).Bind(y => Return(resultSelector(x, y))));
+
         public static IHttpFetchReader<HttpHeaderCollection> ContentHeaders() =>
             Create(f => f.ContentHeaders);
+
+        public static IHttpFetchReader<HttpStatusCode> StatusCode() =>
+            Create(f => f.StatusCode);
 
         public static IHttpFetchReader<string> MediaType() =>
             from hs in ContentHeaders()
@@ -72,29 +82,29 @@ namespace WebLinq
 
     static class X
     {
-        public static ChoiceOf3<T1, T2, T3>
+        public static Choice<T1, T2, T3>
             Choose<T1, T2, T3>(bool f1, Func<T1> c1,
                 bool f2, Func<T2> c2,
                 Func<T3> c3)
-            => f1 ? ChoiceOf3<T1, T2, T3>.Choice1(c1())
-             : f2 ? ChoiceOf3<T1, T2, T3>.Choice2(c2())
-             : ChoiceOf3<T1, T2, T3>.Choice3(c3());
+            => f1 ? Choice<T1, T2, T3>.Choice1(c1())
+             : f2 ? Choice<T1, T2, T3>.Choice2(c2())
+             : Choice<T1, T2, T3>.Choice3(c3());
 
         public static void Test1()
         {
             var q =
                 from t in HttpFetchReader.MediaType()
                 select "text/plain".Equals(t, StringComparison.OrdinalIgnoreCase)
-                     ? ChoiceOf3<IHttpContentReader<string>,
-                                 IHttpContentReader<XDocument>,
-                                 IHttpContentReader<Unit>>.Choice1(HttpContentReader.Text())
+                     ? Choice<IHttpContentReader<string>,
+                              IHttpContentReader<XDocument>,
+                              IHttpContentReader<Unit>>.Choice1(HttpContentReader.Text())
                      : t.StartsWith("application/xml", StringComparison.OrdinalIgnoreCase)
-                     ? ChoiceOf3<IHttpContentReader<string>,
-                                 IHttpContentReader<XDocument>,
-                                 IHttpContentReader<Unit>>.Choice2(HttpContentReader.Xml())
-                     : ChoiceOf3<IHttpContentReader<string>,
-                                 IHttpContentReader<XDocument>,
-                                 IHttpContentReader<Unit>>.Choice3(HttpContentReader.Unit());
+                     ? Choice<IHttpContentReader<string>,
+                              IHttpContentReader<XDocument>,
+                              IHttpContentReader<Unit>>.Choice2(HttpContentReader.Xml())
+                     : Choice<IHttpContentReader<string>,
+                              IHttpContentReader<XDocument>,
+                              IHttpContentReader<Unit>>.Choice3(HttpContentReader.Unit());
         }
 
         public static void Test2()
@@ -102,10 +112,40 @@ namespace WebLinq
             var q =
                 from t in HttpFetchReader.MediaType()
                 select Choose("text/plain".Equals(t, StringComparison.OrdinalIgnoreCase),
-                                  () => HttpContentReader.Text().Select(f => f.WithContent(new { f.Content })),
+                                  () => HttpContentReader.Text().Select(f => new { f.Content }),
                               t.StartsWith("application/xml", StringComparison.OrdinalIgnoreCase),
                                   HttpContentReader.Xml,
                               HttpContentReader.Unit);
+        }
+
+        public static void Test3()
+        {
+            var q =
+                from t in HttpFetchReader.MediaType()
+                select
+                    Choice.If("text/plain".Equals(t, StringComparison.OrdinalIgnoreCase),
+                        () => HttpContentReader.Text().Select(f => f.WithContent(new { f.Content })),
+                        () =>
+                            Choice.If(t.StartsWith("application/xml", StringComparison.OrdinalIgnoreCase),
+                                HttpContentReader.Xml,
+                                HttpContentReader.Unit));
+        }
+
+        public static void Test4()
+        {
+            var q =
+                from sc in HttpFetchReader.StatusCode()
+                from t in sc == HttpStatusCode.OK ? HttpFetchReader.MediaType() : HttpFetchReader.Return<string>(null)
+                select
+                    Choice.If(sc == HttpStatusCode.OK,
+                        () => sc,
+                        () =>
+                            Choice.If("text/plain".Equals(t, StringComparison.OrdinalIgnoreCase),
+                                () => HttpContentReader.Text().Select(f => f.WithContent(new { f.Content })),
+                                () =>
+                                    Choice.If(t.StartsWith("application/xml", StringComparison.OrdinalIgnoreCase),
+                                        HttpContentReader.Xml,
+                                        HttpContentReader.Unit)));
         }
     }
 
@@ -113,13 +153,13 @@ namespace WebLinq
     {
         public static IHttpContentReader<TResult>
             Select<T, TResult>(this IHttpContentReader<T> reader,
-                               Func<HttpFetch<T>, HttpFetch<TResult>> selector) =>
-            Create(async f => selector(await reader.Read(f).DontContinueOnCapturedContext()));
+                               Func<HttpFetch<T>, TResult> selector) =>
+            Create(async f => f.WithContent(selector(await reader.Read(f).DontContinueOnCapturedContext())));
 
         public static IHttpContentReader<string> Text() => Text(_ => _);
 
         public static IHttpContentReader<T> Text<T>(Func<string, T> selector) =>
-            Text().Select(f => f.WithContent(selector(f.Content)));
+            Text().Select(f => selector(f.Content));
 
         public static IHttpContentReader<XDocument> Xml() => Xml(_ => _);
 
@@ -145,7 +185,7 @@ namespace WebLinq
         }
 
         public static IHttpContentReader<T> Return<T>(T value) =>
-            Create(_ => Task.FromResult(value));
+            Create(f => Task.FromResult(f.WithContent(value)));
     }
 
     public static class HttpFetch
