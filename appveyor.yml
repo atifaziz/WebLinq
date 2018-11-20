@@ -7,7 +7,9 @@ skip_commits:
   files:
     - '*.md'
     - '*.txt'
-skip_tags: true
+environment:
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
 install:
 - ps: if ($isWindows) { Install-Product node 6 }
 - cmd: npm install -g eclint
@@ -15,6 +17,12 @@ install:
 - cmd: eclint check -n "**/*.{cs,tt,cmd,sh,md,txt,yml}"
 - cmd: eclint check -w "**/*.{cs,tt,cmd,sh,md,txt,yml,json,sln,csproj,shfbproj}"
 - cmd: git reset --hard
+- sh: wget -q https://packages.microsoft.com/config/ubuntu/16.04/packages-microsoft-prod.deb
+- sh: sudo dpkg -i packages-microsoft-prod.deb
+- sh: sudo apt-get install apt-transport-https
+- sh: sudo apt-get update
+- sh: sudo apt-get install -y --allow-downgrades dotnet-sdk-2.1=2.1.403-1
+skip_tags: true
 build_script:
 - ps: >-
     $id = $env:APPVEYOR_REPO_COMMIT_TIMESTAMP -replace '([-:]|\.0+Z)', ''
