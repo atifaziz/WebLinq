@@ -253,14 +253,13 @@ namespace WebLinq.Samples
                           .ReturnErroneousFetch()
             select new { e.StatusCode, e.ReasonPhrase };
 
-        static readonly Uri HttpbinBasicAuthUrl = new Uri("http://httpbin.org/basic-auth/user/passwd");
-
         static IObservable<object> BasicAuth() =>
 
-            from fst in Http.Get(HttpbinBasicAuthUrl)
+            from url in Observable.Return(new Uri("http://httpbin.org/basic-auth/user/passwd"))
+            from fst in Http.Get(url)
                             .ReturnErroneousFetch()
             from snd in fst.Client.WithConfig(fst.Client.Config.WithCredentials(new NetworkCredential("user", "passwd")))
-                       .Get(HttpbinBasicAuthUrl)
+                       .Get(url)
             select new
             {
                 First  = new { fst.StatusCode, fst.ReasonPhrase },
