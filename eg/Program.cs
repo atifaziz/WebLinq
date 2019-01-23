@@ -10,6 +10,7 @@ namespace WebLinq.Samples
     using System.Linq;
     using System.Net;
     using System.Reactive.Linq;
+    using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Text.RegularExpressions;
     using System.Web;
@@ -24,6 +25,29 @@ namespace WebLinq.Samples
 
     #endregion
 
+    interface IObservable : IObservable<object>
+    {
+        Type ItemType { get; }
+    }
+
+    static class Extension
+    {
+        public static IObservable Generalize<T>(this IObservable<T> source) =>
+            new Observable(typeof(T), source.Select(e => (object) e));
+
+        sealed class Observable : IObservable
+        {
+            public Type ItemType { get; }
+            public IObservable<object> Source { get; }
+
+            public Observable(Type itemType, IObservable<object> source) =>
+                (ItemType, Source) = (itemType, source);
+
+            public IDisposable Subscribe(IObserver<object> observer) =>
+                Source.Subscribe(observer);
+        }
+    }
+
     partial class Program
     {
         static void Wain(string[] args)
@@ -34,17 +58,17 @@ namespace WebLinq.Samples
             var samples =
                 from s in new[]
                 {
-                    new { Title = nameof(GoogleSearch)          , Query = GoogleSearch()           , IsWindowsOnly = false },
-                    new { Title = nameof(QueenSongs)            , Query = QueenSongs()             , IsWindowsOnly = false },
-                    new { Title = nameof(ScheduledTasksViaSpawn), Query = ScheduledTasksViaSpawn() , IsWindowsOnly = true  },
-                    new { Title = nameof(TopHackerNews)         , Query = TopHackerNews(100)       , IsWindowsOnly = false },
-                    new { Title = nameof(MsdnBooksXmlSample)    , Query = MsdnBooksXmlSample()     , IsWindowsOnly = false },
-                    new { Title = nameof(MockarooCsv)           , Query = MockarooCsv()            , IsWindowsOnly = false },
-                    new { Title = nameof(TeapotError)           , Query = TeapotError()            , IsWindowsOnly = false },
-                    new { Title = nameof(BasicAuth)             , Query = BasicAuth()              , IsWindowsOnly = false },
-                    new { Title = nameof(AutoRedirection)       , Query = AutoRedirection()        , IsWindowsOnly = false },
-                    new { Title = nameof(FormPost)              , Query = FormPost()               , IsWindowsOnly = false },
-                    new { Title = nameof(ITunesMovies)          , Query = ITunesMovies("Bollywood"), IsWindowsOnly = false },
+                    new { Title = nameof(GoogleSearch)          , Query = GoogleSearch((t, s, l) => new{ Title = t, Summary = s, Link = l }).Generalize(), IsWindowsOnly = false },
+                    new { Title = nameof(QueenSongs)            , Query = QueenSongs()                    .Generalize(), IsWindowsOnly = false },
+                    new { Title = nameof(ScheduledTasksViaSpawn), Query = ScheduledTasksViaSpawn()        .Generalize(), IsWindowsOnly = true  },
+                    new { Title = nameof(TopHackerNews)         , Query = TopHackerNews(100)              .Generalize(), IsWindowsOnly = false },
+                    new { Title = nameof(MsdnBooksXmlSample)    , Query = MsdnBooksXmlSample(delegate { return new{};})            .Generalize(), IsWindowsOnly = false },
+                    new { Title = nameof(MockarooCsv)           , Query = MockarooCsv()                   .Generalize(), IsWindowsOnly = false },
+                    new { Title = nameof(TeapotError)           , Query = TeapotError()                   .Generalize(), IsWindowsOnly = false },
+                    new { Title = nameof(BasicAuth)             , Query = BasicAuth()                     .Generalize(), IsWindowsOnly = false },
+                    new { Title = nameof(AutoRedirection)       , Query = AutoRedirection()               .Generalize(), IsWindowsOnly = false },
+                    new { Title = nameof(FormPost)              , Query = FormPost()                      .Generalize(), IsWindowsOnly = false },
+                    new { Title = nameof(ITunesMovies)          , Query = ITunesMovies("Bollywood")       .Generalize(), IsWindowsOnly = false },
                 }
                 where args.Length == 0
                    || args.Any(a => s.Title.Equals(a, StringComparison.OrdinalIgnoreCase))
@@ -54,15 +78,47 @@ namespace WebLinq.Samples
 
             foreach (var sample in samples)
             {
-                Console.WriteLine(ruler1);
-                Console.WriteLine(sample.Title);
-                Console.WriteLine(ruler2);
-                foreach (var e in sample.Query.ToEnumerable())
-                    Console.WriteLine(e);
+                //Console.WriteLine(ruler1);
+                //Console.WriteLine(sample.Title);
+                //Console.WriteLine(ruler2);
+
+                var properties =
+                    Enumerable.ToArray(
+                        from p in sample.Query.ItemType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                        where p.CanRead && !p.CanWrite
+                        select p);
+
+                if (!properties.Any())
+                    throw new NotSupportedException();
+
+                string Encode(string s) =>
+                    "\"" + s?.Replace("\"", "\"\"") + "\"";
+
+                string Csv<T>(IEnumerable<T> items) =>
+                    string.Join(",",
+                        from item in items
+                        select item is T v
+                             ? Encode(v.ToString())
+                             : "\"\"");
+
+                Console.WriteLine(
+                    Csv(from p in properties
+                        select p.Name));
+
+                var rows =
+                    from e in sample.Query.ToEnumerable()
+                    select
+                        from p in properties
+                        select p.GetValue(e);
+
+                foreach (var row in rows)
+                    Console.WriteLine(Csv(row));
             }
         }
 
-        static IObservable<object> GoogleSearch() =>
+        delegate T GoogleSearchSelector<T>(string title, string summary, string url);
+
+        static IObservable<T> GoogleSearch<T>(GoogleSearchSelector<T> selector) =>
 
             from sr in Http.Get(new Uri("http://google.com/"))
                            .Submit(0, new NameValueCollection { ["q"] = "foobar" })
@@ -81,13 +137,18 @@ namespace WebLinq.Samples
             {
                 Title = r.QuerySelector(".r")?.InnerText,
                 Summary = r.QuerySelector(".st")?.InnerText,
-                Href = sr.TryBaseHref(r.QuerySelector(".r a")?.GetAttributeValue("href")),
+                Url = sr.TryBaseHref(r.QuerySelector(".r a")?.GetAttributeValue("href")),
+                /*
+                Url = (r.QuerySelector(".r a")?.GetAttributeValue("href")) is string href
+                    ? new Uri(sr.TryBaseHref(href))
+                    : null,
+                */
             }
             into e
             where !string.IsNullOrWhiteSpace(e.Title)
-                && e.Href != null
-                && !string.IsNullOrWhiteSpace(e.Summary)
-            select e;
+               && e.Url != null
+               && !string.IsNullOrWhiteSpace(e.Summary)
+            select selector(NormalizeWhitespace(e.Title), NormalizeWhitespace(e.Summary), e.Url);
 
         static IObservable<object> ScheduledTasksViaSpawn() =>
 
@@ -193,7 +254,14 @@ namespace WebLinq.Samples
                 select e
             select e;
 
-        static IObservable<object> MsdnBooksXmlSample() =>
+        delegate T MsdnBooksXmlSampleSelector<T>(
+            string id, string title,
+            string author, string genre,
+            float price,
+            DateTime publishedDate,
+            string description);
+
+        static IObservable<T> MsdnBooksXmlSample<T>(MsdnBooksXmlSampleSelector<T> selector) =>
 
             from html in
                 Http.Get(new Uri("https://msdn.microsoft.com/en-us/library/ms762271.aspx"))
@@ -202,16 +270,16 @@ namespace WebLinq.Samples
             select html.QuerySelector("#main pre code.lang-xml").InnerText.TrimStart()
             into xml
             from book in ParseXml(xml).Descendants("book")
-            select new
-            {
-                Id            = (string)   book.Attribute("id"),
-                Title         = (string)   book.Element("title"),
-                Author        = (string)   book.Element("author"),
-                Genre         = (string)   book.Element("genre"),
-                Price         = (float)    book.Element("price"),
-                PublishedDate = (DateTime) book.Element("publish_date"),
-                Description   = ((string)  book.Element("description")).NormalizeWhitespace(),
-            };
+            select selector
+            (
+                id            : (string)   book.Attribute("id"),
+                title         : (string)   book.Element("title"),
+                author        : (string)   book.Element("author"),
+                genre         : (string)   book.Element("genre"),
+                price         : (float)    book.Element("price"),
+                publishedDate : (DateTime) book.Element("publish_date"),
+                description   : ((string)  book.Element("description")).NormalizeWhitespace()
+            );
 
         static string NormalizeWhitespace(this string str) =>
             string.IsNullOrEmpty(str)
@@ -267,7 +335,7 @@ namespace WebLinq.Samples
             }
             select result;
 
-        static IObservable<object> AutoRedirection() =>
+        static IObservable<Uri> AutoRedirection() =>
 
             from e in Http.Get(new Uri("http://httpbin.org/redirect-to?url=" + Uri.EscapeDataString("http://example.com/")))
             select e.RequestUrl;
