@@ -291,17 +291,19 @@ namespace WebLinq.Samples
 
         static IObservable<HttpFetch<IEnumerable<(string Title, Uri Url)>>>
             GetITunesMovieGenres(this IHttpClient http) =>
-                from toc in
-                    http.Get(new Uri("https://itunes.apple.com/us/genre/movies/id33"))
-                        .Html()
-                select
-                    toc.WithContent(
-                        from a in toc.Content
-                                     .QuerySelectorAll("#genre-nav ul > li a[href^=https]")
-                        select (Regex.Replace(a.InnerText, @"\s+", " ").Trim(),
-                                new Uri(toc.Content.TryBaseHref(a.GetAttributeValue("href")))));
+
+            from toc in
+                http.Get(new Uri("https://itunes.apple.com/us/genre/movies/id33"))
+                    .Html()
+            select
+                toc.WithContent(
+                    from a in toc.Content
+                                    .QuerySelectorAll("#genre-nav ul > li a[href^=https]")
+                    select (Regex.Replace(a.InnerText, @"\s+", " ").Trim(),
+                            new Uri(toc.Content.TryBaseHref(a.GetAttributeValue("href")))));
 
         static IObservable<object> ITunesMovies(string genreSought) =>
+
             from genres in
                 Http.WithConfig(Http.Config.WithHeader("Accept-Language", "en-US")
                                            .WithUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36"))
