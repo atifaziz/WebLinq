@@ -3,8 +3,10 @@ namespace WebLinq.Samples
     #region Imports
 
     using System;
+    using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.Data;
+    using System.Globalization;
     using System.Linq;
     using System.Net;
     using System.Text.RegularExpressions;
@@ -32,16 +34,17 @@ namespace WebLinq.Samples
             var samples =
                 from s in new[]
                 {
-                    new { Title = nameof(GoogleSearch)          , Query = GoogleSearch()          , IsWindowsOnly = false },
-                    new { Title = nameof(QueenSongs)            , Query = QueenSongs()            , IsWindowsOnly = false },
-                    new { Title = nameof(ScheduledTasksViaSpawn), Query = ScheduledTasksViaSpawn(), IsWindowsOnly = true  },
-                    new { Title = nameof(TopHackerNews)         , Query = TopHackerNews(100)      , IsWindowsOnly = false },
-                    new { Title = nameof(MsdnBooksXmlSample)    , Query = MsdnBooksXmlSample()    , IsWindowsOnly = false },
-                    new { Title = nameof(MockarooCsv)           , Query = MockarooCsv()           , IsWindowsOnly = false },
-                    new { Title = nameof(TeapotError)           , Query = TeapotError()           , IsWindowsOnly = false },
-                    new { Title = nameof(BasicAuth)             , Query = BasicAuth()             , IsWindowsOnly = false },
-                    new { Title = nameof(AutoRedirection)       , Query = AutoRedirection()       , IsWindowsOnly = false },
-                    new { Title = nameof(FormPost)              , Query = FormPost()              , IsWindowsOnly = false },
+                    new { Title = nameof(GoogleSearch)          , Query = GoogleSearch()           , IsWindowsOnly = false },
+                    new { Title = nameof(QueenSongs)            , Query = QueenSongs()             , IsWindowsOnly = false },
+                    new { Title = nameof(ScheduledTasksViaSpawn), Query = ScheduledTasksViaSpawn() , IsWindowsOnly = true  },
+                    new { Title = nameof(TopHackerNews)         , Query = TopHackerNews(100)       , IsWindowsOnly = false },
+                    new { Title = nameof(MsdnBooksXmlSample)    , Query = MsdnBooksXmlSample()     , IsWindowsOnly = false },
+                    new { Title = nameof(MockarooCsv)           , Query = MockarooCsv()            , IsWindowsOnly = false },
+                    new { Title = nameof(TeapotError)           , Query = TeapotError()            , IsWindowsOnly = false },
+                    new { Title = nameof(BasicAuth)             , Query = BasicAuth()              , IsWindowsOnly = false },
+                    new { Title = nameof(AutoRedirection)       , Query = AutoRedirection()        , IsWindowsOnly = false },
+                    new { Title = nameof(FormPost)              , Query = FormPost()               , IsWindowsOnly = false },
+                    new { Title = nameof(ITunesMovies)          , Query = ITunesMovies("Bollywood"), IsWindowsOnly = false },
                 }
                 where args.Length == 0
                    || args.Any(a => s.Title.Equals(a, StringComparison.OrdinalIgnoreCase))
@@ -285,5 +288,89 @@ namespace WebLinq.Samples
                 })
                 .Text()
                 .Content();
+
+        static IObservable<HttpFetch<IEnumerable<(string Title, Uri Url)>>>
+            GetITunesMovieGenres(this IHttpClient http) =>
+                from toc in
+                    http.Get(new Uri("https://itunes.apple.com/us/genre/movies/id33"))
+                        .Html()
+                select
+                    toc.WithContent(
+                        from a in toc.Content
+                                     .QuerySelectorAll("#genre-nav ul > li a[href^=https]")
+                        select (Regex.Replace(a.InnerText, @"\s+", " ").Trim(),
+                                new Uri(toc.Content.TryBaseHref(a.GetAttributeValue("href")))));
+
+        static IObservable<object> ITunesMovies(string genreSought) =>
+            from genres in
+                Http.WithConfig(Http.Config.WithHeader("Accept-Language", "en-US")
+                                           .WithUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36"))
+                    .GetITunesMovieGenres()
+            from genre in
+                genres.Content
+                      .Where(e => e.Title.IndexOf(genreSought, StringComparison.OrdinalIgnoreCase) >= 0)
+                      .Take(1)
+            from home in genres.Client.Get(genre.Url).Html()
+            from page in
+                Observable.For(
+                    from a in home.Content.QuerySelectorAll("ul.list.alpha a[href^=https]")
+                    select new
+                    {
+                        Title = a.InnerText.Trim(),
+                        Url    = new Uri(home.Content.TryBaseHref(a.GetAttributeValue("href"))),
+                    }
+                    into e
+                    where Regex.IsMatch(e.Title, @"^[A-Z*]$")
+                    select e,
+                    ap => // ap = alpha page
+                        from html in home.Client.Get(ap.Url).Html()
+                        from part in
+                            Observable
+                                .For(
+                                    from a in html.Content.QuerySelectorAll("ul.list.paginate a[href^=https]")
+                                    where !a.HasClass("paginate-more")
+                                    select new
+                                    {
+                                        PageNumber = int.Parse(a.InnerText.Trim(), NumberStyles.None, CultureInfo.InvariantCulture),
+                                        Url = new Uri(home.Content.TryBaseHref(a.GetAttributeValue("href"))),
+                                    }
+                                    into e
+                                    // We always have page 1 (which we prepend later, below)
+                                    // so take pages 2 and onward
+                                    where e.PageNumber > 1
+                                    select e,
+                                    np => // np = numbered page
+                                        from page in html.Client.Get(np.Url).Html().Content()
+                                        select new
+                                        {
+                                            np.Url,
+                                            np.PageNumber,
+                                            Html = page
+                                        }
+                                        into e
+                                        select e)
+                                // We always have page 1 so start with it
+                                .StartWith(new
+                                {
+                                    ap.Url,
+                                    PageNumber = 1,
+                                    Html = html.Content
+                                })
+                        select new
+                        {
+                            ap.Title,
+                            part.PageNumber,
+                            part.Html,
+                            part.Url,
+                        })
+            from a in page.Html.QuerySelectorAll("#selectedcontent .column li a[href^=https]")
+            select new
+            {
+                Title = Regex.Replace(a.InnerText, @"\s+", " ").Trim(),
+                Url = page.Html.TryBaseHref(a.GetAttributeValue("href")),
+                Alpha = page.Title,
+                page.PageNumber,
+                SourceUrl = page.Url.AbsoluteUri,
+            };
     }
 }
