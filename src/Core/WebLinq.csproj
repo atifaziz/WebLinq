@@ -11,13 +11,13 @@
     <Owners>Atif Aziz</Owners>
     <Company></Company>
     <PackageProjectUrl>https://github.com/weblinq/WebLinq</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/weblinq/WebLinq</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <PackageTags>linq;web;www;query;scraping;scrape;scraper</PackageTags>
     <PackageLicenseUrl>http://www.apache.org/licenses/LICENSE-2.0</PackageLicenseUrl>
     <PackageOutputPath>..\..\dist</PackageOutputPath>
     <IncludeSymbols>true</IncludeSymbols>
     <IncludeSource>true</IncludeSource>
+    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -33,6 +33,10 @@
     <PackageReference Include="HtmlAgilityPack" Version="1.5.1" />
     <PackageReference Include="Mannex" Version="3.0.0-rc1" />
     <PackageReference Include="System.Reactive" Version="4.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-*" PrivateAssets="all" />
   </ItemGroup>
 
 </Project>
