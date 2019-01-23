@@ -260,11 +260,12 @@ namespace WebLinq.Samples
                             .ReturnErroneousFetch()
             from snd in fst.Client.WithConfig(fst.Client.Config.WithCredentials(new NetworkCredential("user", "passwd")))
                        .Get(url)
-            select new
+            from result in new[]
             {
-                First  = new { fst.StatusCode, fst.ReasonPhrase },
-                Second = new { snd.StatusCode, snd.ReasonPhrase },
-            };
+                new { fst.StatusCode, fst.ReasonPhrase },
+                new { snd.StatusCode, snd.ReasonPhrase },
+            }
+            select result;
 
         static IObservable<object> AutoRedirection() =>
 
