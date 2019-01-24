@@ -26,6 +26,7 @@ namespace WebLinq
     using System.Xml.Linq;
     using RxUnit = System.Reactive.Unit;
     using Choices;
+    using static Choices.Choice.New;
 
     public interface IHttpContentReader<T>
     {
@@ -86,25 +87,25 @@ namespace WebLinq
             Choose<T1, T2, T3>(bool f1, Func<T1> c1,
                 bool f2, Func<T2> c2,
                 Func<T3> c3)
-            => f1 ? Choice<T1, T2, T3>.Choice1(c1())
-             : f2 ? Choice<T1, T2, T3>.Choice2(c2())
-             : Choice<T1, T2, T3>.Choice3(c3());
+            => f1 ? Choice1<T1, T2, T3>(c1())
+             : f2 ? Choice2<T1, T2, T3>(c2())
+             : Choice3<T1, T2, T3>(c3());
 
         public static void Test1()
         {
             var q =
                 from t in HttpFetchReader.MediaType()
                 select "text/plain".Equals(t, StringComparison.OrdinalIgnoreCase)
-                     ? Choice<IHttpContentReader<string>,
-                              IHttpContentReader<XDocument>,
-                              IHttpContentReader<Unit>>.Choice1(HttpContentReader.Text())
+                     ? Choice1<IHttpContentReader<string>,
+                               IHttpContentReader<XDocument>,
+                               IHttpContentReader<Unit>>(HttpContentReader.Text())
                      : t.StartsWith("application/xml", StringComparison.OrdinalIgnoreCase)
-                     ? Choice<IHttpContentReader<string>,
-                              IHttpContentReader<XDocument>,
-                              IHttpContentReader<Unit>>.Choice2(HttpContentReader.Xml())
-                     : Choice<IHttpContentReader<string>,
-                              IHttpContentReader<XDocument>,
-                              IHttpContentReader<Unit>>.Choice3(HttpContentReader.Unit());
+                     ? Choice2<IHttpContentReader<string>,
+                               IHttpContentReader<XDocument>,
+                               IHttpContentReader<Unit>>(HttpContentReader.Xml())
+                     : Choice3<IHttpContentReader<string>,
+                               IHttpContentReader<XDocument>,
+                               IHttpContentReader<Unit>>(HttpContentReader.Unit());
         }
 
         public static void Test2()
