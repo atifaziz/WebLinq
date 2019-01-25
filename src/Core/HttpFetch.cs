@@ -22,11 +22,13 @@ namespace WebLinq
     using System.Net;
     using System.Net.Http;
     using System.Reactive;
+    using System.Reactive.Linq;
     using System.Threading.Tasks;
     using System.Xml.Linq;
     using RxUnit = System.Reactive.Unit;
     using Choices;
     using static Choices.Choice.New;
+    using static WebLinq.Modules.HttpModule;
 
     public interface IHttpContentReader<T>
     {
@@ -147,7 +149,22 @@ namespace WebLinq
                                     Choice.If(t.StartsWith("application/xml", StringComparison.OrdinalIgnoreCase),
                                         HttpContentReader.Xml,
                                         HttpContentReader.Unit)));
+
+            /*
+            var r =
+                from res in
+                    Http.Get(new Uri("http://example.com"))
+                        .As(q, u => u.Match(a => (object) a, b => (object)  b, c => (object) c, d => (object) d))
+                        .Content()
+                select res;
+            */
         }
+
+        public static IObservable<HttpFetch<T>> As<T>(this IHttpObservable query, IHttpContentReader<T> reader) =>
+            query.WithReader(async f => (await reader.Read(f)).Content);
+
+        public static IObservable<HttpFetch<U>> As<T, U>(this IHttpObservable query, IHttpFetchReader<T> reader, Func<T, IHttpContentReader<U>> crf) =>
+            query.WithReader<U>(async f => (await crf(reader.Read(f)).Read(f)).Content);
     }
 
     public static class HttpContentReader
