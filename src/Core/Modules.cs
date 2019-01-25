@@ -186,21 +186,45 @@ namespace WebLinq.Modules
 
     public static class SpawnModule
     {
-        public static IObservable<string> Spawn(string path, string args) =>
+        public static IObservable<string> Spawn(string path, ProcessArguments args) =>
             Spawner.Default.Spawn(path, args, null);
 
-        public static IObservable<string> Spawn(string path, string args, string workingDirectory) =>
+        public static IObservable<string> Spawn(string path, ProcessArguments args, string workingDirectory) =>
             Spawner.Default.Spawn(path, args, workingDirectory, output => output, null);
 
-        public static IObservable<KeyValuePair<T, string>> Spawn<T>(string path, string args, T stdoutKey, T stderrKey) =>
+        public static IObservable<KeyValuePair<T, string>> Spawn<T>(string path, ProcessArguments args, T stdoutKey, T stderrKey) =>
             Spawner.Default.Spawn(path, args, null, stdoutKey, stderrKey);
 
-        public static IObservable<KeyValuePair<T, string>> Spawn<T>(string path, string args, string workingDirectory, T stdoutKey, T stderrKey) =>
+        public static IObservable<KeyValuePair<T, string>> Spawn<T>(string path, ProcessArguments args, string workingDirectory, T stdoutKey, T stderrKey) =>
             Spawner.Default.Spawn(path, args, workingDirectory,
                                   stdout => stdoutKey.AsKeyTo(stdout),
                                   stderr => stderrKey.AsKeyTo(stderr));
 
-        public static IObservable<T> Spawn<T>(string path, string args, Func<string, T> stdoutSelector, Func<string, T> stderrSelector) =>
+        public static IObservable<T> Spawn<T>(string path, ProcessArguments args, Func<string, T> stdoutSelector, Func<string, T> stderrSelector) =>
             Spawner.Default.Spawn(path, args, null, stdoutSelector, stderrSelector);
+
+        //
+
+        [Obsolete("Use the " + nameof(Spawn) + " overload taking" + nameof(ProcessArguments) + " instead.")]
+        public static IObservable<string> Spawn(string path, string args) =>
+            Spawner.Default.Spawn(path, ProcessArguments.Parse(args), null);
+
+        [Obsolete("Use the " + nameof(Spawn) + " overload taking" + nameof(ProcessArguments) + " instead.")]
+        public static IObservable<string> Spawn(string path, string args, string workingDirectory) =>
+            Spawner.Default.Spawn(path, ProcessArguments.Parse(args), workingDirectory, output => output, null);
+
+        [Obsolete("Use the " + nameof(Spawn) + " overload taking" + nameof(ProcessArguments) + " instead.")]
+        public static IObservable<KeyValuePair<T, string>> Spawn<T>(string path, string args, T stdoutKey, T stderrKey) =>
+            Spawner.Default.Spawn(path, ProcessArguments.Parse(args), null, stdoutKey, stderrKey);
+
+        [Obsolete("Use the " + nameof(Spawn) + " overload taking" + nameof(ProcessArguments) + " instead.")]
+        public static IObservable<KeyValuePair<T, string>> Spawn<T>(string path, string args, string workingDirectory, T stdoutKey, T stderrKey) =>
+            Spawner.Default.Spawn(path, ProcessArguments.Parse(args), workingDirectory,
+                                  stdout => stdoutKey.AsKeyTo(stdout),
+                                  stderr => stderrKey.AsKeyTo(stderr));
+
+        [Obsolete("Use the " + nameof(Spawn) + " overload taking" + nameof(ProcessArguments) + " instead.")]
+        public static IObservable<T> Spawn<T>(string path, string args, Func<string, T> stdoutSelector, Func<string, T> stderrSelector) =>
+            Spawner.Default.Spawn(path, ProcessArguments.Parse(args), null, stdoutSelector, stderrSelector);
     }
 }
