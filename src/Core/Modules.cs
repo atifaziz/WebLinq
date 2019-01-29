@@ -60,16 +60,16 @@ namespace WebLinq.Modules
                 from html in query.Html()
                 select HttpQuery.Submit(html.Client, html.Content, formSelector, formIndex, url, data));
 
-        public static IObservable<HttpFetch<string>> Links(this IHttpObservable query) =>
+        public static IObservable<HttpFetch<IEnumerable<string>>> Links(this IHttpObservable query) =>
             query.Links(null);
 
-        public static IObservable<HttpFetch<T>> Links<T>(this IHttpObservable query, Func<string, HtmlObject, T> selector) =>
+        public static IObservable<HttpFetch<IEnumerable<T>>> Links<T>(this IHttpObservable query, Func<string, HtmlObject, T> selector) =>
             Links(query, null, selector);
 
-        public static IObservable<HttpFetch<string>> Links(this IHttpObservable query, Uri baseUrl) =>
+        public static IObservable<HttpFetch<IEnumerable<string>>> Links(this IHttpObservable query, Uri baseUrl) =>
             Links(query, baseUrl, (href, _) => href);
 
-        public static IObservable<HttpFetch<T>> Links<T>(this IHttpObservable query, Uri baseUrl, Func<string, HtmlObject, T> selector) =>
+        public static IObservable<HttpFetch<IEnumerable<T>>> Links<T>(this IHttpObservable query, Uri baseUrl, Func<string, HtmlObject, T> selector) =>
             query.Html().Links(baseUrl, selector);
 
         public static IObservable<HttpFetch<HtmlObject>> Tables(this IHttpObservable query) =>
@@ -123,7 +123,8 @@ namespace WebLinq.Modules
                     continue;
 
                 var lq =
-                    from e in HttpObservable.Return(_ => Observable.Return(fetch)).Links().Content()
+                    from links in HttpObservable.Return(_ => Observable.Return(fetch)).Links().Content()
+                    from e in links
                     select Uri.TryCreate(e, UriKind.Absolute, out url) ? url : null into e
                     where e != null
                        && (e.Scheme == Uri.UriSchemeHttp || e.Scheme == Uri.UriSchemeHttps)

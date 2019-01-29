@@ -17,6 +17,7 @@
 namespace WebLinq.Html
 {
     using System;
+    using System.Collections.Generic;
     using System.Data;
     using System.Net.Mime;
     using System.Reactive.Linq;
@@ -29,19 +30,18 @@ namespace WebLinq.Html
                                                                             .DontContinueOnCapturedContext(),
                                                          fetch.RequestUrl));
 
-        public static IObservable<HttpFetch<string>> Links(this IObservable<HttpFetch<ParsedHtml>> query) =>
+        public static IObservable<HttpFetch<IEnumerable<string>>> Links(this IObservable<HttpFetch<ParsedHtml>> query) =>
             query.Links(null);
 
-        public static IObservable<HttpFetch<T>> Links<T>(this IObservable<HttpFetch<ParsedHtml>> query, Func<string, HtmlObject, T> selector) =>
+        public static IObservable<HttpFetch<IEnumerable<T>>> Links<T>(this IObservable<HttpFetch<ParsedHtml>> query, Func<string, HtmlObject, T> selector) =>
             Links(query, null, selector);
 
-        public static IObservable<HttpFetch<string>> Links(this IObservable<HttpFetch<ParsedHtml>> query, Uri baseUrl) =>
+        public static IObservable<HttpFetch<IEnumerable<string>>> Links(this IObservable<HttpFetch<ParsedHtml>> query, Uri baseUrl) =>
             Links(query, baseUrl, (href, _) => href);
 
-        public static IObservable<HttpFetch<T>> Links<T>(this IObservable<HttpFetch<ParsedHtml>> query, Uri baseUrl, Func<string, HtmlObject, T> selector) =>
+        public static IObservable<HttpFetch<IEnumerable<T>>> Links<T>(this IObservable<HttpFetch<ParsedHtml>> query, Uri baseUrl, Func<string, HtmlObject, T> selector) =>
             from html in query
-            from link in html.Content.Links((href, ho) => html.WithContent(selector(href, ho)))
-            select link;
+            select html.WithContent(html.Content.Links(selector));
 
         public static IObservable<HtmlObject> Tables(this IObservable<ParsedHtml> query) =>
             from html in query
