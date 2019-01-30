@@ -1,5 +1,4 @@
 #region Copyright (c) 2016 Atif Aziz. All rights reserved.
-
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #endregion
 
 namespace WebLinq.Modules
@@ -24,8 +22,11 @@ namespace WebLinq.Modules
     using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.Data;
+    using System.Linq;
     using System.Net.Http;
     using System.Reactive.Linq;
+    using System.Runtime.CompilerServices;
+    using System.Text.RegularExpressions;
     using System.Xml.Linq;
     using Html;
     using Mannex.Collections.Generic;
@@ -35,6 +36,21 @@ namespace WebLinq.Modules
     using LoadOption = System.Xml.Linq.LoadOptions;
 
     #endregion
+
+    public static class UriModule
+    {
+        public static Uri FormatUri(FormattableString formattableString)
+            => formattableString == null
+             ? throw new ArgumentNullException(nameof(formattableString))
+             : new Uri((FormatStringParser.Parse(formattableString.Format,
+                                                 (s, i, len) => s.HasWhiteSpace(i, len),
+                                                 delegate { return false; })
+                                          .Any(hws => hws)
+                        ? FormattableStringFactory.Create(
+                              string.Join(string.Empty, FormatStringParser.Parse(formattableString.Format, (s, i, len) => Regex.Replace(s.Substring(i, len), @"\s+", string.Empty), (s, i, len) => s.Substring(i, len))),
+                              formattableString.GetArguments())
+                        : formattableString).ToString(UriFormatProvider.InvariantCulture));
+    }
 
     public static class HttpModule
     {
