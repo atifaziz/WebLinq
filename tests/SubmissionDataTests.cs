@@ -200,6 +200,21 @@ namespace WebLinq.Tests
         }
 
         [Test]
+        public void SetValues()
+        {
+            var submission = SubmissionData.SetValues("vehicle", "Boat", "Van");
+
+            var (_, data) = Sample.Exercise(submission);
+
+            AssertData(data,
+                ExpectedField("firstname", "Mickey"),
+                ExpectedField("lastname" , "Mouse"),
+                ExpectedField("email"    , "mickey@mouse.com"),
+                ExpectedField("vehicle"  , "Boat", "Van"),
+                ExpectedField("gender"   , "Female"));
+        }
+
+        [Test]
         public void SetNames()
         {
             var submission = SubmissionData.Set(new[] { "firstname", "lastname" }, "Minnie");

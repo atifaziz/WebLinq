@@ -160,6 +160,13 @@ namespace WebLinq
             Do(data => data[name] = value);
 
         /// <summary>
+        /// Sets multiple values for a field identified by its name.
+        /// </summary>
+
+        public static ISubmissionData<Unit> SetValues(string name, params string[] values) =>
+            Remove(name).Then(For(values, value => Do(data => data.Add(name, value))).Ignore());
+
+        /// <summary>
         /// Sets the values of all fields identified by a collection of
         /// names to the same value.
         /// </summary>
