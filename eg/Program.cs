@@ -298,8 +298,7 @@ namespace WebLinq.Samples
                     .Html()
             select
                 toc.WithContent(
-                    from a in toc.Content
-                                    .QuerySelectorAll("#genre-nav ul > li a[href^=https]")
+                    from a in toc.Content.QuerySelectorAll("#genre-nav ul > li a[href^=https]")
                     select (Regex.Replace(a.InnerText, @"\s+", " ").Trim(),
                             new Uri(toc.Content.TryBaseHref(a.GetAttributeValue("href")))));
 
