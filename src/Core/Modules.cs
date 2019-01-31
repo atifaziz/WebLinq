@@ -29,7 +29,9 @@ namespace WebLinq.Modules
     using System.Text.RegularExpressions;
     using System.Xml.Linq;
     using Html;
+    using Mannex;
     using Mannex.Collections.Generic;
+    using Mannex.Web;
     using Sys;
     using Xsv;
     using Unit = System.Reactive.Unit;
@@ -51,6 +53,17 @@ namespace WebLinq.Modules
                               string.Join(string.Empty, FormatStringParser.Parse(formattableString.Format, (s, i, len) => Regex.Replace(s.Substring(i, len), @"\s+", string.Empty), (s, i, len) => s.Substring(i, len))),
                               formattableString.GetArguments())
                         : formattableString).ToString(UriFormatProvider.InvariantCulture));
+
+        public static Uri MergeQuery(this Uri uri, ISubmissionData<Unit> data)
+        {
+            if (uri == null) throw new ArgumentNullException(nameof(uri));
+            if (data == null) throw new ArgumentNullException(nameof(data));
+
+            var query = uri.ParseQuery();
+            data.Run(query);
+            var qs = query.ToQueryString();
+            return new UriBuilder(uri) { Query = qs.TryCharAt(0) == '?' ? qs.Substring(1) : qs }.Uri;
+        }
     }
 
     public static class HttpModule
