@@ -14,6 +14,7 @@ namespace WebLinq.Samples
     using System.Text.RegularExpressions;
     using System.Web;
     using System.Xml.Linq;
+    using Collections;
     using Html;
     using Modules;
     using Sys;
@@ -277,12 +278,12 @@ namespace WebLinq.Samples
             Http.Get(new Uri("http://httpbin.org/forms/post"))
                 .Submit(null,
                     SubmissionData.Collect(
-                        SubmissionData.Set      ("custname" , "John Doe"                   ),
-                        SubmissionData.Set      ("custtel"  , "+99 99 9999 9999"           ),
-                        SubmissionData.Set      ("custemail", "johndoe@example.com"        ),
-                        SubmissionData.Set      ("size"     , "small"                      ),
-                        SubmissionData.SetValues("topping"  , "cheese", "mushroom", "onion"),
-                        SubmissionData.Set      ("delivery" , "19:30"                      )))
+                        SubmissionData.Set("custname" , "John Doe"           ),
+                        SubmissionData.Set("custtel"  , "+99 99 9999 9999"   ),
+                        SubmissionData.Set("custemail", "johndoe@example.com"),
+                        SubmissionData.Set("size"     , "small"              ),
+                        SubmissionData.Set("topping"  , Strings.Values("cheese", "mushroom", "onion")),
+                        SubmissionData.Set("delivery" , "19:30"              )))
                 .Text()
                 .Content();
 

@@ -4,6 +4,7 @@ namespace WebLinq.Tests
     using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.Linq;
+    using Collections;
     using NUnit.Framework;
     using static Modules.HtmlModule;
 
@@ -202,7 +203,7 @@ namespace WebLinq.Tests
         [Test]
         public void SetValues()
         {
-            var submission = SubmissionData.SetValues("vehicle", "Boat", "Van");
+            var submission = SubmissionData.Set("vehicle", Strings.Values("Boat", "Van"));
 
             var (_, data) = Sample.Exercise(submission);
 
