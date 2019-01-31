@@ -119,6 +119,12 @@ namespace WebLinq
     public static partial class SubmissionData
     {
         /// <summary>
+        /// Represents nothing.
+        /// </summary>
+
+        public static ISubmissionData<Unit> None = Do(delegate { });
+
+        /// <summary>
         /// Get the names of all the fields.
         /// </summary>
 
