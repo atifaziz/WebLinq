@@ -60,6 +60,10 @@ namespace WebLinq.Modules
         public static IObservable<HttpFetch<ParsedHtml>> Html(this IHttpObservable query) =>
             query.Html(HtmlParser.Default);
 
+        public static IObservable<HttpFetch<HtmlForm>> SelectForm(this IObservable<HttpFetch<ParsedHtml>> query, Func<ParsedHtml, HtmlForm> selector) =>
+            from html in query
+            select html.WithContent(selector(html.Content));
+
         public static IHttpObservable Submit(this IHttpObservable query, string formSelector, NameValueCollection data) =>
             Submit(query, formSelector, null, null, data);
 
