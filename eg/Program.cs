@@ -66,7 +66,7 @@ namespace WebLinq.Samples
         static IObservable<object> GoogleSearch() =>
 
             from sr in Http.Get(new Uri("http://google.com/"))
-                           .Submit(0, new NameValueCollection { ["q"] = "foobar" })
+                           .Submit(0, SubmissionData.Set("q", "foobar"))
                            .Html()
                            .Expand(curr =>
                            {
@@ -222,11 +222,10 @@ namespace WebLinq.Samples
         static IObservable<object> MockarooCsv() =>
 
             from t in Http.Get(new Uri("https://www.mockaroo.com/"))
-                          .SubmitTo(new Uri("https://www.mockaroo.com/schemas/download"), "#schema_form", new NameValueCollection
-                          {
-                              ["preview"]             = "false",
-                              ["schema[file_format]"] = "csv",
-                          })
+                          .SubmitTo(new Uri("https://www.mockaroo.com/schemas/download"), "#schema_form",
+                              SubmissionData.Collect(
+                                  SubmissionData.Set("preview", "false"),
+                                  SubmissionData.Set("schema[file_format]", "csv")))
                           .Accept("text/csv")
                           .CsvToDataTable(
                               new DataColumn("id", typeof(int)),
@@ -276,17 +275,14 @@ namespace WebLinq.Samples
         static IObservable<object> FormPost() =>
 
             Http.Get(new Uri("http://httpbin.org/forms/post"))
-                .Submit(null, new NameValueCollection
-                {
-                    { "custname" , "John Doe"            },
-                    { "custtel"  , "+99 99 9999 9999"    },
-                    { "custemail", "johndoe@example.com" },
-                    { "size"     , "small"               },
-                    { "topping"  , "cheese"              },
-                    { "topping"  , "mushroom"            },
-                    { "topping"  , "onion"               },
-                    { "delivery" , "19:30"               },
-                })
+                .Submit(null,
+                    SubmissionData.Collect(
+                        SubmissionData.Set      ("custname" , "John Doe"                   ),
+                        SubmissionData.Set      ("custtel"  , "+99 99 9999 9999"           ),
+                        SubmissionData.Set      ("custemail", "johndoe@example.com"        ),
+                        SubmissionData.Set      ("size"     , "small"                      ),
+                        SubmissionData.SetValues("topping"  , "cheese", "mushroom", "onion"),
+                        SubmissionData.Set      ("delivery" , "19:30"                      )))
                 .Text()
                 .Content();
 

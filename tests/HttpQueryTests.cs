@@ -687,7 +687,7 @@ namespace WebLinq.Tests
                 .Enqueue(new byte[0]);
 
             await tt.Http.Get(new Uri("https://www.example.com/"))
-                         .Submit(0, null);
+                         .Submit(0, SubmissionData.None);
 
             var message1 = tt.DequeueRequestMessage();
             var message2 = tt.DequeueRequestMessage();
@@ -721,7 +721,7 @@ namespace WebLinq.Tests
                 .Enqueue(new byte[0]);
 
             await tt.Http.Get(new Uri("https://www.example.com/"))
-                         .Submit(0, null);
+                         .Submit(0, SubmissionData.None);
 
             var message1 = tt.DequeueRequestMessage();
             var message2 = tt.DequeueRequestMessage();

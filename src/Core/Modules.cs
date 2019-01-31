@@ -32,6 +32,7 @@ namespace WebLinq.Modules
     using Mannex.Collections.Generic;
     using Sys;
     using Xsv;
+    using Unit = System.Reactive.Unit;
     using HttpClient = HttpClient;
     using LoadOption = System.Xml.Linq.LoadOptions;
 
@@ -75,6 +76,21 @@ namespace WebLinq.Modules
             HttpObservable.Return(
                 from html in query.Html()
                 select HttpQuery.Submit(html.Client, html.Content, formSelector, formIndex, url, data));
+
+        public static IHttpObservable Submit(this IHttpObservable query, string formSelector, ISubmissionData<Unit> data) =>
+            Submit(query, formSelector, null, null, data);
+
+        public static IHttpObservable Submit(this IHttpObservable query, int formIndex, ISubmissionData<Unit> data) =>
+            Submit(query, null, formIndex, null, data);
+
+        public static IHttpObservable SubmitTo(this IHttpObservable query, Uri url, string formSelector, ISubmissionData<Unit> data) =>
+            Submit(query, formSelector, null, url, data);
+
+        public static IHttpObservable SubmitTo(this IHttpObservable query, Uri url, int formIndex, ISubmissionData<Unit> data) =>
+            Submit(query, null, formIndex, url, data);
+
+        static IHttpObservable Submit(IHttpObservable query, string formSelector, int? formIndex, Uri url, ISubmissionData<Unit> data) =>
+            query.Html().Submit(formSelector, formIndex, url, data);
 
         public static IObservable<HttpFetch<string>> Links(this IHttpObservable query) =>
             query.Links(null);

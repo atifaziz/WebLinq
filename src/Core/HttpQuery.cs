@@ -291,7 +291,7 @@ namespace WebLinq
         public static IHttpObservable SubmitTo(this IObservable<HttpFetch<ParsedHtml>> query, Uri url, int formIndex, NameValueCollection data) =>
             Submit(query, null, formIndex, url, data);
 
-        static IHttpObservable Submit(IObservable<HttpFetch<ParsedHtml>> query, string formSelector, int? formIndex, Uri url, ISubmissionData<Unit> data) =>
+        internal static IHttpObservable Submit(this IObservable<HttpFetch<ParsedHtml>> query, string formSelector, int? formIndex, Uri url, ISubmissionData<Unit> data) =>
             HttpObservable.Return(
                 from html in query
                 select Submit(html.Client, html.Content, formSelector, formIndex, url, _ => data));
