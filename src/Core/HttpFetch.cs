@@ -99,4 +99,39 @@ namespace WebLinq
                              HttpVersion, StatusCode, ReasonPhrase, Headers, ContentHeaders,
                              RequestUrl, RequestHeaders);
     }
+
+    [DebuggerDisplay("{StatusCode} ({ReasonPhrase})")]
+    public sealed class HttpFetchData
+    {
+        public Version HttpVersion                 { get; }
+        public HttpStatusCode StatusCode           { get; }
+        public string ReasonPhrase                 { get; }
+        public HttpHeaderCollection Headers        { get; }
+        public HttpHeaderCollection ContentHeaders { get; }
+        public Uri RequestUrl                      { get; }
+        public HttpHeaderCollection RequestHeaders { get; }
+
+        public HttpFetchData(Version httpVersion,
+            HttpStatusCode statusCode,
+            string reasonPhrase,
+            HttpHeaderCollection headers,
+            HttpHeaderCollection contentHeaders,
+            Uri requestUrl,
+            HttpHeaderCollection requestHeaders)
+        {
+            HttpVersion    = httpVersion;
+            StatusCode     = statusCode;
+            ReasonPhrase   = reasonPhrase;
+            Headers        = headers;
+            ContentHeaders = contentHeaders;
+            RequestUrl     = requestUrl;
+            RequestHeaders = requestHeaders;
+        }
+
+        internal static HttpFetchData From<T>(HttpFetch<T> f) =>
+            new HttpFetchData(f.HttpVersion, f.StatusCode, f.ReasonPhrase, f.Headers, f.ContentHeaders, f.RequestUrl, f.RequestHeaders);
+
+        public bool IsSuccessStatusCode => IsSuccessStatusCodeInRange(200, 299);
+        public bool IsSuccessStatusCodeInRange(int first, int last) => (int)StatusCode >= first && (int)StatusCode <= last;
+    }
 }
