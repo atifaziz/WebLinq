@@ -20,6 +20,7 @@ namespace WebLinq.Sys
     using System.Collections;
     using System.Collections.Generic;
     using System.Collections.Immutable;
+    using System.Diagnostics;
     using System.Text;
 
     // A union of process arguments stored as either a list or a single
@@ -33,6 +34,7 @@ namespace WebLinq.Sys
 
         ProcessArguments(string line, ImmutableArray<string> list)
         {
+            Debug.Assert(list.IsDefault || line == null);
             _line = line;
             _list = list;
         }
