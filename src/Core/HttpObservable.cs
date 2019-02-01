@@ -31,7 +31,7 @@ namespace WebLinq
         IObservable<HttpFetch<T>> WithReader<T>(Func<HttpFetch<HttpContent>, Task<T>> reader);
     }
 
-    public static class HttpObservable
+    public static partial class HttpObservable
     {
         public static IHttpObservable ReturnErroneousFetch(this IHttpObservable query) =>
             query.WithOptions(query.Options.WithReturnErroneousFetch(true));
