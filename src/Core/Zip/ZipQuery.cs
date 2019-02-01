@@ -17,28 +17,26 @@
 namespace WebLinq.Zip
 {
     using System;
-    using System.IO;
     using System.Net.Http;
     using System.Reactive.Linq;
-    using System.Threading.Tasks;
 
     public static class ZipQuery
     {
+        [Obsolete("Use " + nameof(HttpObservable.Download)
+                         + " or " + nameof(HttpObservable.DownloadTemp)
+                         + " with " + nameof(AsZip) + " instead.")]
         public static IObservable<HttpFetch<Zip>> DownloadZip(this IHttpObservable query) =>
-            from fetch in query.WithReader(f => DownloadZip(f.Content))
-            select fetch.WithContent(new Zip(fetch.Content));
+            query.DownloadTemp("zip").AsZip();
 
+        [Obsolete("Use " + nameof(HttpObservable.Download)
+                         + " or " + nameof(HttpObservable.DownloadTemp)
+                         + " with " + nameof(AsZip) + " instead.")]
         public static IObservable<HttpFetch<Zip>> DownloadZip(this IObservable<HttpFetch<HttpContent>> query) =>
-            from fetch in query
-            from path in DownloadZip(fetch.Content)
-            select fetch.WithContent(new Zip(path));
+            from fetch in query.DownloadTemp("zip")
+            select fetch.WithContent(new Zip(fetch.Content.Path));
 
-        static async Task<string> DownloadZip(HttpContent content)
-        {
-            var path = Path.GetTempFileName();
-            using (var output = File.Create(path))
-                await content.CopyToAsync(output).DontContinueOnCapturedContext();
-            return path;
-        }
+        public static IObservable<HttpFetch<Zip>> AsZip(this IObservable<HttpFetch<LocalFileContent>> query) =>
+            from fetch in query
+            select fetch.WithContent(new Zip(fetch.Content.Path));
     }
 }
