@@ -43,6 +43,12 @@ namespace WebLinq.Sys
             return new ProcessArguments(args, null);
         }
 
+        public static ProcessArguments Var(params string[] args) =>
+            From(args);
+
+        public static ProcessArguments From(IEnumerable<string> args) =>
+            From(ImmutableList.CreateRange(args));
+
         public static ProcessArguments From(IImmutableList<string> args)
         {
             if (args == null) throw new ArgumentNullException(nameof(args));
