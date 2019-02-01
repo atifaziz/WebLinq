@@ -14,7 +14,7 @@ namespace WebLinq.Collections
     }
 
     // Source:
-    // https://github.com/aspnet/Common/blob/6ea261d07b013a93e8200d55668343dd7d6b305d/src/Microsoft.Extensions.Primitives/StringValues.cs
+    // https://github.com/aspnet/Extensions/blob/7ce647cfa3287e31497b72643eee28531eed1b7f/src/Primitives/src/StringValues.cs
     //
     // This is a slightly modified version from the snapshot above with the
     // following changes:
@@ -28,13 +28,13 @@ namespace WebLinq.Collections
     /// Represents zero/null, one, or many strings in an efficient way.
     /// </summary>
 
-    public partial struct Strings : IList<string>, IReadOnlyList<string>, IEquatable<Strings>, IEquatable<string>, IEquatable<string[]>
+    public readonly partial struct Strings : IList<string>, IReadOnlyList<string>, IEquatable<Strings>, IEquatable<string>, IEquatable<string[]>
     {
         private static readonly string[] EmptyArray = new string[0];
         public static readonly Strings Empty = new Strings(EmptyArray);
 
         private readonly string _value;
-        private readonly IReadOnlyList<string> _values;
+        private readonly string[] _values;
 
         public Strings(string value)
         {
@@ -42,7 +42,7 @@ namespace WebLinq.Collections
             _values = null;
         }
 
-        public Strings(IReadOnlyList<string> values)
+        public Strings(string[] values)
         {
             _value = null;
             _values = values;
@@ -58,7 +58,7 @@ namespace WebLinq.Collections
             return new Strings(values);
         }
 
-        public static implicit operator string(Strings values)
+        public static implicit operator string (Strings values)
         {
             return values.GetStringValue();
         }
@@ -68,7 +68,7 @@ namespace WebLinq.Collections
             return value.GetArrayValue();
         }
 
-        public int Count => _value != null ? 1 : (_values?.Count ?? 0);
+        public int Count => _value != null ? 1 : (_values?.Length ?? 0);
 
         bool ICollection<string>.IsReadOnly
         {
@@ -108,7 +108,7 @@ namespace WebLinq.Collections
             {
                 return _value;
             }
-            switch (_values.Count)
+            switch (_values.Length)
             {
                 case 0: return null;
                 case 1: return _values[0];
@@ -127,9 +127,7 @@ namespace WebLinq.Collections
             {
                 return new[] { _value };
             }
-            var array = new string[_values.Count];
-            CopyTo(array, 0);
-            return array;
+            return _values;
         }
 
         int IList<string>.IndexOf(string item)
@@ -142,7 +140,7 @@ namespace WebLinq.Collections
             if (_values != null)
             {
                 var values = _values;
-                for (int i = 0; i < values.Count; i++)
+                for (int i = 0; i < values.Length; i++)
                 {
                     if (string.Equals(values[i], item, StringComparison.Ordinal))
                     {
@@ -174,8 +172,7 @@ namespace WebLinq.Collections
         {
             if (_values != null)
             {
-                for (var i = 0; i < _values.Count && arrayIndex + i < array.Length; i++)
-                    array[arrayIndex + i] = _values[i];
+                Array.Copy(_values, 0, array, arrayIndex, _values.Length);
                 return;
             }
 
@@ -226,7 +223,7 @@ namespace WebLinq.Collections
 
         public Enumerator GetEnumerator()
         {
-            return new Enumerator(ref this);
+            return new Enumerator(_values, _value);
         }
 
         IEnumerator<string> IEnumerable<string>.GetEnumerator()
@@ -245,7 +242,7 @@ namespace WebLinq.Collections
             {
                 return string.IsNullOrEmpty(value._value);
             }
-            switch (value._values.Count)
+            switch (value._values.Length)
             {
                 case 0: return true;
                 case 1: return string.IsNullOrEmpty(value._values[0]);
@@ -271,6 +268,44 @@ namespace WebLinq.Collections
             var combined = new string[count1 + count2];
             values1.CopyTo(combined, 0);
             values2.CopyTo(combined, count1);
+            return new Strings(combined);
+        }
+
+        public static Strings Concat(in Strings values, string value)
+        {
+            if (value == null)
+            {
+                return values;
+            }
+
+            var count = values.Count;
+            if (count == 0)
+            {
+                return new Strings(value);
+            }
+
+            var combined = new string[count + 1];
+            values.CopyTo(combined, 0);
+            combined[count] = value;
+            return new Strings(combined);
+        }
+
+        public static Strings Concat(string value, in Strings values)
+        {
+            if (value == null)
+            {
+                return values;
+            }
+
+            var count = values.Count;
+            if (count == 0)
+            {
+                return new Strings(value);
+            }
+
+            var combined = new string[count + 1];
+            combined[0] = value;
+            values.CopyTo(combined, 1);
             return new Strings(combined);
         }
 
@@ -431,7 +466,7 @@ namespace WebLinq.Collections
             }
 
             var hcc = new HashCodeCombiner();
-            for (var i = 0; i < _values.Count; i++)
+            for (var i = 0; i < _values.Length; i++)
             {
                 hcc.Add(_values[i]);
             }
@@ -440,9 +475,16 @@ namespace WebLinq.Collections
 
         public struct Enumerator : IEnumerator<string>
         {
-            private readonly IReadOnlyList<string> _values;
+            private readonly string[] _values;
             private string _current;
             private int _index;
+
+            internal Enumerator(string[] values, string value)
+            {
+               _values = values;
+               _current = value;
+               _index = 0;
+            }
 
             public Enumerator(ref Strings values)
             {
@@ -460,7 +502,7 @@ namespace WebLinq.Collections
 
                 if (_values != null)
                 {
-                    if (_index < _values.Count)
+                    if (_index < _values.Length)
                     {
                         _current = _values[_index];
                         _index++;
@@ -484,7 +526,7 @@ namespace WebLinq.Collections
                 throw new NotSupportedException();
             }
 
-            void IDisposable.Dispose()
+            public void Dispose()
             {
             }
         }
