@@ -26,32 +26,32 @@ namespace WebLinq.Sys
     // A union of process arguments stored as either a list or a single
     // string representing the arguments in a command-line.
 
-    public sealed partial class ProcessArguments : ICollection<string>
+    public sealed partial class ProgramArguments : ICollection<string>
     {
         readonly string _line;
-        readonly ImmutableArray<string> _list;
         List<string> _parsedList;
+        readonly ImmutableArray<string> _list;
 
-        ProcessArguments(string line, ImmutableArray<string> list)
+        ProgramArguments(string line, ImmutableArray<string> list)
         {
             Debug.Assert(list.IsDefault || line == null);
             _line = line;
             _list = list;
         }
 
-        public static ProcessArguments Parse(string args)
+        public static ProgramArguments Parse(string args)
         {
             if (args == null) throw new ArgumentNullException(nameof(args));
-            return new ProcessArguments(args, default);
+            return new ProgramArguments(args, default);
         }
 
-        public static ProcessArguments Var(params string[] args) =>
+        public static ProgramArguments Var(params string[] args) =>
             From(args);
 
-        public static ProcessArguments From(IEnumerable<string> args)
+        public static ProgramArguments From(IEnumerable<string> args)
         {
             if (args == null) throw new ArgumentNullException(nameof(args));
-            return new ProcessArguments(null, ImmutableArray.CreateRange(args));
+            return new ProgramArguments(null, ImmutableArray.CreateRange(args));
         }
 
         ICollection<string> Args
@@ -80,7 +80,7 @@ namespace WebLinq.Sys
         bool ICollection<string>.Remove(string item) => throw new NotSupportedException();
     }
 
-    partial class ProcessArguments
+    partial class ProgramArguments
     {
         static List<string> ParseArgumentsIntoList(string arguments)
         {

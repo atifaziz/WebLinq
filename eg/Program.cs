@@ -93,7 +93,7 @@ namespace WebLinq.Samples
 
         static IObservable<object> ScheduledTasksViaSpawn() =>
 
-            from xml in Spawn("schtasks", ProcessArguments.Parse("/query /xml ONE")).Delimited(Environment.NewLine)
+            from xml in Spawn("schtasks", ProgramArguments.Parse("/query /xml ONE")).Delimited(Environment.NewLine)
             let ns = XNamespace.Get("http://schemas.microsoft.com/windows/2004/02/mit/task")
             from t in ParseXml(xml).Elements("Tasks").Elements(ns + "Task")
             from e in t.Elements(ns + "Actions").Elements(ns + "Exec")
