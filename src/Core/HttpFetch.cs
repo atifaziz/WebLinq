@@ -32,9 +32,11 @@ namespace WebLinq
                                              HttpHeaderCollection contentHeaders,
                                              Uri requestUrl,
                                              HttpHeaderCollection requestHeaders) =>
-            new HttpFetch<T>(id, content, client,
-                             httpVersion, statusCode, reasonPhrase, headers, contentHeaders,
-                             requestUrl, requestHeaders);
+            new HttpFetch<T>(client,
+                             new HttpFetchInfo(id,
+                                httpVersion, statusCode, reasonPhrase, headers, contentHeaders,
+                                requestUrl, requestHeaders),
+                             content);
     }
 
     [DebuggerDisplay("Id = {Id}, StatusCode = {StatusCode} ({ReasonPhrase}), Content = {Content}")]
@@ -42,42 +44,28 @@ namespace WebLinq
     {
         bool _disposed;
 
-        public int Id                              { get; }
-        public T Content                           { get; private set; }
         public IHttpClient Client                  { get; }
-        public Version HttpVersion                 { get; }
-        public HttpStatusCode StatusCode           { get; }
-        public string ReasonPhrase                 { get; }
-        public HttpHeaderCollection Headers        { get; }
-        public HttpHeaderCollection ContentHeaders { get; }
-        public Uri RequestUrl                      { get; }
-        public HttpHeaderCollection RequestHeaders { get; }
+        public HttpFetchInfo Info                  { get; }
+        public T Content                           { get; private set; }
 
-        public HttpFetch(int id,
-                         T content,
-                         IHttpClient client,
-                         Version httpVersion,
-                         HttpStatusCode statusCode,
-                         string reasonPhrase,
-                         HttpHeaderCollection headers,
-                         HttpHeaderCollection contentHeaders,
-                         Uri requestUrl,
-                         HttpHeaderCollection requestHeaders)
+        public int Id                              => Info.Id;
+        public Version HttpVersion                 => Info.HttpVersion;
+        public HttpStatusCode StatusCode           => Info.StatusCode;
+        public string ReasonPhrase                 => Info.ReasonPhrase;
+        public HttpHeaderCollection Headers        => Info.Headers;
+        public HttpHeaderCollection ContentHeaders => Info.ContentHeaders;
+        public Uri RequestUrl                      => Info.RequestUrl;
+        public HttpHeaderCollection RequestHeaders => Info.RequestHeaders;
+
+        public HttpFetch(IHttpClient client, HttpFetchInfo info, T content)
         {
-            Id             = id;
-            Content        = content;
-            Client         = client;
-            HttpVersion    = httpVersion;
-            StatusCode     = statusCode;
-            ReasonPhrase   = reasonPhrase;
-            Headers        = headers;
-            ContentHeaders = contentHeaders;
-            RequestUrl     = requestUrl;
-            RequestHeaders = requestHeaders;
+            Client  = client;
+            Info    = info;
+            Content = content;
         }
 
-        public bool IsSuccessStatusCode => IsSuccessStatusCodeInRange(200, 299);
-        public bool IsSuccessStatusCodeInRange(int first, int last) => (int)StatusCode >= first && (int)StatusCode <= last;
+        public bool IsSuccessStatusCode => Info.IsSuccessStatusCode;
+        public bool IsSuccessStatusCodeInRange(int first, int last) => Info.IsSuccessStatusCodeInRange(first, last);
 
         public void Dispose()
         {
@@ -90,19 +78,16 @@ namespace WebLinq
         }
 
         public HttpFetch<TContent> WithContent<TContent>(TContent content) =>
-            new HttpFetch<TContent>(Id, content, Client,
-                                    HttpVersion, StatusCode, ReasonPhrase, Headers, ContentHeaders,
-                                    RequestUrl, RequestHeaders);
+            new HttpFetch<TContent>(Client, Info, content);
 
         public HttpFetch<T> WithConfig(HttpConfig config) =>
-            new HttpFetch<T>(Id, Content, Client.WithConfig(config),
-                             HttpVersion, StatusCode, ReasonPhrase, Headers, ContentHeaders,
-                             RequestUrl, RequestHeaders);
+            new HttpFetch<T>(Client.WithConfig(config), Info, Content);
     }
 
-    [DebuggerDisplay("{StatusCode} ({ReasonPhrase})")]
-    public sealed class HttpFetchData
+    [DebuggerDisplay("Id = {Id}, StatusCode = {StatusCode} ({ReasonPhrase})")]
+    public sealed class HttpFetchInfo
     {
+        public int Id                              { get; }
         public Version HttpVersion                 { get; }
         public HttpStatusCode StatusCode           { get; }
         public string ReasonPhrase                 { get; }
@@ -111,7 +96,8 @@ namespace WebLinq
         public Uri RequestUrl                      { get; }
         public HttpHeaderCollection RequestHeaders { get; }
 
-        public HttpFetchData(Version httpVersion,
+        public HttpFetchInfo(int id,
+            Version httpVersion,
             HttpStatusCode statusCode,
             string reasonPhrase,
             HttpHeaderCollection headers,
@@ -119,6 +105,7 @@ namespace WebLinq
             Uri requestUrl,
             HttpHeaderCollection requestHeaders)
         {
+            Id             = id;
             HttpVersion    = httpVersion;
             StatusCode     = statusCode;
             ReasonPhrase   = reasonPhrase;
@@ -127,9 +114,6 @@ namespace WebLinq
             RequestUrl     = requestUrl;
             RequestHeaders = requestHeaders;
         }
-
-        internal static HttpFetchData From<T>(HttpFetch<T> f) =>
-            new HttpFetchData(f.HttpVersion, f.StatusCode, f.ReasonPhrase, f.Headers, f.ContentHeaders, f.RequestUrl, f.RequestHeaders);
 
         public bool IsSuccessStatusCode => IsSuccessStatusCodeInRange(200, 299);
         public bool IsSuccessStatusCodeInRange(int first, int last) => (int)StatusCode >= first && (int)StatusCode <= last;
