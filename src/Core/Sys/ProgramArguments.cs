@@ -29,14 +29,14 @@ namespace WebLinq.Sys
     public sealed partial class ProgramArguments : ICollection<string>
     {
         readonly string _line;
-        List<string> _parsedList;
-        readonly ImmutableArray<string> _list;
+        List<string> _parsedLineArgs;
+        readonly ImmutableArray<string> _args;
 
-        ProgramArguments(string line, ImmutableArray<string> list)
+        ProgramArguments(string line, ImmutableArray<string> args)
         {
-            Debug.Assert(list.IsDefault || line == null);
+            Debug.Assert(args.IsDefault || line == null);
             _line = line;
-            _list = list;
+            _args = args;
         }
 
         public static ProgramArguments Parse(string args)
@@ -56,8 +56,8 @@ namespace WebLinq.Sys
 
         ICollection<string> Args
             => _line is string line
-             ? _parsedList ?? (_parsedList = ParseArgumentsIntoList(line))
-             : (ICollection<string>) _list;
+             ? _parsedLineArgs ?? (_parsedLineArgs = ParseArgumentsIntoList(line))
+             : (ICollection<string>) _args;
 
         public int Count => Args.Count;
 
@@ -68,7 +68,7 @@ namespace WebLinq.Sys
             Args.GetEnumerator();
 
         public override string ToString()
-            => _line ?? PasteArguments.Paste(_list);
+            => _line ?? PasteArguments.Paste(_args);
 
         bool ICollection<string>.IsReadOnly => true;
 
