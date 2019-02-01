@@ -27,7 +27,9 @@ namespace WebLinq
         HttpOptions Options { get; }
         IHttpObservable WithOptions(HttpOptions options);
         Func<HttpConfig, HttpConfig> Configurer { get; }
+        Func<HttpFetchInfo, bool> Predicate { get; }
         IHttpObservable WithConfigurer(Func<HttpConfig, HttpConfig> modifier);
+        IHttpObservable WithPredicate(Func<HttpFetchInfo, bool> predicate);
         IObservable<HttpFetch<T>> WithReader<T>(Func<HttpFetch<HttpContent>, Task<T>> reader);
     }
 
@@ -50,23 +52,28 @@ namespace WebLinq
                 return f.Content;
             });
 
-        public static IHttpObservable Do(this IHttpObservable query, Action<HttpFetch<HttpContent>> action) =>
-            Return(query.Options, query.Configurer,
-                   ho => query.WithConfigurer(ho.Configurer)
-                              .WithOptions(ho.Options)
-                              .WithReader(f => { action(f); return Task.FromResult(f.Content); }));
+        public static IHttpObservable Do(this IHttpObservable query, Action<HttpFetchInfo> action) =>
+            query.Where(f => { action(f); return true; });
+
+        public static IHttpObservable Where(this IHttpObservable query, Func<HttpFetchInfo, bool> predicate) =>
+            query.WithPredicate(f => query.Predicate(f) && predicate(f));
 
         internal static IHttpObservable Return(Func<IHttpObservable, IObservable<HttpFetch<HttpContent>>> query) =>
-            Return(HttpOptions.Default, _ => _, query);
+            Return(HttpOptions.Default, _ => _, query, _ => true);
 
-        static IHttpObservable Return(HttpOptions options, Func<HttpConfig, HttpConfig> configurer, Func<IHttpObservable, IObservable<HttpFetch<HttpContent>>> query) =>
-            new Impl(query, options, configurer);
+        static IHttpObservable
+            Return(HttpOptions options,
+                   Func<HttpConfig, HttpConfig> configurer,
+                   Func<IHttpObservable, IObservable<HttpFetch<HttpContent>>> query,
+                   Func<HttpFetchInfo, bool> predicate) =>
+            new Impl(query, options, configurer, predicate);
 
         internal static IHttpObservable Return(IObservable<IHttpObservable> query) =>
             Return(ho =>
                 from q in query
                 from e in q.WithConfigurer(ho.Configurer)
                            .WithOptions(ho.Options)
+                           .WithPredicate(ho.Predicate)
                            .WithReader(f => Task.FromResult(f.Content))
                 select e);
 
@@ -74,31 +81,42 @@ namespace WebLinq
         {
             readonly Func<IHttpObservable, IObservable<HttpFetch<HttpContent>>> _query;
 
-            public Impl(Func<IHttpObservable, IObservable<HttpFetch<HttpContent>>> query, HttpOptions options, Func<HttpConfig, HttpConfig> configurer)
+            public Impl(Func<IHttpObservable, IObservable<HttpFetch<HttpContent>>> query,
+                        HttpOptions options,
+                        Func<HttpConfig, HttpConfig> configurer,
+                        Func<HttpFetchInfo, bool> predicate)
             {
                 _query = query;
                 Options = options;
                 Configurer = configurer;
+                Predicate = predicate;
             }
 
             public IDisposable Subscribe(IObserver<HttpFetch<Unit>> observer) =>
                 _query(this)
                     .Do(f => f.Content.Dispose())
                     .Select(f => f.WithContent(new Unit()))
+                    .Where(f => Predicate(f.Info))
                     .Subscribe(observer);
 
             public HttpOptions Options { get; }
 
             public IHttpObservable WithOptions(HttpOptions options) =>
-                new Impl(_query, options, Configurer);
+                new Impl(_query, options, Configurer, Predicate);
 
             public Func<HttpConfig, HttpConfig> Configurer { get; }
 
             public IHttpObservable WithConfigurer(Func<HttpConfig, HttpConfig> configurer) =>
-                new Impl(_query, Options, configurer);
+                new Impl(_query, Options, configurer, Predicate);
+
+            public Func<HttpFetchInfo, bool> Predicate { get; }
+
+            public IHttpObservable WithPredicate(Func<HttpFetchInfo, bool> predicate) =>
+                new Impl(_query, Options, Configurer, predicate);
 
             public IObservable<HttpFetch<T>> WithReader<T>(Func<HttpFetch<HttpContent>, Task<T>> reader) =>
                 from f in _query(this)
+                where Predicate(f.Info)
                 from c in reader(f)
                 select f.WithContent(c);
         }

@@ -9,7 +9,8 @@ namespace WebLinq.Tests
     using System.Net;
     using System.Reactive.Threading.Tasks;
     using NUnit.Framework;
-    using static Modules.HttpModule;
+    using WebLinq;
+    using static WebLinq.Modules.HttpModule;
 
     public class HttpQueryTests
     {
@@ -838,6 +839,51 @@ namespace WebLinq.Tests
             var message = tt.DequeueRequestMessage();
 
             Assert.That(message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/index.htm")));
+        }
+
+        [Test]
+        public async Task WhereTrue()
+        {
+            var tt = new TestTransport().EnqueueText(string.Empty, HttpStatusCode.BadRequest);
+
+            HttpFetchInfo first = null;
+            HttpFetchInfo second = null;
+
+            await tt.Http.Get(new Uri("https://www.example.com/"))
+                         .ReturnErroneousFetch()
+                         .Where(f =>
+                         {
+                             Assert.That(f, Is.InstanceOf<HttpFetchInfo>());
+                             Assert.That(second, Is.Null);
+                             first = f;
+                             return f.StatusCode == HttpStatusCode.BadRequest;
+                         })
+                         .Where(f =>
+                         {
+                             Assert.That(f, Is.InstanceOf<HttpFetchInfo>());
+                             Assert.That(first, Is.Not.Null);
+                             Assert.That(f, Is.SameAs(first));
+                             second = f;
+                             return f.ContentHeaders["Content-Type"]
+                                     .Single().Split(';').First() == "text/plain";
+                         });
+
+            // Succeeds if it doesn't throw.
+        }
+
+        [Test]
+        public async Task WhereFalse()
+        {
+            var tt = new TestTransport().EnqueueText(string.Empty);
+
+            var result = await
+                tt.Http.Get(new Uri("https://www.example.com/"))
+                       .Where(f => f.StatusCode == HttpStatusCode.BadRequest)
+                       .Where(f => { Assert.Fail(); return true; })
+                       .Select(_ => { Assert.Fail(); return 42; })
+                       .SingleOrDefaultAsync();
+
+            Assert.That(result, Is.EqualTo(0));
         }
     }
 }
