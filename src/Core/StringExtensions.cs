@@ -18,7 +18,7 @@ namespace WebLinq
 {
     using System;
 
-    public static class StringExtensions
+    static class StringExtensions
     {
         public static bool HasWhiteSpace(this string str) =>
             HasWhiteSpace(str, 0, str.Length);
