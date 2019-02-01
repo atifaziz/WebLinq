@@ -28,10 +28,10 @@ namespace WebLinq.Sys
     public sealed partial class ProcessArguments : ICollection<string>
     {
         readonly string _line;
-        readonly IImmutableList<string> _list;
+        readonly ImmutableArray<string> _list;
         List<string> _parsedList;
 
-        ProcessArguments(string line, IImmutableList<string> list)
+        ProcessArguments(string line, ImmutableArray<string> list)
         {
             _line = line;
             _list = list;
@@ -40,25 +40,22 @@ namespace WebLinq.Sys
         public static ProcessArguments Parse(string args)
         {
             if (args == null) throw new ArgumentNullException(nameof(args));
-            return new ProcessArguments(args, null);
+            return new ProcessArguments(args, default);
         }
 
         public static ProcessArguments Var(params string[] args) =>
             From(args);
 
-        public static ProcessArguments From(IEnumerable<string> args) =>
-            From(ImmutableList.CreateRange(args));
-
-        public static ProcessArguments From(IImmutableList<string> args)
+        public static ProcessArguments From(IEnumerable<string> args)
         {
             if (args == null) throw new ArgumentNullException(nameof(args));
-            return new ProcessArguments(null, args);
+            return new ProcessArguments(null, ImmutableArray.CreateRange(args));
         }
 
         ICollection<string> Args
-            => _list != null
-             ? (ICollection<string>) _list
-             : _parsedList ?? (_parsedList = ParseArgumentsIntoList(_line));
+            => _line is string line
+             ? _parsedList ?? (_parsedList = ParseArgumentsIntoList(line))
+             : (ICollection<string>) _list;
 
         public int Count => Args.Count;
 
