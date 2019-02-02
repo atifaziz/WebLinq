@@ -55,5 +55,10 @@ namespace WebLinq.Html
 
         public string Class => _class ?? (_class = GetAttributeValue("class") ?? string.Empty);
         public bool HasClass(string className) => Classes.Contains(className);
+
+        public virtual string NormalInnerText
+            => string.IsNullOrEmpty(InnerText)
+             ? InnerText
+             : string.Join(" ", InnerText.Split((char[])null, StringSplitOptions.RemoveEmptyEntries));
     }
 }

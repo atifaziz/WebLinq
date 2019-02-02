@@ -82,8 +82,8 @@ namespace WebLinq.Samples
             from r in sr.QuerySelectorAll(".g")
             select new
             {
-                Title = r.QuerySelector(".r")?.InnerText,
-                Summary = r.QuerySelector(".st")?.InnerText,
+                Title = r.QuerySelector(".r")?.NormalInnerText,
+                Summary = r.QuerySelector(".st")?.NormalInnerText,
                 Href = sr.TryBaseHref(r.QuerySelector(".r a")?.GetAttributeValue("href")),
             }
             into e
@@ -139,7 +139,7 @@ namespace WebLinq.Samples
             let hdrs =
                 trs.FirstOrDefault(tr => tr.QuerySelectorAll("th").Take(4).Count() >= 3)
                     ?.QuerySelectorAll("th")
-                    .Select(th => th.InnerTextSource.Decoded.Trim())
+                    .Select(th => th.NormalInnerText)
                     .ToArray()
             where hdrs != null
             let idxs =
@@ -155,7 +155,7 @@ namespace WebLinq.Samples
             from tr in trs
             let tds =
                 tr.QuerySelectorAll("td")
-                    .Select(td => td.InnerTextSource.Decoded)
+                    .Select(td => td.NormalInnerText)
                     .ToArray()
             where tds.Length >= 3
             select new
@@ -188,7 +188,7 @@ namespace WebLinq.Samples
                 select new
                 {
                     r.Id,
-                    Score = int.Parse(Regex.Match(s.Score, @"\b[0-9]+(?= +points)").Value),
+                    Score = int.Parse(Regex.Match(s.Score, @"\b[0-9]+(?=\s+points)").Value),
                     r.Link,
                 }
                 into e
@@ -298,7 +298,7 @@ namespace WebLinq.Samples
             select
                 toc.WithContent(
                     from a in toc.Content.QuerySelectorAll("#genre-nav ul > li a[href^=https]")
-                    select (Regex.Replace(a.InnerText, @"\s+", " ").Trim(),
+                    select (a.NormalInnerText,
                             new Uri(toc.Content.TryBaseHref(a.GetAttributeValue("href")))));
 
         static IObservable<object> ITunesMovies(string genreSought) =>
@@ -317,7 +317,7 @@ namespace WebLinq.Samples
                     from a in home.Content.QuerySelectorAll("ul.list.alpha a[href^=https]")
                     select new
                     {
-                        Title = a.InnerText.Trim(),
+                        Title = a.NormalInnerText,
                         Url    = new Uri(home.Content.TryBaseHref(a.GetAttributeValue("href"))),
                     }
                     into e
@@ -332,7 +332,7 @@ namespace WebLinq.Samples
                                     where !a.HasClass("paginate-more")
                                     select new
                                     {
-                                        PageNumber = int.Parse(a.InnerText.Trim(), NumberStyles.None, CultureInfo.InvariantCulture),
+                                        PageNumber = int.Parse(a.NormalInnerText, NumberStyles.None, CultureInfo.InvariantCulture),
                                         Url = new Uri(home.Content.TryBaseHref(a.GetAttributeValue("href"))),
                                     }
                                     into e
@@ -367,7 +367,7 @@ namespace WebLinq.Samples
             from a in page.Html.QuerySelectorAll("#selectedcontent .column li a[href^=https]")
             select new
             {
-                Title = Regex.Replace(a.InnerText, @"\s+", " ").Trim(),
+                Title = a.NormalInnerText,
                 Url = page.Html.TryBaseHref(a.GetAttributeValue("href")),
                 Alpha = page.Title,
                 page.PageNumber,
