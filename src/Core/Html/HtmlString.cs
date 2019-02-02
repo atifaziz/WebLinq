@@ -37,7 +37,7 @@ namespace WebLinq.Html
         public string Encoded => _encoded ?? (_decoded == null ? null : (_encoded = WebUtility.HtmlEncode(_decoded)));
 
         public bool Equals(HtmlString other) => string.Equals(Decoded, other.Decoded);
-        public override bool Equals(object obj) => obj is HtmlString && Equals((HtmlString)obj);
+        public override bool Equals(object obj) => obj is HtmlString s && Equals(s);
         public override int GetHashCode() => Decoded?.GetHashCode() ?? 0;
         public override string ToString() => Encoded;
     }

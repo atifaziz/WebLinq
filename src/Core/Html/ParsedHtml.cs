@@ -190,7 +190,7 @@ namespace WebLinq.Html
 
             public CellSpan(int cols, int rows) { Rows = rows; Cols = cols; }
             public bool Equals(CellSpan other) => Cols == other.Cols && Rows == other.Rows;
-            public override bool Equals(object obj) => obj is CellSpan && Equals((CellSpan)obj);
+            public override bool Equals(object obj) => obj is CellSpan cs && Equals(cs);
             public override int GetHashCode() => unchecked((Cols * 397) ^ Rows);
             public override string ToString() => $"[{Cols}, {Rows}]";
         }

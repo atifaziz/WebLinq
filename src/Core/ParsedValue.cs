@@ -102,7 +102,7 @@ namespace WebLinq
             && EqualityComparer<TValue>.Default.Equals(Value, other.Value);
 
         public override bool Equals(object obj) =>
-            obj is ParsedValue<TSource, TValue> && Equals((ParsedValue<TSource, TValue>) obj);
+            obj is ParsedValue<TSource, TValue> pv && Equals(pv);
 
         public override int GetHashCode() =>
             unchecked((EqualityComparer<TSource>.Default.GetHashCode(Source) * 397)
