@@ -107,36 +107,44 @@ namespace WebLinq.Samples
 
         static IObservable<object> QueenSongs() =>
 
-            from t in Http.Get(new Uri("https://en.wikipedia.org/wiki/Queen_discography"))
-                          .Tables()
-                          .Content((http, t) => new { Http = http, Table = t })
-                          .Where(t => t.Table.HasClass("wikitable"))
-                          .Take(1)
-            from tr in t.Table.TableRows((_, trs) => trs)
-            let th = tr.FirstOrDefault(e => e?.AttributeValueEquals("scope", "row") == true)
-            where th != null
-            let a = th.QuerySelector("a[href]")
-            select new
-            {
-                t.Http,
-                Title = a.GetAttributeValue("title")?.Trim(),
-                Href = a.Owner.TryBaseHref(a.GetAttributeValue("href")?.Trim()),
-            }
-            into e
-            select new
-            {
-                e.Http,
-                e.Title,
-                Url = Uri.TryCreate(e.Href, UriKind.Absolute, out var url) ? url : null,
-            }
-            into e
-            where !string.IsNullOrEmpty(e.Title) && e.Url != null
-            select e
-            into album
+            from dg in Http.Get(new Uri("https://en.wikipedia.org/wiki/Queen_discography"))
+                           .Html()
 
-            from html in album.Http.Get(album.Url).Html().Content()
+            from album in Observable.For(
 
-            from tb in html.Tables(".tracklist").Take(2)
+                from t in dg.Content.Tables()
+                                    .Where(t => t.HasClass("wikitable"))
+                                    .Take(1)
+                from tr in t.TableRows((_, trs) => trs)
+                let th = tr.FirstOrDefault(e => e?.AttributeValueEquals("scope", "row") == true)
+                where th != null
+                let a = th.QuerySelector("a[href]")
+                select new
+                {
+                    Http  = dg.Client,
+                    Title = a.GetAttributeValue("title")?.Trim(),
+                    Href  = a.Owner.TryBaseHref(a.GetAttributeValue("href")?.Trim()),
+                }
+                into e
+                select new
+                {
+                    e.Http,
+                    e.Title,
+                    Url = Uri.TryCreate(e.Href, UriKind.Absolute, out var url) ? url : null,
+                }
+                into e
+                where !string.IsNullOrEmpty(e.Title) && e.Url != null
+                select e,
+
+                album =>
+                    from html in album.Http.Get(album.Url).Html().Content()
+                    select new
+                    {
+                        album.Title,
+                        Html = html,
+                    })
+
+            from tb in album.Html.Tables(".tracklist").Take(2)
             let trs = tb.QuerySelectorAll("tr")
             let hdrs =
                 trs.FirstOrDefault(tr => tr.QuerySelectorAll("th").Take(4).Count() >= 3)
