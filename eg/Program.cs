@@ -4,7 +4,6 @@ namespace WebLinq.Samples
 
     using System;
     using System.Collections.Generic;
-    using System.Collections.Specialized;
     using System.Data;
     using System.Globalization;
     using System.Linq;
