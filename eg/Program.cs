@@ -107,7 +107,9 @@ namespace WebLinq.Samples
 
         static IObservable<object> QueenSongs() =>
 
-            from t in Http.Get(new Uri("https://en.wikipedia.org/wiki/Queen_discography")).Tables().Content((http, t) => new { Http = http, Table = t })
+            from t in Http.Get(new Uri("https://en.wikipedia.org/wiki/Queen_discography"))
+                          .Tables()
+                          .Content((http, t) => new { Http = http, Table = t })
                           .Where(t => t.Table.HasClass("wikitable"))
                           .Take(1)
             from tr in t.Table.TableRows((_, trs) => trs)
@@ -138,14 +140,14 @@ namespace WebLinq.Samples
             let trs = tb.QuerySelectorAll("tr")
             let hdrs =
                 trs.FirstOrDefault(tr => tr.QuerySelectorAll("th").Take(4).Count() >= 3)
-                    ?.QuerySelectorAll("th")
-                    .Select(th => th.NormalInnerText)
-                    .ToArray()
+                  ?.QuerySelectorAll("th")
+                   .Select(th => th.NormalInnerText)
+                   .ToArray()
             where hdrs != null
             let idxs =
-                new[] { "Title", "Writer(s)", "Length" }
-                    .Select(h => Array.FindIndex(hdrs, he => he == h))
-                    .ToArray()
+                Enumerable.ToArray(
+                    from h in new[] { "Title", "Writer(s)", "Length" }
+                    select Array.FindIndex(hdrs, he => he == h))
             let his = new
             {
                 Title   = idxs[0],
@@ -155,8 +157,8 @@ namespace WebLinq.Samples
             from tr in trs
             let tds =
                 tr.QuerySelectorAll("td")
-                    .Select(td => td.NormalInnerText)
-                    .ToArray()
+                  .Select(td => td.NormalInnerText)
+                  .ToArray()
             where tds.Length >= 3
             select new
             {
@@ -168,7 +170,9 @@ namespace WebLinq.Samples
 
         static IObservable<object> TopHackerNews(int score) =>
 
-            from sp in Http.Get(new Uri("https://news.ycombinator.com/")).Html().Content()
+            from sp in Http.Get(new Uri("https://news.ycombinator.com/"))
+                           .Html()
+                           .Content()
             let scores =
                 from s in sp.QuerySelectorAll(".score")
                 select new
@@ -253,7 +257,11 @@ namespace WebLinq.Samples
 
             from e in Http.Get(new Uri("http://httpbin.org/status/418"))
                           .ReturnErroneousFetch()
-            select new { e.StatusCode, e.ReasonPhrase };
+            select new
+            {
+                e.StatusCode,
+                e.ReasonPhrase
+            };
 
         static IObservable<object> BasicAuth() =>
 
@@ -261,7 +269,7 @@ namespace WebLinq.Samples
             from fst in Http.Get(url)
                             .ReturnErroneousFetch()
             from snd in fst.Client.WithConfig(fst.Client.Config.WithCredentials(new NetworkCredential("user", "passwd")))
-                       .Get(url)
+                           .Get(url)
             from result in new[]
             {
                 new { fst.StatusCode, fst.ReasonPhrase },
