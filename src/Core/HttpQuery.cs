@@ -234,10 +234,6 @@ namespace WebLinq
                     SendAsync(http, ho.Configurer(http.Config), 0, HttpMethod.Post, url, content, ho.Options)
                         .ToObservable()));
 
-        public static IObservable<HttpFetch<T>> WithUserAgent<T>(this IObservable<HttpFetch<T>> query, string ua) =>
-            from e in query
-            select e.WithConfig(e.Client.Config.WithUserAgent(ua));
-
         public static IObservable<TResult> Content<TContent, TResult>(this IObservable<HttpFetch<TContent>> query, Func<IHttpClient, TContent, TResult> selector) =>
             from e in query select selector(e.Client, e.Content);
 
