@@ -81,64 +81,66 @@ namespace WebLinq
             query.DownloadTemp(Path.GetTempPath());
 
         public static IObservable<HttpFetch<LocalFileContent>> DownloadTemp(this IObservable<HttpFetch<HttpContent>> query, string path) =>
-            query.SelectMany(async f => f.WithContent(await DownloadAsync(f.Content, path)));
+            query.SelectMany(async f => f.WithContent(await DownloadTemp(f, path)));
 
         public static IObservable<HttpFetch<LocalFileContent>> DownloadTemp(this IHttpObservable query) =>
             query.Download(Path.GetTempFileName());
 
         public static IObservable<HttpFetch<LocalFileContent>> DownloadTemp(this IHttpObservable query, string path) =>
-            query.WithReader(async f =>
+            query.WithReader(f => DownloadTemp(f, path));
+
+        static async Task<LocalFileContent> DownloadTemp(HttpFetch<HttpContent> fetch, string path)
+        {
+            string tempPath;
+
+            var startTime = DateTime.Now;
+            var exceptions = new List<Exception>();
+
+            while (true)
             {
-                string tempPath;
+                // NOTE! Path.GetDirectoryName returns null for "/" or "\\"
+                // but Path.IsPathRooted return true, so we use path verbatim
+                // when it is just the root.
 
-                var startTime = DateTime.Now;
-                var exceptions = new List<Exception>();
+                var desiredDir = Path.GetDirectoryName(path);
+                var dir = desiredDir is string dn && dn.Length > 0 ? dn
+                    : desiredDir == null && Path.IsPathRooted(path) ? path
+                    : Path.GetTempPath();
 
-                while (true)
+                var fileName = Path.GetFileNameWithoutExtension(path);
+                var discriminator = (Process.GetCurrentProcess().Id + Environment.TickCount).ToString("x16");
+                var tempName = (string.IsNullOrEmpty(fileName) ? "tmp" : fileName)
+                               + "-" + discriminator
+                               + Path.GetExtension(path);
+
+                var tempTestPath = Path.Combine(dir, tempName);
+
+                try
                 {
-                    // NOTE! Path.GetDirectoryName returns null for "/" or "\\"
-                    // but Path.IsPathRooted return true, so we use path verbatim
-                    // when it is just the root.
+                    new FileStream(tempTestPath, FileMode.CreateNew).Close();
+                    tempPath = tempTestPath;
+                    break;
+                }
+                catch (IOException e)
+                {
+                    exceptions.Add(e);
 
-                    var desiredDir = Path.GetDirectoryName(path);
-                    var dir = desiredDir is string dn && dn.Length > 0 ? dn
-                            : desiredDir == null && Path.IsPathRooted(path) ? path
-                            : Path.GetTempPath();
+                    // There is no good cross-platform way to know if
+                    // IOException is due to file already existing or not
+                    // so we assume any IOException is due to file already
+                    // existing. However, if we've been looping for 5
+                    // seconds then something is seriously wrong and we
+                    // throw thereafter.
 
-                    var fileName = Path.GetFileNameWithoutExtension(path);
-                    var discriminator = (Process.GetCurrentProcess().Id + Environment.TickCount).ToString("x16");
-                    var tempName = (string.IsNullOrEmpty(fileName) ? "tmp" : fileName)
-                                 + "-" + discriminator
-                                 + Path.GetExtension(path);
-
-                    var tempTestPath = Path.Combine(dir, tempName);
-
-                    try
-                    {
-                        new FileStream(tempTestPath, FileMode.CreateNew).Close();
-                        tempPath = tempTestPath;
-                        break;
-                    }
-                    catch (IOException e)
-                    {
-                        exceptions.Add(e);
-
-                        // There is no good cross-platform way to know if
-                        // IOException is due to file already existing or not
-                        // so we assume any IOException is due to file already
-                        // existing. However, if we've been looping for 5
-                        // seconds then something is seriously wrong and we
-                        // throw thereafter.
-
-                        if (DateTime.Now - startTime > TimeSpan.FromSeconds(5))
-                            throw new IOException(e.Message, new AggregateException(exceptions));
-                    }
-
-                    await Task.Delay(TimeSpan.FromSeconds(0.1))
-                              .DontContinueOnCapturedContext();
+                    if (DateTime.Now - startTime > TimeSpan.FromSeconds(5))
+                        throw new IOException(e.Message, new AggregateException(exceptions));
                 }
 
-                return await DownloadAsync(f.Content, tempPath).DontContinueOnCapturedContext();
-            });
+                await Task.Delay(TimeSpan.FromSeconds(0.1))
+                    .DontContinueOnCapturedContext();
+            }
+
+            return await DownloadAsync(fetch.Content, tempPath).DontContinueOnCapturedContext();
+        }
     }
 }
