@@ -40,13 +40,11 @@ namespace WebLinq
     }
 
     [DebuggerDisplay("Id = {Id}, StatusCode = {StatusCode} ({ReasonPhrase}), Content = {Content}")]
-    public partial class HttpFetch<T> : IDisposable
+    public partial class HttpFetch<T>
     {
-        bool _disposed;
-
         public IHttpClient Client                  { get; }
         public HttpFetchInfo Info                  { get; }
-        public T Content                           { get; private set; }
+        public T Content                           { get; }
 
         public int Id                              => Info.Id;
         public Version HttpVersion                 => Info.HttpVersion;
@@ -66,16 +64,6 @@ namespace WebLinq
 
         public bool IsSuccessStatusCode => Info.IsSuccessStatusCode;
         public bool IsSuccessStatusCodeInRange(int first, int last) => Info.IsSuccessStatusCodeInRange(first, last);
-
-        public void Dispose()
-        {
-            if (_disposed)
-                return;
-            _disposed = true;
-            var disposable = Content as IDisposable;
-            Content = default;
-            disposable?.Dispose();
-        }
 
         public HttpFetch<TContent> WithContent<TContent>(TContent content) =>
             new HttpFetch<TContent>(Client, Info, content);

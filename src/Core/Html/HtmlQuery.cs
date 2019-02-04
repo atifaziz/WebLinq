@@ -25,9 +25,9 @@ namespace WebLinq.Html
     {
         public static IObservable<HttpFetch<ParsedHtml>> Html(this IHttpObservable query, IHtmlParser parser) =>
             query.Accept(MediaTypeNames.Text.Html)
-                 .WithReader(async fetch => parser.Parse(await fetch.Content.ReadAsStringAsync()
-                                                                            .DontContinueOnCapturedContext(),
-                                                         fetch.RequestUrl));
+                 .WithReader(async (f, c) => parser.Parse(await c.ReadAsStringAsync()
+                                                                 .DontContinueOnCapturedContext(),
+                                                          f.RequestUrl));
 
         public static IObservable<HttpFetch<string>> Links(this IObservable<HttpFetch<ParsedHtml>> query) =>
             query.Links(null);
