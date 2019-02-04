@@ -112,6 +112,7 @@ namespace WebLinq.Modules
 
         public static IObservable<HttpFetch<HtmlForm>> Forms(this IHttpObservable query) =>
             query.Html().Forms();
+
         public static IObservable<HttpFetch<HttpContent>> Crawl(Uri url) =>
             Crawl(url, int.MaxValue);
 
@@ -137,13 +138,13 @@ namespace WebLinq.Modules
                 var level = dequeued.Key;
                 // TODO retry intermittent errors?
                 var fetch = Http.Get(url)
-                                .WithOptions(HttpOptions.Default.WithReturnErroneousFetch(true))
+                                .SkipErroneousFetch()
                                 .Buffer()
-                                .SingleAsync()
+                                .SingleOrDefaultAsync()
                                 .GetAwaiter()
                                 .GetResult();
 
-                if (!fetch.IsSuccessStatusCode)
+                if (fetch == null)
                     continue;
 
                 yield return fetch;

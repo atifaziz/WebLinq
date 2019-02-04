@@ -21,6 +21,7 @@ namespace WebLinq
     using System.Reactive;
     using System.Reactive.Linq;
     using System.Threading.Tasks;
+    using WebLinq;
 
     public interface IHttpObservable : IObservable<HttpFetch<Unit>>
     {
@@ -41,6 +42,10 @@ namespace WebLinq
         [Obsolete("Use " + nameof(ReturnErroneousFetch) + " instead.")]
         public static IHttpObservable ReturnErrorneousFetch(this IHttpObservable query) =>
             query.WithOptions(query.Options.WithReturnErroneousFetch(true));
+
+        public static IHttpObservable SkipErroneousFetch(this IHttpObservable query) =>
+            query.ReturnErroneousFetch()
+                 .Where(f => f.IsSuccessStatusCode);
 
         public static IHttpObservable SetHeader(this IHttpObservable query, string name, string value) =>
             query.WithConfigurer(c => query.Configurer(c).WithHeader(name, value));
