@@ -20,60 +20,8 @@ namespace WebLinq
     using System.Diagnostics;
     using System.Net;
 
-    public static class HttpFetch
-    {
-        public static HttpFetch<T> Create<T>(int id,
-                                             T content,
-                                             IHttpClient client,
-                                             Version httpVersion,
-                                             HttpStatusCode statusCode,
-                                             string reasonPhrase,
-                                             HttpHeaderCollection headers,
-                                             HttpHeaderCollection contentHeaders,
-                                             Uri requestUrl,
-                                             HttpHeaderCollection requestHeaders) =>
-            new HttpFetch<T>(client,
-                             new HttpFetchInfo(id,
-                                httpVersion, statusCode, reasonPhrase, headers, contentHeaders,
-                                requestUrl, requestHeaders),
-                             content);
-    }
-
-    [DebuggerDisplay("Id = {Id}, StatusCode = {StatusCode} ({ReasonPhrase}), Content = {Content}")]
-    public partial class HttpFetch<T>
-    {
-        public IHttpClient Client                  { get; }
-        public HttpFetchInfo Info                  { get; }
-        public T Content                           { get; }
-
-        public int Id                              => Info.Id;
-        public Version HttpVersion                 => Info.HttpVersion;
-        public HttpStatusCode StatusCode           => Info.StatusCode;
-        public string ReasonPhrase                 => Info.ReasonPhrase;
-        public HttpHeaderCollection Headers        => Info.Headers;
-        public HttpHeaderCollection ContentHeaders => Info.ContentHeaders;
-        public Uri RequestUrl                      => Info.RequestUrl;
-        public HttpHeaderCollection RequestHeaders => Info.RequestHeaders;
-
-        public HttpFetch(IHttpClient client, HttpFetchInfo info, T content)
-        {
-            Client  = client;
-            Info    = info;
-            Content = content;
-        }
-
-        public bool IsSuccessStatusCode => Info.IsSuccessStatusCode;
-        public bool IsSuccessStatusCodeInRange(int first, int last) => Info.IsSuccessStatusCodeInRange(first, last);
-
-        public HttpFetch<TContent> WithContent<TContent>(TContent content) =>
-            new HttpFetch<TContent>(Client, Info, content);
-
-        public HttpFetch<T> WithConfig(HttpConfig config) =>
-            new HttpFetch<T>(Client.WithConfig(config), Info, Content);
-    }
-
     [DebuggerDisplay("Id = {Id}, StatusCode = {StatusCode} ({ReasonPhrase})")]
-    public sealed class HttpFetchInfo
+    public partial class HttpFetch
     {
         public int Id                              { get; }
         public Version HttpVersion                 { get; }
@@ -84,7 +32,7 @@ namespace WebLinq
         public Uri RequestUrl                      { get; }
         public HttpHeaderCollection RequestHeaders { get; }
 
-        public HttpFetchInfo(int id,
+        public HttpFetch(int id,
             Version httpVersion,
             HttpStatusCode statusCode,
             string reasonPhrase,
@@ -106,4 +54,61 @@ namespace WebLinq
         public bool IsSuccessStatusCode => IsSuccessStatusCodeInRange(200, 299);
         public bool IsSuccessStatusCodeInRange(int first, int last) => (int)StatusCode >= first && (int)StatusCode <= last;
     }
+
+    partial class HttpFetch
+    {
+        public static HttpFetch<T> Create<T>(int id,
+                                             T content,
+                                             IHttpClient client,
+                                             Version httpVersion,
+                                             HttpStatusCode statusCode,
+                                             string reasonPhrase,
+                                             HttpHeaderCollection headers,
+                                             HttpHeaderCollection contentHeaders,
+                                             Uri requestUrl,
+                                             HttpHeaderCollection requestHeaders) =>
+            new HttpFetch<T>(id,
+                             httpVersion, statusCode, reasonPhrase,
+                             headers, contentHeaders,
+                             requestUrl, requestHeaders,
+                             client, content);
+    }
+
+    [DebuggerDisplay("Id = {Id}, StatusCode = {StatusCode} ({ReasonPhrase}), Content = {Content}")]
+    public partial class HttpFetch<T> : HttpFetch
+    {
+        public IHttpClient Client { get; }
+        public T Content          { get; }
+
+        public HttpFetch(int id,
+                         Version httpVersion,
+                         HttpStatusCode statusCode,
+                         string reasonPhrase,
+                         HttpHeaderCollection headers,
+                         HttpHeaderCollection contentHeaders,
+                         Uri requestUrl,
+                         HttpHeaderCollection requestHeaders,
+                         IHttpClient client, T content) :
+            base(id, httpVersion, statusCode, reasonPhrase,
+                 headers, contentHeaders,
+                 requestUrl, requestHeaders)
+        {
+            Client = client;
+            Content = content;
+        }
+
+        HttpFetch(HttpFetch fetch, IHttpClient client, T content) :
+            this(fetch.Id,
+                 fetch.HttpVersion, fetch.StatusCode, fetch.ReasonPhrase,
+                 fetch.Headers, fetch.ContentHeaders,
+                 fetch.RequestUrl, fetch.RequestHeaders,
+                 client, content) {}
+
+        public HttpFetch<TContent> WithContent<TContent>(TContent content) =>
+            new HttpFetch<TContent>(this, Client, content);
+
+        internal HttpFetch<T> WithConfig(HttpConfig config) =>
+            new HttpFetch<T>(this, Client.WithConfig(config), Content);
+    }
+
 }

@@ -846,21 +846,21 @@ namespace WebLinq.Tests
         {
             var tt = new TestTransport().EnqueueText(string.Empty, HttpStatusCode.BadRequest);
 
-            HttpFetchInfo first = null;
-            HttpFetchInfo second = null;
+            HttpFetch first = null;
+            HttpFetch second = null;
 
             await tt.Http.Get(new Uri("https://www.example.com/"))
                          .ReturnErroneousFetch()
                          .Where(f =>
                          {
-                             Assert.That(f, Is.InstanceOf<HttpFetchInfo>());
+                             Assert.That(f, Is.InstanceOf<HttpFetch>());
                              Assert.That(second, Is.Null);
                              first = f;
                              return f.StatusCode == HttpStatusCode.BadRequest;
                          })
                          .Where(f =>
                          {
-                             Assert.That(f, Is.InstanceOf<HttpFetchInfo>());
+                             Assert.That(f, Is.InstanceOf<HttpFetch>());
                              Assert.That(first, Is.Not.Null);
                              Assert.That(f, Is.SameAs(first));
                              second = f;
