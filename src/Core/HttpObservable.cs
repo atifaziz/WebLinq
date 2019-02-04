@@ -30,7 +30,7 @@ namespace WebLinq
         Func<HttpFetchInfo, bool> Predicate { get; }
         IHttpObservable WithConfigurer(Func<HttpConfig, HttpConfig> modifier);
         IHttpObservable WithPredicate(Func<HttpFetchInfo, bool> predicate);
-        IObservable<HttpFetch<T>> WithReader<T>(Func<HttpFetch<HttpContent>, Task<T>> reader);
+        IObservable<HttpFetch<T>> ReadContent<T>(Func<HttpFetch<HttpContent>, Task<T>> reader);
     }
 
     public static partial class HttpObservable
@@ -46,7 +46,7 @@ namespace WebLinq
             query.WithConfigurer(c => query.Configurer(c).WithHeader(name, value));
 
         public static IObservable<HttpFetch<HttpContent>> Buffer(this IHttpObservable query) =>
-            query.WithReader(async f =>
+            query.ReadContent(async f =>
             {
                 await f.Content.LoadIntoBufferAsync().DontContinueOnCapturedContext();
                 return f.Content;
@@ -74,8 +74,12 @@ namespace WebLinq
                 from e in q.WithConfigurer(ho.Configurer)
                            .WithOptions(ho.Options)
                            .WithPredicate(ho.Predicate)
-                           .WithReader(f => Task.FromResult(f.Content))
+                           .ReadContent(f => Task.FromResult(f.Content))
                 select e);
+
+        [Obsolete("Use " + nameof(IHttpObservable.ReadContent) + " instead.")]
+        public static IObservable<HttpFetch<T>> WithReader<T>(this IHttpObservable query, Func<HttpFetch<HttpContent>, Task<T>> reader) =>
+            query.ReadContent(reader);
 
         sealed class Impl : IHttpObservable
         {
@@ -114,7 +118,7 @@ namespace WebLinq
             public IHttpObservable WithPredicate(Func<HttpFetchInfo, bool> predicate) =>
                 new Impl(_query, Options, Configurer, predicate);
 
-            public IObservable<HttpFetch<T>> WithReader<T>(Func<HttpFetch<HttpContent>, Task<T>> reader) =>
+            public IObservable<HttpFetch<T>> ReadContent<T>(Func<HttpFetch<HttpContent>, Task<T>> reader) =>
                 from f in _query(this)
                 where Predicate(f.Info)
                 from c in reader(f)

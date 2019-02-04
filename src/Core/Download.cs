@@ -60,7 +60,7 @@ namespace WebLinq
             query.SelectMany(async f => f.WithContent(await DownloadAsync(f.Content, path)));
 
         public static IObservable<HttpFetch<LocalFileContent>> Download(this IHttpObservable query, string path) =>
-            query.WithReader(f => DownloadAsync(f.Content, path));
+            query.ReadContent(f => DownloadAsync(f.Content, path));
 
         static async Task<LocalFileContent> DownloadAsync(HttpContent content, string path)
         {
@@ -87,7 +87,7 @@ namespace WebLinq
             query.Download(Path.GetTempFileName());
 
         public static IObservable<HttpFetch<LocalFileContent>> DownloadTemp(this IHttpObservable query, string path) =>
-            query.WithReader(f => DownloadTemp(f, path));
+            query.ReadContent(f => DownloadTemp(f, path));
 
         static async Task<LocalFileContent> DownloadTemp(HttpFetch<HttpContent> fetch, string path)
         {

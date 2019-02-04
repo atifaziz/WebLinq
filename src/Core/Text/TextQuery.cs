@@ -33,10 +33,10 @@ namespace WebLinq.Text
                     sb => sb.ToString());
 
         public static IObservable<HttpFetch<string>> Text(this IHttpObservable query) =>
-            query.WithReader(f => f.Content.ReadAsStringAsync());
+            query.ReadContent(f => f.Content.ReadAsStringAsync());
 
         public static IObservable<HttpFetch<string>> Text(this IHttpObservable query, Encoding encoding) =>
-            query.WithReader(async f =>
+            query.ReadContent(async f =>
             {
                 using (var stream = await f.Content.ReadAsStreamAsync().DontContinueOnCapturedContext())
                 using (var reader = new StreamReader(stream, encoding))
