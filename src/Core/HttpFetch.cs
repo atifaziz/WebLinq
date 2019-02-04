@@ -32,21 +32,21 @@ namespace WebLinq
                                              HttpHeaderCollection contentHeaders,
                                              Uri requestUrl,
                                              HttpHeaderCollection requestHeaders) =>
-            new HttpFetch<T>(client,
-                             new HttpFetchInfo(id,
-                                httpVersion, statusCode, reasonPhrase, headers, contentHeaders,
-                                requestUrl, requestHeaders),
+            new HttpFetch<T>(new HttpFetchInfo(
+                                 id, client,
+                                 httpVersion, statusCode, reasonPhrase, headers, contentHeaders,
+                                 requestUrl, requestHeaders),
                              content);
     }
 
     [DebuggerDisplay("Id = {Id}, StatusCode = {StatusCode} ({ReasonPhrase}), Content = {Content}")]
     public partial class HttpFetch<T>
     {
-        public IHttpClient Client                  { get; }
         public HttpFetchInfo Info                  { get; }
         public T Content                           { get; }
 
         public int Id                              => Info.Id;
+        public IHttpClient Client                  => Info.Client;
         public Version HttpVersion                 => Info.HttpVersion;
         public HttpStatusCode StatusCode           => Info.StatusCode;
         public string ReasonPhrase                 => Info.ReasonPhrase;
@@ -55,9 +55,8 @@ namespace WebLinq
         public Uri RequestUrl                      => Info.RequestUrl;
         public HttpHeaderCollection RequestHeaders => Info.RequestHeaders;
 
-        public HttpFetch(IHttpClient client, HttpFetchInfo info, T content)
+        public HttpFetch(HttpFetchInfo info, T content)
         {
-            Client  = client;
             Info    = info;
             Content = content;
         }
@@ -66,16 +65,14 @@ namespace WebLinq
         public bool IsSuccessStatusCodeInRange(int first, int last) => Info.IsSuccessStatusCodeInRange(first, last);
 
         public HttpFetch<TContent> WithContent<TContent>(TContent content) =>
-            new HttpFetch<TContent>(Client, Info, content);
-
-        public HttpFetch<T> WithConfig(HttpConfig config) =>
-            new HttpFetch<T>(Client.WithConfig(config), Info, Content);
+            new HttpFetch<TContent>(Info, content);
     }
 
     [DebuggerDisplay("Id = {Id}, StatusCode = {StatusCode} ({ReasonPhrase})")]
     public sealed class HttpFetchInfo
     {
         public int Id                              { get; }
+        public IHttpClient Client                  { get; }
         public Version HttpVersion                 { get; }
         public HttpStatusCode StatusCode           { get; }
         public string ReasonPhrase                 { get; }
@@ -85,6 +82,7 @@ namespace WebLinq
         public HttpHeaderCollection RequestHeaders { get; }
 
         public HttpFetchInfo(int id,
+            IHttpClient client,
             Version httpVersion,
             HttpStatusCode statusCode,
             string reasonPhrase,
@@ -94,6 +92,7 @@ namespace WebLinq
             HttpHeaderCollection requestHeaders)
         {
             Id             = id;
+            Client         = client;
             HttpVersion    = httpVersion;
             StatusCode     = statusCode;
             ReasonPhrase   = reasonPhrase;
