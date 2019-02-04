@@ -136,7 +136,12 @@ namespace WebLinq.Modules
                 var url = dequeued.Value;
                 var level = dequeued.Key;
                 // TODO retry intermittent errors?
-                var fetch = Http.Get(url).WithOptions(HttpOptions.Default.WithReturnErroneousFetch(true)).Buffer().Single();
+                var fetch = Http.Get(url)
+                                .WithOptions(HttpOptions.Default.WithReturnErroneousFetch(true))
+                                .Buffer()
+                                .SingleAsync()
+                                .GetAwaiter()
+                                .GetResult();
 
                 if (!fetch.IsSuccessStatusCode)
                     continue;
