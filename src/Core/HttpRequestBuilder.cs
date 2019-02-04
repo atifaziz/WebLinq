@@ -25,13 +25,15 @@ namespace WebLinq
         {
             if (response == null) throw new ArgumentNullException(nameof(response));
             var request = response.RequestMessage;
-            return HttpFetch.Create(id, response.Content, http,
-                                    response.Version,
-                                    response.StatusCode, response.ReasonPhrase,
-                                    HttpHeaderCollection.Empty.Set(response.Headers),
-                                    HttpHeaderCollection.Empty.Set(response.Content.Headers),
-                                    request.RequestUri,
-                                    HttpHeaderCollection.Empty.Set(request.Headers));
+            return HttpFetch.Create(new HttpFetchInfo(
+                                        id, http,
+                                        response.Version,
+                                        response.StatusCode, response.ReasonPhrase,
+                                        HttpHeaderCollection.Empty.Set(response.Headers),
+                                        HttpHeaderCollection.Empty.Set(response.Content.Headers),
+                                        request.RequestUri,
+                                        HttpHeaderCollection.Empty.Set(request.Headers)),
+                                    response.Content);
         }
     }
 }

@@ -22,21 +22,8 @@ namespace WebLinq
 
     public static class HttpFetch
     {
-        public static HttpFetch<T> Create<T>(int id,
-                                             T content,
-                                             IHttpClient client,
-                                             Version httpVersion,
-                                             HttpStatusCode statusCode,
-                                             string reasonPhrase,
-                                             HttpHeaderCollection headers,
-                                             HttpHeaderCollection contentHeaders,
-                                             Uri requestUrl,
-                                             HttpHeaderCollection requestHeaders) =>
-            new HttpFetch<T>(new HttpFetchInfo(
-                                 id, client,
-                                 httpVersion, statusCode, reasonPhrase, headers, contentHeaders,
-                                 requestUrl, requestHeaders),
-                             content);
+        public static HttpFetch<T> Create<T>(HttpFetchInfo info, T content) =>
+            new HttpFetch<T>(info, content);
     }
 
     [DebuggerDisplay("Id = {Id}, StatusCode = {StatusCode} ({ReasonPhrase}), Content = {Content}")]
