@@ -41,7 +41,8 @@ namespace WebLinq
     {
         static readonly int MaximumAutomaticRedirections = WebRequest.CreateHttp("http://localhost/").MaximumAutomaticRedirections;
 
-        static async Task<HttpFetch<HttpContent>> SendAsync(IHttpClient http, HttpConfig config, int id, HttpMethod method, Uri url, HttpContent content = null, HttpOptions options = null)
+        static async Task<(IHttpClient Client, HttpFetch Fetch, HttpContent Content)>
+            SendAsync(IHttpClient http, HttpConfig config, int id, HttpMethod method, Uri url, HttpContent content = null, HttpOptions options = null)
         {
             http = http.WithConfig(config);
 
@@ -71,7 +72,7 @@ namespace WebLinq
                         .DontContinueOnCapturedContext();
 
                 if (result.Response != null)
-                    return result.Response.ToHttpFetch(id, http.WithConfig(result.Config));
+                    return (http.WithConfig(result.Config), result.Response.ToHttpFetch(id), result.Response.Content);
 
                 // TODO tail call recursion?
 
@@ -211,7 +212,7 @@ namespace WebLinq
                 Observable.Defer(() =>
                     SendAsync(http, ho.Configurer(http.Config), 0, HttpMethod.Get, url, options: ho.Options)
                         .ToObservable()
-                        .Select(f => f.WithConfig(http.Config.WithCookies(f.Client.Config.Cookies)))));
+                        .Select(f => f.Fetch.And(f.Client, f.Content).WithConfig(http.Config.WithCookies(f.Client.Config.Cookies)))));
 
         public static IHttpObservable Post(this IHttpObservable query, Uri url, NameValueCollection data) =>
             HttpObservable.Return(
@@ -234,7 +235,7 @@ namespace WebLinq
                 Observable.Defer(() =>
                     SendAsync(http, ho.Configurer(http.Config), 0, HttpMethod.Post, url, content, ho.Options)
                         .ToObservable()
-                        .Select(f => f.WithConfig(http.Config.WithCookies(f.Client.Config.Cookies)))));
+                        .Select(f => f.Fetch.And(f.Client, f.Content).WithConfig(http.Config.WithCookies(f.Client.Config.Cookies)))));
 
         public static IObservable<HttpFetch<T>> WithTimeout<T>(this IObservable<HttpFetch<T>> query, TimeSpan duration) =>
             from e in query

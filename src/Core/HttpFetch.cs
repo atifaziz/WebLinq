@@ -53,25 +53,9 @@ namespace WebLinq
 
         public bool IsSuccessStatusCode => IsSuccessStatusCodeInRange(200, 299);
         public bool IsSuccessStatusCodeInRange(int first, int last) => (int)StatusCode >= first && (int)StatusCode <= last;
-    }
 
-    partial class HttpFetch
-    {
-        public static HttpFetch<T> Create<T>(int id,
-                                             T content,
-                                             IHttpClient client,
-                                             Version httpVersion,
-                                             HttpStatusCode statusCode,
-                                             string reasonPhrase,
-                                             HttpHeaderCollection headers,
-                                             HttpHeaderCollection contentHeaders,
-                                             Uri requestUrl,
-                                             HttpHeaderCollection requestHeaders) =>
-            new HttpFetch<T>(id,
-                             httpVersion, statusCode, reasonPhrase,
-                             headers, contentHeaders,
-                             requestUrl, requestHeaders,
-                             client, content);
+        public HttpFetch<T> And<T>(IHttpClient client, T content) =>
+            new HttpFetch<T>(this, client, content);
     }
 
     [DebuggerDisplay("Id = {Id}, StatusCode = {StatusCode} ({ReasonPhrase}), Content = {Content}")]
@@ -97,6 +81,7 @@ namespace WebLinq
             Content = content;
         }
 
+        internal
         HttpFetch(HttpFetch fetch, IHttpClient client, T content) :
             this(fetch.Id,
                  fetch.HttpVersion, fetch.StatusCode, fetch.ReasonPhrase,
