@@ -23,18 +23,24 @@ namespace WebLinq.Collections
     //   to this project.
     // - Renamed from StringValues to Strings.
     // - Marked partial.
+    // - Re-styled to use project conventions.
 
     /// <summary>
     /// Represents zero/null, one, or many strings in an efficient way.
     /// </summary>
 
-    public readonly partial struct Strings : IList<string>, IReadOnlyList<string>, IEquatable<Strings>, IEquatable<string>, IEquatable<string[]>
+    public readonly partial struct Strings :
+        IList<string>,
+        IReadOnlyList<string>,
+        IEquatable<Strings>,
+        IEquatable<string>,
+        IEquatable<string[]>
     {
-        private static readonly string[] EmptyArray = new string[0];
+        static readonly string[] EmptyArray = new string[0];
         public static readonly Strings Empty = new Strings(EmptyArray);
 
-        private readonly string _value;
-        private readonly string[] _values;
+        readonly string _value;
+        readonly string[] _values;
 
         public Strings(string value)
         {
@@ -48,66 +54,41 @@ namespace WebLinq.Collections
             _values = values;
         }
 
-        public static implicit operator Strings(string value)
-        {
-            return new Strings(value);
-        }
+        public static implicit operator Strings(string value) =>
+            new Strings(value);
 
-        public static implicit operator Strings(string[] values)
-        {
-            return new Strings(values);
-        }
+        public static implicit operator Strings(string[] values) =>
+            new Strings(values);
 
-        public static implicit operator string (Strings values)
-        {
-            return values.GetStringValue();
-        }
+        public static implicit operator string (Strings values) =>
+            values.GetStringValue();
 
-        public static implicit operator string[] (Strings value)
-        {
-            return value.GetArrayValue();
-        }
+        public static implicit operator string[] (Strings value) =>
+            value.GetArrayValue();
 
         public int Count => _value != null ? 1 : (_values?.Length ?? 0);
 
-        bool ICollection<string>.IsReadOnly
-        {
-            get { return true; }
-        }
+        bool ICollection<string>.IsReadOnly => true;
 
         string IList<string>.this[int index]
         {
-            get { return this[index]; }
-            set { throw new NotSupportedException(); }
+            get => this[index];
+            set => throw new NotSupportedException();
         }
 
         public string this[int index]
-        {
-            get
-            {
-                if (_values != null)
-                {
-                    return _values[index]; // may throw
-                }
-                if (index == 0 && _value != null)
-                {
-                    return _value;
-                }
-                return EmptyArray[0]; // throws
-            }
-        }
+            => _values != null ? _values[index]
+             : index == 0 && _value != null ? _value
+             : EmptyArray[0];
 
-        public override string ToString()
-        {
-            return GetStringValue() ?? string.Empty;
-        }
+        public override string ToString() =>
+            GetStringValue() ?? string.Empty;
 
-        private string GetStringValue()
+        string GetStringValue()
         {
             if (_values == null)
-            {
                 return _value;
-            }
+
             switch (_values.Length)
             {
                 case 0: return null;
@@ -116,59 +97,41 @@ namespace WebLinq.Collections
             }
         }
 
-        public string[] ToArray()
-        {
-            return GetArrayValue() ?? EmptyArray;
-        }
+        public string[] ToArray() =>
+            GetArrayValue() ?? EmptyArray;
 
-        private string[] GetArrayValue()
-        {
-            if (_value != null)
-            {
-                return new[] { _value };
-            }
-            return _values;
-        }
+        string[] GetArrayValue() =>
+            _value != null ? new[] { _value } : _values;
 
-        int IList<string>.IndexOf(string item)
-        {
-            return IndexOf(item);
-        }
+        int IList<string>.IndexOf(string item) =>
+            IndexOf(item);
 
-        private int IndexOf(string item)
+        int IndexOf(string item)
         {
             if (_values != null)
             {
                 var values = _values;
-                for (int i = 0; i < values.Length; i++)
+                for (var i = 0; i < values.Length; i++)
                 {
                     if (string.Equals(values[i], item, StringComparison.Ordinal))
-                    {
                         return i;
-                    }
                 }
+
                 return -1;
             }
 
-            if (_value != null)
-            {
-                return string.Equals(_value, item, StringComparison.Ordinal) ? 0 : -1;
-            }
-
-            return -1;
+            return _value != null
+                 ? string.Equals(_value, item, StringComparison.Ordinal) ? 0 : -1
+                 : -1;
         }
 
-        bool ICollection<string>.Contains(string item)
-        {
-            return IndexOf(item) >= 0;
-        }
+        bool ICollection<string>.Contains(string item) =>
+            IndexOf(item) >= 0;
 
-        void ICollection<string>.CopyTo(string[] array, int arrayIndex)
-        {
+        void ICollection<string>.CopyTo(string[] array, int arrayIndex) =>
             CopyTo(array, arrayIndex);
-        }
 
-        private void CopyTo(string[] array, int arrayIndex)
+        void CopyTo(string[] array, int arrayIndex)
         {
             if (_values != null)
             {
@@ -179,13 +142,10 @@ namespace WebLinq.Collections
             if (_value != null)
             {
                 if (array == null)
-                {
                     throw new ArgumentNullException(nameof(array));
-                }
                 if (arrayIndex < 0)
-                {
                     throw new ArgumentOutOfRangeException(nameof(arrayIndex));
-                }
+
                 if (array.Length - arrayIndex < 1)
                 {
                     throw new ArgumentException(
@@ -196,52 +156,26 @@ namespace WebLinq.Collections
             }
         }
 
-        void ICollection<string>.Add(string item)
-        {
-            throw new NotSupportedException();
-        }
+        void ICollection<string>.Add(string item) => throw new NotSupportedException();
+        void IList<string>.Insert(int index, string item) => throw new NotSupportedException();
+        bool ICollection<string>.Remove(string item) => throw new NotSupportedException();
+        void IList<string>.RemoveAt(int index) => throw new NotSupportedException();
+        void ICollection<string>.Clear() => throw new NotSupportedException();
 
-        void IList<string>.Insert(int index, string item)
-        {
-            throw new NotSupportedException();
-        }
+        public Enumerator GetEnumerator() =>
+            new Enumerator(_values, _value);
 
-        bool ICollection<string>.Remove(string item)
-        {
-            throw new NotSupportedException();
-        }
+        IEnumerator<string> IEnumerable<string>.GetEnumerator() =>
+            GetEnumerator();
 
-        void IList<string>.RemoveAt(int index)
-        {
-            throw new NotSupportedException();
-        }
-
-        void ICollection<string>.Clear()
-        {
-            throw new NotSupportedException();
-        }
-
-        public Enumerator GetEnumerator()
-        {
-            return new Enumerator(_values, _value);
-        }
-
-        IEnumerator<string> IEnumerable<string>.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() =>
+            GetEnumerator();
 
         public static bool IsNullOrEmpty(Strings value)
         {
             if (value._values == null)
-            {
                 return string.IsNullOrEmpty(value._value);
-            }
+
             switch (value._values.Length)
             {
                 case 0: return true;
@@ -256,14 +190,10 @@ namespace WebLinq.Collections
             var count2 = values2.Count;
 
             if (count1 == 0)
-            {
                 return values2;
-            }
 
             if (count2 == 0)
-            {
                 return values1;
-            }
 
             var combined = new string[count1 + count2];
             values1.CopyTo(combined, 0);
@@ -274,15 +204,11 @@ namespace WebLinq.Collections
         public static Strings Concat(in Strings values, string value)
         {
             if (value == null)
-            {
                 return values;
-            }
 
             var count = values.Count;
             if (count == 0)
-            {
                 return new Strings(value);
-            }
 
             var combined = new string[count + 1];
             values.CopyTo(combined, 0);
@@ -293,15 +219,11 @@ namespace WebLinq.Collections
         public static Strings Concat(string value, in Strings values)
         {
             if (value == null)
-            {
                 return values;
-            }
 
             var count = values.Count;
             if (count == 0)
-            {
                 return new Strings(value);
-            }
 
             var combined = new string[count + 1];
             combined[0] = value;
@@ -314,170 +236,108 @@ namespace WebLinq.Collections
             var count = left.Count;
 
             if (count != right.Count)
-            {
                 return false;
-            }
 
             for (var i = 0; i < count; i++)
             {
                 if (left[i] != right[i])
-                {
                     return false;
-                }
             }
 
             return true;
         }
 
-        public static bool operator ==(Strings left, Strings right)
-        {
-            return Equals(left, right);
-        }
+        public static bool operator ==(Strings left, Strings right) =>
+            Equals(left, right);
 
-        public static bool operator !=(Strings left, Strings right)
-        {
-            return !Equals(left, right);
-        }
+        public static bool operator !=(Strings left, Strings right) =>
+            !Equals(left, right);
 
-        public bool Equals(Strings other)
-        {
-            return Equals(this, other);
-        }
+        public bool Equals(Strings other) =>
+            Equals(this, other);
 
-        public static bool Equals(string left, Strings right)
-        {
-            return Equals(new Strings(left), right);
-        }
+        public static bool Equals(string left, Strings right) =>
+            Equals(new Strings(left), right);
 
-        public static bool Equals(Strings left, string right)
-        {
-            return Equals(left, new Strings(right));
-        }
+        public static bool Equals(Strings left, string right) =>
+            Equals(left, new Strings(right));
 
-        public bool Equals(string other)
-        {
-            return Equals(this, new Strings(other));
-        }
+        public bool Equals(string other) =>
+            Equals(this, new Strings(other));
 
-        public static bool Equals(string[] left, Strings right)
-        {
-            return Equals(new Strings(left), right);
-        }
+        public static bool Equals(string[] left, Strings right) =>
+            Equals(new Strings(left), right);
 
-        public static bool Equals(Strings left, string[] right)
-        {
-            return Equals(left, new Strings(right));
-        }
+        public static bool Equals(Strings left, string[] right) =>
+            Equals(left, new Strings(right));
 
-        public bool Equals(string[] other)
-        {
-            return Equals(this, new Strings(other));
-        }
+        public bool Equals(string[] other) =>
+            Equals(this, new Strings(other));
 
-        public static bool operator ==(Strings left, string right)
-        {
-            return Equals(left, new Strings(right));
-        }
+        public static bool operator ==(Strings left, string right) =>
+            Equals(left, new Strings(right));
 
-        public static bool operator !=(Strings left, string right)
-        {
-            return !Equals(left, new Strings(right));
-        }
+        public static bool operator !=(Strings left, string right) =>
+            !Equals(left, new Strings(right));
 
-        public static bool operator ==(string left, Strings right)
-        {
-            return Equals(new Strings(left), right);
-        }
+        public static bool operator ==(string left, Strings right) =>
+            Equals(new Strings(left), right);
 
-        public static bool operator !=(string left, Strings right)
-        {
-            return !Equals(new Strings(left), right);
-        }
+        public static bool operator !=(string left, Strings right) =>
+            !Equals(new Strings(left), right);
 
-        public static bool operator ==(Strings left, string[] right)
-        {
-            return Equals(left, new Strings(right));
-        }
+        public static bool operator ==(Strings left, string[] right) =>
+            Equals(left, new Strings(right));
 
-        public static bool operator !=(Strings left, string[] right)
-        {
-            return !Equals(left, new Strings(right));
-        }
+        public static bool operator !=(Strings left, string[] right) =>
+            !Equals(left, new Strings(right));
 
-        public static bool operator ==(string[] left, Strings right)
-        {
-            return Equals(new Strings(left), right);
-        }
+        public static bool operator ==(string[] left, Strings right) =>
+            Equals(new Strings(left), right);
 
-        public static bool operator !=(string[] left, Strings right)
-        {
-            return !Equals(new Strings(left), right);
-        }
+        public static bool operator !=(string[] left, Strings right) =>
+            !Equals(new Strings(left), right);
 
-        public static bool operator ==(Strings left, object right)
-        {
-            return left.Equals(right);
-        }
+        public static bool operator ==(Strings left, object right) =>
+            left.Equals(right);
 
-        public static bool operator !=(Strings left, object right)
-        {
-            return !left.Equals(right);
-        }
-        public static bool operator ==(object left, Strings right)
-        {
-            return right.Equals(left);
-        }
+        public static bool operator !=(Strings left, object right) =>
+            !left.Equals(right);
 
-        public static bool operator !=(object left, Strings right)
-        {
-            return !right.Equals(left);
-        }
+        public static bool operator ==(object left, Strings right) =>
+            right.Equals(left);
+
+        public static bool operator !=(object left, Strings right) =>
+            !right.Equals(left);
 
         public override bool Equals(object obj)
         {
-            if (obj == null)
+            switch (obj)
             {
-                return Equals(this, Strings.Empty);
+                case null: return Equals(this, Empty);
+                case string b: return Equals(this, b);
+                case string[] b: return Equals(this, b);
+                case Strings b: return Equals(this, b);
+                default: return false;
             }
-
-            if (obj is string)
-            {
-                return Equals(this, (string)obj);
-            }
-
-            if (obj is string[])
-            {
-                return Equals(this, (string[])obj);
-            }
-
-            if (obj is Strings)
-            {
-                return Equals(this, (Strings)obj);
-            }
-
-            return false;
         }
 
         public override int GetHashCode()
         {
             if (_values == null)
-            {
                 return _value == null ? 0 : _value.GetHashCode();
-            }
 
             var hcc = new HashCodeCombiner();
-            for (var i = 0; i < _values.Length; i++)
-            {
-                hcc.Add(_values[i]);
-            }
+            foreach (var v in _values)
+                hcc.Add(v);
             return hcc.CombinedHash;
         }
 
         public struct Enumerator : IEnumerator<string>
         {
-            private readonly string[] _values;
-            private string _current;
-            private int _index;
+            readonly string[] _values;
+            string _current;
+            int _index;
 
             internal Enumerator(string[] values, string value)
             {
@@ -496,9 +356,7 @@ namespace WebLinq.Collections
             public bool MoveNext()
             {
                 if (_index < 0)
-                {
                     return false;
-                }
 
                 if (_values != null)
                 {
@@ -521,14 +379,10 @@ namespace WebLinq.Collections
 
             object IEnumerator.Current => _current;
 
-            void IEnumerator.Reset()
-            {
+            void IEnumerator.Reset() =>
                 throw new NotSupportedException();
-            }
 
-            public void Dispose()
-            {
-            }
+            public void Dispose() {}
         }
     }
 }
