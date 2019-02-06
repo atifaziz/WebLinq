@@ -8,7 +8,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using NUnit.Framework;
 using NAssert = NUnit.Framework.Assert;
-using StringValues = WebLinq.Collections.Strings;
+using WebLinq.Collections;
 
 namespace WebLinq.Tests
 {
@@ -21,41 +21,41 @@ namespace WebLinq.Tests
 
     public class StringsTests
     {
-        public static IEnumerable<StringValues> DefaultOrNullStringValues
+        public static IEnumerable<Strings> DefaultOrNullStrings
         {
             get
             {
-                return new StringValues[]
+                return new Strings[]
                 {
-                    new StringValues(),
-                    new StringValues(default(ImmutableArray<string>)),
+                    new Strings(),
+                    new Strings(default(ImmutableArray<string>)),
                 };
             }
         }
 
-        public static IEnumerable<StringValues> EmptyStringValues
+        public static IEnumerable<Strings> EmptyStrings
         {
             get
             {
-                return new StringValues[]
+                return new Strings[]
                 {
-                    StringValues.Empty,
-                    new StringValues(ImmutableArray<string>.Empty),
+                    Strings.Empty,
+                    new Strings(ImmutableArray<string>.Empty),
                     ImmutableArray<string>.Empty
                 };
             }
         }
 
-        public static IEnumerable<StringValues> FilledStringValues
+        public static IEnumerable<Strings> FilledStrings
         {
             get
             {
-                return new StringValues[]
+                return new Strings[]
                 {
-                    new StringValues("abc"),
-                    new StringValues(ImmutableArray.Create("abc")),
-                    new StringValues(ImmutableArray.Create("abc", "bcd")),
-                    new StringValues(ImmutableArray.Create("abc", "bcd", "foo")),
+                    new Strings("abc"),
+                    new Strings(ImmutableArray.Create("abc")),
+                    new Strings(ImmutableArray.Create("abc", "bcd")),
+                    new Strings(ImmutableArray.Create("abc", "bcd", "foo")),
                     "abc",
                     ImmutableArray.Create("abc"),
                     ImmutableArray.Create("abc", "bcd"),
@@ -64,51 +64,51 @@ namespace WebLinq.Tests
             }
         }
 
-        public static IEnumerable FilledStringValuesWithExpectedStrings
+        public static IEnumerable FilledStringsWithExpectedStrings
         {
             get
             {
                 var args = new[]
                 {
-                    (new StringValues(string.Empty), string.Empty ),
-                    (new StringValues(ImmutableArray.Create(string.Empty)), string.Empty ),
-                    (new StringValues("abc"), "abc"),
+                    (new Strings(string.Empty), string.Empty ),
+                    (new Strings(ImmutableArray.Create(string.Empty)), string.Empty ),
+                    (new Strings("abc"), "abc"),
                 };
                 return from a in args select new object[] { a.Item1, a.Item2 };
             }
         }
 
-        public static IEnumerable FilledStringValuesWithExpectedObjects
+        public static IEnumerable FilledStringsWithExpectedObjects
         {
             get
             {
                 var args = new[]
                 {
-                    (default(StringValues), (object)null),
-                    (StringValues.Empty, (object)null),
-                    (new StringValues(ImmutableArray<string>.Empty), (object)null),
-                    (new StringValues("abc"), (object)"abc"),
-                    (new StringValues("abc"), (object)new[] { "abc" }),
-                    (new StringValues(ImmutableArray.Create("abc")), (object)new[] { "abc" }),
-                    (new StringValues(ImmutableArray.Create("abc", "bcd")), (object)new[] { "abc", "bcd" }),
+                    (default(Strings), (object)null),
+                    (Strings.Empty, (object)null),
+                    (new Strings(ImmutableArray<string>.Empty), (object)null),
+                    (new Strings("abc"), (object)"abc"),
+                    (new Strings("abc"), (object)new[] { "abc" }),
+                    (new Strings(ImmutableArray.Create("abc")), (object)new[] { "abc" }),
+                    (new Strings(ImmutableArray.Create("abc", "bcd")), (object)new[] { "abc", "bcd" }),
                 };
                 return from a in args select new[] { a.Item1, a.Item2 };
             }
         }
 
-        public static IEnumerable FilledStringValuesWithExpected
+        public static IEnumerable FilledStringsWithExpected
         {
             get
             {
-                var args = new(StringValues, string[])[]
+                var args = new(Strings, string[])[]
                 {
-                    (default(StringValues), new string[0]),
-                    (StringValues.Empty, new string[0]),
-                    (new StringValues(string.Empty), new[] { string.Empty }),
-                    (new StringValues("abc"), new[] { "abc" }),
-                    (new StringValues(ImmutableArray.Create("abc")), new[] { "abc" }),
-                    (new StringValues(ImmutableArray.Create("abc", "bcd")), new[] { "abc", "bcd" }),
-                    (new StringValues(ImmutableArray.Create("abc", "bcd", "foo")), new[] { "abc", "bcd", "foo" }),
+                    (default(Strings), new string[0]),
+                    (Strings.Empty, new string[0]),
+                    (new Strings(string.Empty), new[] { string.Empty }),
+                    (new Strings("abc"), new[] { "abc" }),
+                    (new Strings(ImmutableArray.Create("abc")), new[] { "abc" }),
+                    (new Strings(ImmutableArray.Create("abc", "bcd")), new[] { "abc", "bcd" }),
+                    (new Strings(ImmutableArray.Create("abc", "bcd", "foo")), new[] { "abc", "bcd", "foo" }),
                     (string.Empty, new[] { string.Empty }),
                     ("abc", new[] { "abc" }),
                     (ImmutableArray.Create("abc"), new[] { "abc" }),
@@ -120,101 +120,101 @@ namespace WebLinq.Tests
         }
 
         [Theory]
-        [TestCaseSource(nameof(DefaultOrNullStringValues))]
-        [TestCaseSource(nameof(EmptyStringValues))]
-        [TestCaseSource(nameof(FilledStringValues))]
-        public void IsReadOnly_True(StringValues stringValues)
+        [TestCaseSource(nameof(DefaultOrNullStrings))]
+        [TestCaseSource(nameof(EmptyStrings))]
+        [TestCaseSource(nameof(FilledStrings))]
+        public void IsReadOnly_True(Strings strings)
         {
-            Assert.True(((IList<string>)stringValues).IsReadOnly);
-            Assert.Throws<NotSupportedException>(() => ((IList<string>)stringValues)[0] = string.Empty);
-            Assert.Throws<NotSupportedException>(() => ((ICollection<string>)stringValues).Add(string.Empty));
-            Assert.Throws<NotSupportedException>(() => ((IList<string>)stringValues).Insert(0, string.Empty));
-            Assert.Throws<NotSupportedException>(() => ((ICollection<string>)stringValues).Remove(string.Empty));
-            Assert.Throws<NotSupportedException>(() => ((IList<string>)stringValues).RemoveAt(0));
-            Assert.Throws<NotSupportedException>(() => ((ICollection<string>)stringValues).Clear());
+            Assert.True(((IList<string>)strings).IsReadOnly);
+            Assert.Throws<NotSupportedException>(() => ((IList<string>)strings)[0] = string.Empty);
+            Assert.Throws<NotSupportedException>(() => ((ICollection<string>)strings).Add(string.Empty));
+            Assert.Throws<NotSupportedException>(() => ((IList<string>)strings).Insert(0, string.Empty));
+            Assert.Throws<NotSupportedException>(() => ((ICollection<string>)strings).Remove(string.Empty));
+            Assert.Throws<NotSupportedException>(() => ((IList<string>)strings).RemoveAt(0));
+            Assert.Throws<NotSupportedException>(() => ((ICollection<string>)strings).Clear());
         }
 
         [Theory]
-        [TestCaseSource(nameof(DefaultOrNullStringValues))]
-        public void DefaultOrNull_ExpectedValues(StringValues stringValues)
+        [TestCaseSource(nameof(DefaultOrNullStrings))]
+        public void DefaultOrNull_ExpectedValues(Strings strings)
         {
-            Assert.Empty((string[])stringValues);
+            Assert.Empty((string[])strings);
         }
 
         [Theory]
-        [TestCaseSource(nameof(DefaultOrNullStringValues))]
-        [TestCaseSource(nameof(EmptyStringValues))]
-        public void DefaultNullOrEmpty_ExpectedValues(StringValues stringValues)
+        [TestCaseSource(nameof(DefaultOrNullStrings))]
+        [TestCaseSource(nameof(EmptyStrings))]
+        public void DefaultNullOrEmpty_ExpectedValues(Strings strings)
         {
-            Assert.Empty(stringValues);
-            Assert.Null((string)stringValues);
-            Assert.Equal((string)null, stringValues);
-            Assert.Equal(string.Empty, stringValues.ToString());
-            Assert.Equal(new string[0], stringValues.ToArray());
+            Assert.Empty(strings);
+            Assert.Null((string)strings);
+            Assert.Equal((string)null, strings);
+            Assert.Equal(string.Empty, strings.ToString());
+            Assert.Equal(new string[0], strings.ToArray());
 
-            Assert.True(StringValues.IsNullOrEmpty(stringValues));
-            Assert.Throws<IndexOutOfRangeException>(() => _ = stringValues[0]);
-            Assert.Throws<IndexOutOfRangeException>(() => _ = ((IList<string>)stringValues)[0]);
-            Assert.Equal(string.Empty, stringValues.ToString());
-            Assert.Equal(-1, ((IList<string>)stringValues).IndexOf(null));
-            Assert.Equal(-1, ((IList<string>)stringValues).IndexOf(string.Empty));
-            Assert.Equal(-1, ((IList<string>)stringValues).IndexOf("not there"));
-            Assert.False(((ICollection<string>)stringValues).Contains(null));
-            Assert.False(((ICollection<string>)stringValues).Contains(string.Empty));
-            Assert.False(((ICollection<string>)stringValues).Contains("not there"));
-            Assert.Empty(stringValues);
+            Assert.True(Strings.IsNullOrEmpty(strings));
+            Assert.Throws<IndexOutOfRangeException>(() => _ = strings[0]);
+            Assert.Throws<IndexOutOfRangeException>(() => _ = ((IList<string>)strings)[0]);
+            Assert.Equal(string.Empty, strings.ToString());
+            Assert.Equal(-1, ((IList<string>)strings).IndexOf(null));
+            Assert.Equal(-1, ((IList<string>)strings).IndexOf(string.Empty));
+            Assert.Equal(-1, ((IList<string>)strings).IndexOf("not there"));
+            Assert.False(((ICollection<string>)strings).Contains(null));
+            Assert.False(((ICollection<string>)strings).Contains(string.Empty));
+            Assert.False(((ICollection<string>)strings).Contains("not there"));
+            Assert.Empty(strings);
         }
 
         [Test]
         public void ImplicitStringConverter_Works()
         {
             string nullString = null;
-            StringValues stringValues = nullString;
-            Assert.Null((string)stringValues);
-            Assert.Equal(new string[] { null }, (string[])stringValues);
+            Strings strings = nullString;
+            Assert.Null((string)strings);
+            Assert.Equal(new string[] { null }, (string[])strings);
 
             string aString = "abc";
-            stringValues = aString;
-            Assert.Single(stringValues);
-            Assert.Equal(aString, stringValues);
-            Assert.Equal(aString, stringValues[0]);
-            Assert.Equal(aString, ((IList<string>)stringValues)[0]);
-            Assert.Equal<string[]>(new string[] { aString }, stringValues);
+            strings = aString;
+            Assert.Single(strings);
+            Assert.Equal(aString, strings);
+            Assert.Equal(aString, strings[0]);
+            Assert.Equal(aString, ((IList<string>)strings)[0]);
+            Assert.Equal<string[]>(new string[] { aString }, strings);
         }
 
         [Test]
         public void ImplicitStringArrayConverter_Works()
         {
             ImmutableArray<string> nullStringArray = default;
-            StringValues stringValues = nullStringArray;
-            Assert.Empty(stringValues);
-            Assert.Null((string)stringValues);
-            Assert.Empty((string[])stringValues);
+            Strings strings = nullStringArray;
+            Assert.Empty(strings);
+            Assert.Null((string)strings);
+            Assert.Empty((string[])strings);
 
             string aString = "abc";
             var aStringArray = ImmutableArray.Create(aString);
-            stringValues = aStringArray;
-            Assert.Single(stringValues);
-            Assert.Equal(aString, stringValues);
-            Assert.Equal(aString, stringValues[0]);
-            Assert.Equal(aString, ((IList<string>)stringValues)[0]);
-            Assert.Equal(aStringArray, stringValues);
+            strings = aStringArray;
+            Assert.Single(strings);
+            Assert.Equal(aString, strings);
+            Assert.Equal(aString, strings[0]);
+            Assert.Equal(aString, ((IList<string>)strings)[0]);
+            Assert.Equal(aStringArray, strings);
 
             aString = "abc";
             string bString = "bcd";
             aStringArray = ImmutableArray.Create(aString, bString);
-            stringValues = aStringArray;
-            Assert.Equal(2, stringValues.Count);
-            Assert.Equal("abc,bcd", stringValues);
-            Assert.Equal(aStringArray, stringValues);
+            strings = aStringArray;
+            Assert.Equal(2, strings.Count);
+            Assert.Equal("abc,bcd", strings);
+            Assert.Equal(aStringArray, strings);
         }
 
         [Theory]
-        [TestCaseSource(nameof(DefaultOrNullStringValues))]
-        [TestCaseSource(nameof(EmptyStringValues))]
-        public void DefaultNullOrEmpty_Enumerator(StringValues stringValues)
+        [TestCaseSource(nameof(DefaultOrNullStrings))]
+        [TestCaseSource(nameof(EmptyStrings))]
+        public void DefaultNullOrEmpty_Enumerator(Strings strings)
         {
-            var e = stringValues.GetEnumerator();
+            var e = strings.GetEnumerator();
             Assert.Null(e.Current);
             Assert.False(e.MoveNext());
             Assert.Null(e.Current);
@@ -222,7 +222,7 @@ namespace WebLinq.Tests
             Assert.False(e.MoveNext());
             Assert.False(e.MoveNext());
 
-            var e1 = ((IEnumerable<string>)stringValues).GetEnumerator();
+            var e1 = ((IEnumerable<string>)strings).GetEnumerator();
             Assert.Null(e1.Current);
             Assert.False(e1.MoveNext());
             Assert.Null(e1.Current);
@@ -230,7 +230,7 @@ namespace WebLinq.Tests
             Assert.False(e1.MoveNext());
             Assert.False(e1.MoveNext());
 
-            var e2 = ((IEnumerable)stringValues).GetEnumerator();
+            var e2 = ((IEnumerable)strings).GetEnumerator();
             Assert.Null(e2.Current);
             Assert.False(e2.MoveNext());
             Assert.Null(e2.Current);
@@ -240,10 +240,10 @@ namespace WebLinq.Tests
         }
 
         [Theory]
-        [TestCaseSource(nameof(FilledStringValuesWithExpected))]
-        public void Enumerator(StringValues stringValues, string[] expected)
+        [TestCaseSource(nameof(FilledStringsWithExpected))]
+        public void Enumerator(Strings strings, string[] expected)
         {
-            var e = stringValues.GetEnumerator();
+            var e = strings.GetEnumerator();
             for (int i = 0; i < expected.Length; i++)
             {
                 Assert.True(e.MoveNext());
@@ -253,7 +253,7 @@ namespace WebLinq.Tests
             Assert.False(e.MoveNext());
             Assert.False(e.MoveNext());
 
-            var e1 = ((IEnumerable<string>)stringValues).GetEnumerator();
+            var e1 = ((IEnumerable<string>)strings).GetEnumerator();
             for (int i = 0; i < expected.Length; i++)
             {
                 Assert.True(e1.MoveNext());
@@ -263,7 +263,7 @@ namespace WebLinq.Tests
             Assert.False(e1.MoveNext());
             Assert.False(e1.MoveNext());
 
-            var e2 = ((IEnumerable)stringValues).GetEnumerator();
+            var e2 = ((IEnumerable)strings).GetEnumerator();
             for (int i = 0; i < expected.Length; i++)
             {
                 Assert.True(e2.MoveNext());
@@ -275,10 +275,10 @@ namespace WebLinq.Tests
         }
 
         [Theory]
-        [TestCaseSource(nameof(FilledStringValuesWithExpected))]
-        public void IndexOf(StringValues stringValues, string[] expected)
+        [TestCaseSource(nameof(FilledStringsWithExpected))]
+        public void IndexOf(Strings strings, string[] expected)
         {
-            IList<string> list = stringValues;
+            IList<string> list = strings;
             Assert.Equal(-1, list.IndexOf("not there"));
             for (int i = 0; i < expected.Length; i++)
             {
@@ -287,10 +287,10 @@ namespace WebLinq.Tests
         }
 
         [Theory]
-        [TestCaseSource(nameof(FilledStringValuesWithExpected))]
-        public void Contains(StringValues stringValues, string[] expected)
+        [TestCaseSource(nameof(FilledStringsWithExpected))]
+        public void Contains(Strings strings, string[] expected)
         {
-            ICollection<string> collection = stringValues;
+            ICollection<string> collection = strings;
             Assert.False(collection.Contains("not there"));
             for (int i = 0; i < expected.Length; i++)
             {
@@ -299,12 +299,12 @@ namespace WebLinq.Tests
         }
 
         [Theory]
-        [TestCaseSource(nameof(DefaultOrNullStringValues))]
-        [TestCaseSource(nameof(EmptyStringValues))]
-        [TestCaseSource(nameof(FilledStringValues))]
-        public void CopyTo_TooSmall(StringValues stringValues)
+        [TestCaseSource(nameof(DefaultOrNullStrings))]
+        [TestCaseSource(nameof(EmptyStrings))]
+        [TestCaseSource(nameof(FilledStrings))]
+        public void CopyTo_TooSmall(Strings strings)
         {
-            ICollection<string> collection = stringValues;
+            ICollection<string> collection = strings;
             string[] tooSmall = new string[0];
 
             if (collection.Count > 0)
@@ -314,10 +314,10 @@ namespace WebLinq.Tests
         }
 
         [Theory]
-        [TestCaseSource(nameof(FilledStringValuesWithExpected))]
-        public void CopyTo_CorrectSize(StringValues stringValues, string[] expected)
+        [TestCaseSource(nameof(FilledStringsWithExpected))]
+        public void CopyTo_CorrectSize(Strings strings, string[] expected)
         {
-            ICollection<string> collection = stringValues;
+            ICollection<string> collection = strings;
             string[] actual = new string[expected.Length];
 
             if (collection.Count > 0)
@@ -330,57 +330,57 @@ namespace WebLinq.Tests
         }
 
         [Theory]
-        [TestCaseSource(nameof(DefaultOrNullStringValues))]
-        [TestCaseSource(nameof(EmptyStringValues))]
-        public void DefaultNullOrEmpty_Concat(StringValues stringValues)
+        [TestCaseSource(nameof(DefaultOrNullStrings))]
+        [TestCaseSource(nameof(EmptyStrings))]
+        public void DefaultNullOrEmpty_Concat(Strings strings)
         {
             var expected = ImmutableArray.Create("abc", "bcd", "foo");
-            StringValues expectedStringValues = new StringValues(expected);
-            Assert.Equal(expected, StringValues.Concat(stringValues, expectedStringValues));
-            Assert.Equal(expected, StringValues.Concat(expectedStringValues, stringValues));
+            Strings expectedStrings = new Strings(expected);
+            Assert.Equal(expected, Strings.Concat(strings, expectedStrings));
+            Assert.Equal(expected, Strings.Concat(expectedStrings, strings));
 
 
-            Assert.Equal(new StringValues(ImmutableArray.Create((string) null).AddRange(expected)),
-                         StringValues.Concat((string)null, in expectedStringValues));
+            Assert.Equal(new Strings(ImmutableArray.Create((string) null).AddRange(expected)),
+                         Strings.Concat((string)null, in expectedStrings));
 
-            Assert.Equal(new StringValues(expected.Add(null)),
-                         StringValues.Concat(in expectedStringValues, (string)null));
+            Assert.Equal(new Strings(expected.Add(null)),
+                         Strings.Concat(in expectedStrings, (string)null));
 
             string[] empty = new string[0];
-            StringValues emptyStringValues = new StringValues(ImmutableArray<string>.Empty);
-            Assert.Equal(empty, StringValues.Concat(stringValues, StringValues.Empty));
-            Assert.Equal(empty, StringValues.Concat(StringValues.Empty, stringValues));
-            Assert.Equal(empty, StringValues.Concat(stringValues, new StringValues()));
-            Assert.Equal(empty, StringValues.Concat(new StringValues(), stringValues));
+            Strings emptyStrings = new Strings(ImmutableArray<string>.Empty);
+            Assert.Equal(empty, Strings.Concat(strings, Strings.Empty));
+            Assert.Equal(empty, Strings.Concat(Strings.Empty, strings));
+            Assert.Equal(empty, Strings.Concat(strings, new Strings()));
+            Assert.Equal(empty, Strings.Concat(new Strings(), strings));
 
             string[] @null = { null };
-            Assert.Equal(@null, StringValues.Concat((string)null, in emptyStringValues));
-            Assert.Equal(@null, StringValues.Concat(in emptyStringValues, (string)null));
+            Assert.Equal(@null, Strings.Concat((string)null, in emptyStrings));
+            Assert.Equal(@null, Strings.Concat(in emptyStrings, (string)null));
         }
 
         [Theory]
-        [TestCaseSource(nameof(FilledStringValuesWithExpected))]
-        public void Concat(StringValues stringValues, string[] array)
+        [TestCaseSource(nameof(FilledStringsWithExpected))]
+        public void Concat(Strings strings, string[] array)
         {
             var filled = ImmutableArray.Create("abc", "bcd", "foo");
 
             string[] expectedPrepended = array.Concat(filled).ToArray();
-            Assert.Equal(expectedPrepended, StringValues.Concat(stringValues, new StringValues(filled)));
+            Assert.Equal(expectedPrepended, Strings.Concat(strings, new Strings(filled)));
 
             string[] expectedAppended = filled.Concat(array).ToArray();
-            Assert.Equal(expectedAppended, StringValues.Concat(new StringValues(filled), stringValues));
+            Assert.Equal(expectedAppended, Strings.Concat(new Strings(filled), strings));
 
-            StringValues values = stringValues;
+            Strings values = strings;
             foreach (string s in filled)
             {
-                values = StringValues.Concat(in values, s);
+                values = Strings.Concat(in values, s);
             }
             Assert.Equal(expectedPrepended, values);
 
-            values = stringValues;
+            values = strings;
             foreach (string s in filled.Reverse())
             {
-                values = StringValues.Concat(s, in values);
+                values = Strings.Concat(s, in values);
             }
             Assert.Equal(expectedAppended, values);
         }
@@ -391,25 +391,25 @@ namespace WebLinq.Tests
             var equalString = "abc";
 
             var equalStringArray = new string[] { equalString };
-            var equalStringValues = new StringValues(equalString);
-            var otherStringValues = new StringValues(equalString);
+            var equalStrings = new Strings(equalString);
+            var otherStrings = new Strings(equalString);
             var stringArray = ImmutableArray.Create(equalString, equalString);
-            var stringValuesArray = new StringValues(stringArray);
+            var stringValuesArray = new Strings(stringArray);
 
-            Assert.True(equalStringValues == otherStringValues);
+            Assert.True(equalStrings == otherStrings);
 
-            Assert.True(equalStringValues == equalString);
-            Assert.True(equalString == equalStringValues);
+            Assert.True(equalStrings == equalString);
+            Assert.True(equalString == equalStrings);
 
-            Assert.True(equalStringValues == equalStringArray);
-            Assert.True(equalStringArray == equalStringValues);
+            Assert.True(equalStrings == equalStringArray);
+            Assert.True(equalStringArray == equalStrings);
 
             Assert.True(stringArray == stringValuesArray);
             Assert.True(stringValuesArray == stringArray);
 
             Assert.False(stringValuesArray == equalString);
             Assert.False(stringValuesArray == equalStringArray);
-            Assert.False(stringValuesArray == equalStringValues);
+            Assert.False(stringValuesArray == equalStrings);
         }
 
         [Test]
@@ -418,25 +418,25 @@ namespace WebLinq.Tests
             var equalString = "abc";
 
             var equalStringArray = new string[] { equalString };
-            var equalStringValues = new StringValues(equalString);
-            var otherStringValues = new StringValues(equalString);
+            var equalStrings = new Strings(equalString);
+            var otherStrings = new Strings(equalString);
             var stringArray = ImmutableArray.Create(equalString, equalString);
-            var stringValuesArray = new StringValues(stringArray);
+            var stringValuesArray = new Strings(stringArray);
 
-            Assert.False(equalStringValues != otherStringValues);
+            Assert.False(equalStrings != otherStrings);
 
-            Assert.False(equalStringValues != equalString);
-            Assert.False(equalString != equalStringValues);
+            Assert.False(equalStrings != equalString);
+            Assert.False(equalString != equalStrings);
 
-            Assert.False(equalStringValues != equalStringArray);
-            Assert.False(equalStringArray != equalStringValues);
+            Assert.False(equalStrings != equalStringArray);
+            Assert.False(equalStringArray != equalStrings);
 
             Assert.False(stringArray != stringValuesArray);
             Assert.False(stringValuesArray != stringArray);
 
             Assert.True(stringValuesArray != equalString);
             Assert.True(stringValuesArray != equalStringArray);
-            Assert.True(stringValuesArray != equalStringValues);
+            Assert.True(stringValuesArray != equalStrings);
         }
 
         [Test]
@@ -445,56 +445,56 @@ namespace WebLinq.Tests
             var equalString = "abc";
 
             var equalStringArray = new string[] { equalString };
-            var equalStringValues = new StringValues(equalString);
+            var equalStrings = new Strings(equalString);
             var stringArray = ImmutableArray.Create(equalString, equalString);
-            var stringValuesArray = new StringValues(stringArray);
+            var stringValuesArray = new Strings(stringArray);
 
-            Assert.True(equalStringValues.Equals(equalStringValues));
-            Assert.True(equalStringValues.Equals(equalString));
-            Assert.True(equalStringValues.Equals(equalStringArray));
+            Assert.True(equalStrings.Equals(equalStrings));
+            Assert.True(equalStrings.Equals(equalString));
+            Assert.True(equalStrings.Equals(equalStringArray));
             Assert.True(stringValuesArray.Equals(stringArray));
         }
 
         [Theory]
-        [TestCaseSource(nameof(FilledStringValuesWithExpectedObjects))]
-        public void Equals_ObjectEquals(StringValues stringValues, object obj)
+        [TestCaseSource(nameof(FilledStringsWithExpectedObjects))]
+        public void Equals_ObjectEquals(Strings strings, object obj)
         {
-            Assert.True(stringValues == obj);
-            Assert.True(obj == stringValues);
+            Assert.True(strings == obj);
+            Assert.True(obj == strings);
         }
 
         [Theory]
-        [TestCaseSource(nameof(FilledStringValuesWithExpectedObjects))]
-        public void Equals_ObjectNotEquals(StringValues stringValues, object obj)
+        [TestCaseSource(nameof(FilledStringsWithExpectedObjects))]
+        public void Equals_ObjectNotEquals(Strings strings, object obj)
         {
-            Assert.False(stringValues != obj);
-            Assert.False(obj != stringValues);
+            Assert.False(strings != obj);
+            Assert.False(obj != strings);
         }
 
         [Theory]
-        [TestCaseSource(nameof(FilledStringValuesWithExpectedStrings))]
-        public void Equals_String(StringValues stringValues, string expected)
+        [TestCaseSource(nameof(FilledStringsWithExpectedStrings))]
+        public void Equals_String(Strings strings, string expected)
         {
-            var notEqual = new StringValues("bcd");
+            var notEqual = new Strings("bcd");
 
-            Assert.True(StringValues.Equals(stringValues, expected));
-            Assert.False(StringValues.Equals(stringValues, notEqual));
+            Assert.True(Strings.Equals(strings, expected));
+            Assert.False(Strings.Equals(strings, notEqual));
         }
 
         [Theory]
-        [TestCaseSource(nameof(FilledStringValuesWithExpected))]
-        public void Equals_StringArray(StringValues stringValues, string[] expected)
+        [TestCaseSource(nameof(FilledStringsWithExpected))]
+        public void Equals_StringArray(Strings strings, string[] expected)
         {
             var notEqual = ImmutableArray.Create("bcd", "abc");
 
-            Assert.True(StringValues.Equals(stringValues, expected));
-            Assert.False(StringValues.Equals(stringValues, notEqual));
+            Assert.True(Strings.Equals(strings, expected));
+            Assert.False(Strings.Equals(strings, notEqual));
         }
 
         [Test]
         public void NullString()
         {
-            var strings = new StringValues((string)null);
+            var strings = new Strings((string)null);
 
             NAssert.AreEqual(1, strings.Count);
             NAssert.Null(strings[0]);
@@ -512,7 +512,7 @@ namespace WebLinq.Tests
             list.CopyTo(array, 0);
             NAssert.AreEqual(null, array[0]);
 
-            NAssert.True(StringValues.IsNullOrEmpty(strings));
+            NAssert.True(Strings.IsNullOrEmpty(strings));
 
             using (var e = strings.GetEnumerator())
             {
@@ -529,7 +529,7 @@ namespace WebLinq.Tests
             public static void False(bool condition) => NAssert.False(condition);
             public static void Empty(IEnumerable collection) => NAssert.IsEmpty(collection);
             public static void Equal<T>(T expected, T actual) => NAssert.That(actual, Is.EqualTo(expected));
-            public static void Equal(string[] expected, StringValues actual) => NAssert.That(actual, Is.EqualTo(expected));
+            public static void Equal(string[] expected, Strings actual) => NAssert.That(actual, Is.EqualTo(expected));
             public static void Equal(string expected, string actual) => NAssert.AreEqual(actual, expected);
             public static void Throws<T>(TestDelegate code) where T : Exception => NAssert.Throws<T>(code);
             public static void Single<T>(IEnumerable<T> collection) => NAssert.That(collection.Count(), Is.EqualTo(1));
