@@ -6,11 +6,13 @@ namespace WebLinq.Collections
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using Microsoft.Extensions.Internal;
 
     partial struct Strings
     {
-        public static Strings Values(params string[] values) => new Strings(values);
+        public static Strings Values(params string[] values) =>
+            new Strings(ImmutableArray.CreateRange(values));
     }
 
     // Source:
@@ -35,41 +37,44 @@ namespace WebLinq.Collections
         IList<string>,
         IReadOnlyList<string>,
         IEquatable<Strings>,
-        IEquatable<string>,
-        IEquatable<string[]>
+        IEquatable<string>
     {
         public static readonly Strings Empty = new Strings();
 
         readonly bool _hasValue;
         readonly string _value;
-        readonly string[] _values;
+        readonly ImmutableArray<string> _values;
 
         public Strings(string value) :
-            this(true, value, null) {}
+            this(true, value, default) {}
 
-        public Strings(string[] values) :
+        public Strings(ImmutableArray<string> values) :
             this(false, null, values) {}
 
-        Strings(bool hasValue, string value, string[] values)
+        Strings(bool hasValue, string value, ImmutableArray<string> values)
         {
             _hasValue = hasValue;
             _value = value;
-            _values = values;
+            _values = values.IsDefault && !_hasValue
+                    ? ImmutableArray<string>.Empty
+                    : values;
         }
 
         public static implicit operator Strings(string value) =>
             new Strings(value);
 
-        public static implicit operator Strings(string[] values) =>
+        public static implicit operator Strings(ImmutableArray<string> values) =>
             new Strings(values);
 
-        public static implicit operator string (Strings values) =>
+        public static implicit operator string(Strings values) =>
             values.GetStringValue();
 
-        public static implicit operator string[] (Strings value) =>
+        public static implicit operator string[](Strings value) =>
             value.GetArrayValue();
 
-        public int Count => _hasValue ? 1 : (_values?.Length ?? 0);
+        public int Count => _hasValue ? 1
+                          : _values.IsDefault ? 0
+                          : _values.Length;
 
         bool ICollection<string>.IsReadOnly => true;
 
@@ -80,7 +85,7 @@ namespace WebLinq.Collections
         }
 
         public string this[int index]
-            => _values != null ? _values[index]
+            => !_values.IsDefault ? _values[index]
              : index == 0 && _hasValue ? _value
              : Array.Empty<string>()[0];
 
@@ -89,7 +94,7 @@ namespace WebLinq.Collections
 
         string GetStringValue()
         {
-            if (_values == null)
+            if (_values.IsDefault)
                 return _value;
 
             switch (_values.Length)
@@ -103,15 +108,25 @@ namespace WebLinq.Collections
         public string[] ToArray() =>
             GetArrayValue() ?? Array.Empty<string>();
 
-        string[] GetArrayValue() =>
-            _hasValue ? new[] { _value } : _values;
+        string[] GetArrayValue()
+        {
+            if (_hasValue)
+                return new[] { _value };
+
+            if (_values.IsDefault)
+                return Array.Empty<string>();
+
+            var array = new string[Count];
+            _values.CopyTo(array, 0);
+            return array;
+        }
 
         int IList<string>.IndexOf(string item) =>
             IndexOf(item);
 
         int IndexOf(string item)
         {
-            if (_values != null)
+            if (!_values.IsDefault)
             {
                 var values = _values;
                 for (var i = 0; i < values.Length; i++)
@@ -136,9 +151,9 @@ namespace WebLinq.Collections
 
         void CopyTo(string[] array, int arrayIndex)
         {
-            if (_values != null)
+            if (!_values.IsDefault)
             {
-                Array.Copy(_values, 0, array, arrayIndex, _values.Length);
+                _values.CopyTo(array, arrayIndex);
                 return;
             }
 
@@ -188,10 +203,12 @@ namespace WebLinq.Collections
             if (count2 == 0)
                 return values1;
 
-            var combined = new string[count1 + count2];
-            values1.CopyTo(combined, 0);
-            values2.CopyTo(combined, count1);
-            return new Strings(combined);
+            var builder = ImmutableArray.CreateBuilder<string>(count1 + count2);
+            for (var i = 0; i < count1; i++)
+                builder.Add(values1[i]);
+            for (var i = 0; i < count2; i++)
+                builder.Add(values2[i]);
+            return new Strings(builder.ToImmutable());
         }
 
         public static Strings Concat(in Strings values, string value)
@@ -200,10 +217,11 @@ namespace WebLinq.Collections
             if (count == 0)
                 return new Strings(value);
 
-            var combined = new string[count + 1];
-            values.CopyTo(combined, 0);
-            combined[count] = value;
-            return new Strings(combined);
+            var builder = ImmutableArray.CreateBuilder<string>(count + 1);
+            for (var i = 0; i < count; i++)
+                builder.Add(values[i]);
+            builder.Add(value);
+            return new Strings(builder.ToImmutable());
         }
 
         public static Strings Concat(string value, in Strings values)
@@ -212,10 +230,11 @@ namespace WebLinq.Collections
             if (count == 0)
                 return new Strings(value);
 
-            var combined = new string[count + 1];
-            combined[0] = value;
-            values.CopyTo(combined, 1);
-            return new Strings(combined);
+            var builder = ImmutableArray.CreateBuilder<string>(count + 1);
+            builder.Add(value);
+            for (var i = 0; i < count; i++)
+                builder.Add(values[i]);
+            return new Strings(builder.ToImmutable());
         }
 
         public static bool Equals(Strings left, Strings right)
@@ -253,13 +272,26 @@ namespace WebLinq.Collections
             Equals(this, new Strings(other));
 
         public static bool Equals(string[] left, Strings right) =>
-            Equals(new Strings(left), right);
+            Equals(right, left);
 
-        public static bool Equals(Strings left, string[] right) =>
-            Equals(left, new Strings(right));
+        public static bool Equals(Strings left, string[] right)
+        {
+            var count = left.Count;
+
+            if (count != right.Length)
+                return false;
+
+            for (var i = 0; i < count; i++)
+            {
+                if (left[i] != right[i])
+                    return false;
+            }
+
+            return true;
+        }
 
         public bool Equals(string[] other) =>
-            Equals(this, new Strings(other));
+            Equals(this, other);
 
         public static bool operator ==(Strings left, string right) =>
             Equals(left, new Strings(right));
@@ -274,16 +306,16 @@ namespace WebLinq.Collections
             !Equals(new Strings(left), right);
 
         public static bool operator ==(Strings left, string[] right) =>
-            Equals(left, new Strings(right));
+            Equals(left, right);
 
         public static bool operator !=(Strings left, string[] right) =>
-            !Equals(left, new Strings(right));
+            !Equals(left, right);
 
         public static bool operator ==(string[] left, Strings right) =>
-            Equals(new Strings(left), right);
+            Equals(left, right);
 
         public static bool operator !=(string[] left, Strings right) =>
-            !Equals(new Strings(left), right);
+            !Equals(left, right);
 
         public static bool operator ==(Strings left, object right) =>
             left.Equals(right);
@@ -322,11 +354,11 @@ namespace WebLinq.Collections
 
         public struct Enumerator : IEnumerator<string>
         {
-            readonly string[] _values;
+            readonly ImmutableArray<string> _values;
             string _current;
             int _index;
 
-            internal Enumerator(string[] values, string value, int count)
+            internal Enumerator(ImmutableArray<string> values, string value, int count)
             {
                _values = values;
                _current = value;

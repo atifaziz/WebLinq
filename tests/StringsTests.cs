@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using NUnit.Framework;
 using NAssert = NUnit.Framework.Assert;
@@ -27,8 +28,7 @@ namespace WebLinq.Tests
                 return new StringValues[]
                 {
                     new StringValues(),
-                    new StringValues((string[])null),
-                    (string[])null
+                    new StringValues(default(ImmutableArray<string>)),
                 };
             }
         }
@@ -40,8 +40,8 @@ namespace WebLinq.Tests
                 return new StringValues[]
                 {
                     StringValues.Empty,
-                    new StringValues(new string[0]),
-                    new string[0]
+                    new StringValues(ImmutableArray<string>.Empty),
+                    ImmutableArray<string>.Empty
                 };
             }
         }
@@ -53,13 +53,13 @@ namespace WebLinq.Tests
                 return new StringValues[]
                 {
                     new StringValues("abc"),
-                    new StringValues(new[] { "abc" }),
-                    new StringValues(new[] { "abc", "bcd" }),
-                    new StringValues(new[] { "abc", "bcd", "foo" }),
+                    new StringValues(ImmutableArray.Create("abc")),
+                    new StringValues(ImmutableArray.Create("abc", "bcd")),
+                    new StringValues(ImmutableArray.Create("abc", "bcd", "foo")),
                     "abc",
-                    new[] { "abc" },
-                    new[] { "abc", "bcd" },
-                    new[] { "abc", "bcd", "foo" }
+                    ImmutableArray.Create("abc"),
+                    ImmutableArray.Create("abc", "bcd"),
+                    ImmutableArray.Create("abc", "bcd", "foo"),
                 };
             }
         }
@@ -71,7 +71,7 @@ namespace WebLinq.Tests
                 var args = new[]
                 {
                     (new StringValues(string.Empty), string.Empty ),
-                    (new StringValues(new string[] { string.Empty }), string.Empty ),
+                    (new StringValues(ImmutableArray.Create(string.Empty)), string.Empty ),
                     (new StringValues("abc"), "abc"),
                 };
                 return from a in args select new object[] { a.Item1, a.Item2 };
@@ -86,11 +86,11 @@ namespace WebLinq.Tests
                 {
                     (default(StringValues), (object)null),
                     (StringValues.Empty, (object)null),
-                    (new StringValues(new string[] { }), (object)null),
+                    (new StringValues(ImmutableArray<string>.Empty), (object)null),
                     (new StringValues("abc"), (object)"abc"),
                     (new StringValues("abc"), (object)new[] { "abc" }),
-                    (new StringValues(new[] { "abc" }), (object)new[] { "abc" }),
-                    (new StringValues(new[] { "abc", "bcd" }), (object)new[] { "abc", "bcd" }),
+                    (new StringValues(ImmutableArray.Create("abc")), (object)new[] { "abc" }),
+                    (new StringValues(ImmutableArray.Create("abc", "bcd")), (object)new[] { "abc", "bcd" }),
                 };
                 return from a in args select new[] { a.Item1, a.Item2 };
             }
@@ -106,14 +106,14 @@ namespace WebLinq.Tests
                     (StringValues.Empty, new string[0]),
                     (new StringValues(string.Empty), new[] { string.Empty }),
                     (new StringValues("abc"), new[] { "abc" }),
-                    (new StringValues(new[] { "abc" }), new[] { "abc" }),
-                    (new StringValues(new[] { "abc", "bcd" }), new[] { "abc", "bcd" }),
-                    (new StringValues(new[] { "abc", "bcd", "foo" }), new[] { "abc", "bcd", "foo" }),
+                    (new StringValues(ImmutableArray.Create("abc")), new[] { "abc" }),
+                    (new StringValues(ImmutableArray.Create("abc", "bcd")), new[] { "abc", "bcd" }),
+                    (new StringValues(ImmutableArray.Create("abc", "bcd", "foo")), new[] { "abc", "bcd", "foo" }),
                     (string.Empty, new[] { string.Empty }),
                     ("abc", new[] { "abc" }),
-                    (new[] { "abc" }, new[] { "abc" }),
-                    (new[] { "abc", "bcd" }, new[] { "abc", "bcd" }),
-                    (new[] { "abc", "bcd", "foo" }, new[] { "abc", "bcd", "foo" }),
+                    (ImmutableArray.Create("abc"), new[] { "abc" }),
+                    (ImmutableArray.Create("abc", "bcd"), new[] { "abc", "bcd" }),
+                    (ImmutableArray.Create("abc", "bcd", "foo"), new[] { "abc", "bcd", "foo" }),
                 };
                 return from a in args select new object[] { a.Item1, a.Item2 };
             }
@@ -138,7 +138,7 @@ namespace WebLinq.Tests
         [TestCaseSource(nameof(DefaultOrNullStringValues))]
         public void DefaultOrNull_ExpectedValues(StringValues stringValues)
         {
-            Assert.Null((string[])stringValues);
+            Assert.Empty((string[])stringValues);
         }
 
         [Theory]
@@ -185,28 +185,28 @@ namespace WebLinq.Tests
         [Test]
         public void ImplicitStringArrayConverter_Works()
         {
-            string[] nullStringArray = null;
+            ImmutableArray<string> nullStringArray = default;
             StringValues stringValues = nullStringArray;
             Assert.Empty(stringValues);
             Assert.Null((string)stringValues);
-            Assert.Null((string[])stringValues);
+            Assert.Empty((string[])stringValues);
 
             string aString = "abc";
-            string[] aStringArray = new[] { aString };
+            var aStringArray = ImmutableArray.Create(aString);
             stringValues = aStringArray;
             Assert.Single(stringValues);
             Assert.Equal(aString, stringValues);
             Assert.Equal(aString, stringValues[0]);
             Assert.Equal(aString, ((IList<string>)stringValues)[0]);
-            Assert.Equal<string[]>(aStringArray, stringValues);
+            Assert.Equal(aStringArray, stringValues);
 
             aString = "abc";
             string bString = "bcd";
-            aStringArray = new[] { aString, bString };
+            aStringArray = ImmutableArray.Create(aString, bString);
             stringValues = aStringArray;
             Assert.Equal(2, stringValues.Count);
             Assert.Equal("abc,bcd", stringValues);
-            Assert.Equal<string[]>(aStringArray, stringValues);
+            Assert.Equal(aStringArray, stringValues);
         }
 
         [Theory]
@@ -334,20 +334,20 @@ namespace WebLinq.Tests
         [TestCaseSource(nameof(EmptyStringValues))]
         public void DefaultNullOrEmpty_Concat(StringValues stringValues)
         {
-            string[] expected = new[] { "abc", "bcd", "foo" };
+            var expected = ImmutableArray.Create("abc", "bcd", "foo");
             StringValues expectedStringValues = new StringValues(expected);
             Assert.Equal(expected, StringValues.Concat(stringValues, expectedStringValues));
             Assert.Equal(expected, StringValues.Concat(expectedStringValues, stringValues));
 
 
-            Assert.Equal(new StringValues(new string[] { null }.Concat(expected).ToArray()),
+            Assert.Equal(new StringValues(ImmutableArray.Create((string) null).AddRange(expected)),
                          StringValues.Concat((string)null, in expectedStringValues));
 
-            Assert.Equal(new StringValues(expected.Concat(new string[] { null }).ToArray()),
+            Assert.Equal(new StringValues(expected.Add(null)),
                          StringValues.Concat(in expectedStringValues, (string)null));
 
             string[] empty = new string[0];
-            StringValues emptyStringValues = new StringValues(empty);
+            StringValues emptyStringValues = new StringValues(ImmutableArray<string>.Empty);
             Assert.Equal(empty, StringValues.Concat(stringValues, StringValues.Empty));
             Assert.Equal(empty, StringValues.Concat(StringValues.Empty, stringValues));
             Assert.Equal(empty, StringValues.Concat(stringValues, new StringValues()));
@@ -362,7 +362,7 @@ namespace WebLinq.Tests
         [TestCaseSource(nameof(FilledStringValuesWithExpected))]
         public void Concat(StringValues stringValues, string[] array)
         {
-            string[] filled = new[] { "abc", "bcd", "foo" };
+            var filled = ImmutableArray.Create("abc", "bcd", "foo");
 
             string[] expectedPrepended = array.Concat(filled).ToArray();
             Assert.Equal(expectedPrepended, StringValues.Concat(stringValues, new StringValues(filled)));
@@ -393,7 +393,7 @@ namespace WebLinq.Tests
             var equalStringArray = new string[] { equalString };
             var equalStringValues = new StringValues(equalString);
             var otherStringValues = new StringValues(equalString);
-            var stringArray = new string[] { equalString, equalString };
+            var stringArray = ImmutableArray.Create(equalString, equalString);
             var stringValuesArray = new StringValues(stringArray);
 
             Assert.True(equalStringValues == otherStringValues);
@@ -420,7 +420,7 @@ namespace WebLinq.Tests
             var equalStringArray = new string[] { equalString };
             var equalStringValues = new StringValues(equalString);
             var otherStringValues = new StringValues(equalString);
-            var stringArray = new string[] { equalString, equalString };
+            var stringArray = ImmutableArray.Create(equalString, equalString);
             var stringValuesArray = new StringValues(stringArray);
 
             Assert.False(equalStringValues != otherStringValues);
@@ -446,7 +446,7 @@ namespace WebLinq.Tests
 
             var equalStringArray = new string[] { equalString };
             var equalStringValues = new StringValues(equalString);
-            var stringArray = new string[] { equalString, equalString };
+            var stringArray = ImmutableArray.Create(equalString, equalString);
             var stringValuesArray = new StringValues(stringArray);
 
             Assert.True(equalStringValues.Equals(equalStringValues));
@@ -485,7 +485,7 @@ namespace WebLinq.Tests
         [TestCaseSource(nameof(FilledStringValuesWithExpected))]
         public void Equals_StringArray(StringValues stringValues, string[] expected)
         {
-            var notEqual = new StringValues(new[] { "bcd", "abc" });
+            var notEqual = ImmutableArray.Create("bcd", "abc");
 
             Assert.True(StringValues.Equals(stringValues, expected));
             Assert.False(StringValues.Equals(stringValues, notEqual));
