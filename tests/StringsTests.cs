@@ -16,6 +16,7 @@ namespace WebLinq.Tests
     // - Moved namespace to one belonging to this project.
     // - Renamed StringValues to Strings.
     // - Modified to work with NUnit instead of XUnit.
+    // - Adapted according to changes in Strings implementation.
 
     public class StringsTests
     {
@@ -26,9 +27,7 @@ namespace WebLinq.Tests
                 return new StringValues[]
                 {
                     new StringValues(),
-                    new StringValues((string)null),
                     new StringValues((string[])null),
-                    (string)null,
                     (string[])null
                 };
             }
@@ -71,9 +70,6 @@ namespace WebLinq.Tests
             {
                 var args = new[]
                 {
-                    (default(StringValues), (string)null ),
-                    (StringValues.Empty, (string)null ),
-                    (new StringValues(new string[] { }), (string)null ),
                     (new StringValues(string.Empty), string.Empty ),
                     (new StringValues(new string[] { string.Empty }), string.Empty ),
                     (new StringValues("abc"), "abc"),
@@ -174,9 +170,8 @@ namespace WebLinq.Tests
         {
             string nullString = null;
             StringValues stringValues = nullString;
-            Assert.Empty(stringValues);
             Assert.Null((string)stringValues);
-            Assert.Null((string[])stringValues);
+            Assert.Equal(new string[] { null }, (string[])stringValues);
 
             string aString = "abc";
             stringValues = aString;
@@ -343,8 +338,13 @@ namespace WebLinq.Tests
             StringValues expectedStringValues = new StringValues(expected);
             Assert.Equal(expected, StringValues.Concat(stringValues, expectedStringValues));
             Assert.Equal(expected, StringValues.Concat(expectedStringValues, stringValues));
-            Assert.Equal(expected, StringValues.Concat((string)null, in expectedStringValues));
-            Assert.Equal(expected, StringValues.Concat(in expectedStringValues, (string)null));
+
+
+            Assert.Equal(new StringValues(new string[] { null }.Concat(expected).ToArray()),
+                         StringValues.Concat((string)null, in expectedStringValues));
+
+            Assert.Equal(new StringValues(expected.Concat(new string[] { null }).ToArray()),
+                         StringValues.Concat(in expectedStringValues, (string)null));
 
             string[] empty = new string[0];
             StringValues emptyStringValues = new StringValues(empty);
@@ -352,8 +352,10 @@ namespace WebLinq.Tests
             Assert.Equal(empty, StringValues.Concat(StringValues.Empty, stringValues));
             Assert.Equal(empty, StringValues.Concat(stringValues, new StringValues()));
             Assert.Equal(empty, StringValues.Concat(new StringValues(), stringValues));
-            Assert.Equal(empty, StringValues.Concat((string)null, in emptyStringValues));
-            Assert.Equal(empty, StringValues.Concat(in emptyStringValues, (string)null));
+
+            string[] @null = { null };
+            Assert.Equal(@null, StringValues.Concat((string)null, in emptyStringValues));
+            Assert.Equal(@null, StringValues.Concat(in emptyStringValues, (string)null));
         }
 
         [Theory]
@@ -487,6 +489,37 @@ namespace WebLinq.Tests
 
             Assert.True(StringValues.Equals(stringValues, expected));
             Assert.False(StringValues.Equals(stringValues, notEqual));
+        }
+
+        [Test]
+        public void NullString()
+        {
+            var strings = new StringValues((string)null);
+
+            NAssert.AreEqual(1, strings.Count);
+            NAssert.Null(strings[0]);
+            NAssert.Null((string)strings);
+            NAssert.IsEmpty(strings.ToString());
+            NAssert.AreEqual(new string[] { null }, (string[])strings);
+            NAssert.AreEqual(new string[] { null }, strings.ToArray());
+
+            var list = (IList<string>)strings;
+            NAssert.AreEqual(0, list.IndexOf(null));
+            NAssert.AreEqual(-1, list.IndexOf("foo"));
+            NAssert.True(list.Contains(null));
+            NAssert.False(list.Contains("foo"));
+            var array = new[] { "foo" };
+            list.CopyTo(array, 0);
+            NAssert.AreEqual(null, array[0]);
+
+            NAssert.True(StringValues.IsNullOrEmpty(strings));
+
+            using (var e = strings.GetEnumerator())
+            {
+                NAssert.True(e.MoveNext());
+                NAssert.Null(e.Current);
+                NAssert.False(e.MoveNext());
+            }
         }
 
         static class Assert

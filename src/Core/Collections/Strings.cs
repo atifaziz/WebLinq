@@ -24,6 +24,8 @@ namespace WebLinq.Collections
     // - Renamed from StringValues to Strings.
     // - Marked partial.
     // - Re-styled to use project conventions.
+    // - Rendered single null string to be consistent with a single array of
+    //   null string.
 
     /// <summary>
     /// Represents zero/null, one, or many strings in an efficient way.
@@ -36,21 +38,22 @@ namespace WebLinq.Collections
         IEquatable<string>,
         IEquatable<string[]>
     {
-        static readonly string[] EmptyArray = new string[0];
-        public static readonly Strings Empty = new Strings(EmptyArray);
+        public static readonly Strings Empty = new Strings();
 
+        readonly bool _hasValue;
         readonly string _value;
         readonly string[] _values;
 
-        public Strings(string value)
-        {
-            _value = value;
-            _values = null;
-        }
+        public Strings(string value) :
+            this(true, value, null) {}
 
-        public Strings(string[] values)
+        public Strings(string[] values) :
+            this(false, null, values) {}
+
+        Strings(bool hasValue, string value, string[] values)
         {
-            _value = null;
+            _hasValue = hasValue;
+            _value = value;
             _values = values;
         }
 
@@ -66,7 +69,7 @@ namespace WebLinq.Collections
         public static implicit operator string[] (Strings value) =>
             value.GetArrayValue();
 
-        public int Count => _value != null ? 1 : (_values?.Length ?? 0);
+        public int Count => _hasValue ? 1 : (_values?.Length ?? 0);
 
         bool ICollection<string>.IsReadOnly => true;
 
@@ -78,8 +81,8 @@ namespace WebLinq.Collections
 
         public string this[int index]
             => _values != null ? _values[index]
-             : index == 0 && _value != null ? _value
-             : EmptyArray[0];
+             : index == 0 && _hasValue ? _value
+             : Array.Empty<string>()[0];
 
         public override string ToString() =>
             GetStringValue() ?? string.Empty;
@@ -98,10 +101,10 @@ namespace WebLinq.Collections
         }
 
         public string[] ToArray() =>
-            GetArrayValue() ?? EmptyArray;
+            GetArrayValue() ?? Array.Empty<string>();
 
         string[] GetArrayValue() =>
-            _value != null ? new[] { _value } : _values;
+            _hasValue ? new[] { _value } : _values;
 
         int IList<string>.IndexOf(string item) =>
             IndexOf(item);
@@ -120,7 +123,7 @@ namespace WebLinq.Collections
                 return -1;
             }
 
-            return _value != null
+            return _hasValue
                  ? string.Equals(_value, item, StringComparison.Ordinal) ? 0 : -1
                  : -1;
         }
@@ -139,7 +142,7 @@ namespace WebLinq.Collections
                 return;
             }
 
-            if (_value != null)
+            if (_hasValue)
             {
                 if (array == null)
                     throw new ArgumentNullException(nameof(array));
@@ -163,7 +166,7 @@ namespace WebLinq.Collections
         void ICollection<string>.Clear() => throw new NotSupportedException();
 
         public Enumerator GetEnumerator() =>
-            new Enumerator(_values, _value);
+            new Enumerator(_values, _value, Count);
 
         IEnumerator<string> IEnumerable<string>.GetEnumerator() =>
             GetEnumerator();
@@ -171,18 +174,8 @@ namespace WebLinq.Collections
         IEnumerator IEnumerable.GetEnumerator() =>
             GetEnumerator();
 
-        public static bool IsNullOrEmpty(Strings value)
-        {
-            if (value._values == null)
-                return string.IsNullOrEmpty(value._value);
-
-            switch (value._values.Length)
-            {
-                case 0: return true;
-                case 1: return string.IsNullOrEmpty(value._values[0]);
-                default: return false;
-            }
-        }
+        public static bool IsNullOrEmpty(Strings value) =>
+            value.Count == 0 || string.IsNullOrEmpty(value[0]);
 
         public static Strings Concat(Strings values1, Strings values2)
         {
@@ -203,9 +196,6 @@ namespace WebLinq.Collections
 
         public static Strings Concat(in Strings values, string value)
         {
-            if (value == null)
-                return values;
-
             var count = values.Count;
             if (count == 0)
                 return new Strings(value);
@@ -218,9 +208,6 @@ namespace WebLinq.Collections
 
         public static Strings Concat(string value, in Strings values)
         {
-            if (value == null)
-                return values;
-
             var count = values.Count;
             if (count == 0)
                 return new Strings(value);
@@ -339,11 +326,11 @@ namespace WebLinq.Collections
             string _current;
             int _index;
 
-            internal Enumerator(string[] values, string value)
+            internal Enumerator(string[] values, string value, int count)
             {
                _values = values;
                _current = value;
-               _index = 0;
+               _index = count == 0 ? -1 : 0;
             }
 
             public Enumerator(ref Strings values)
@@ -372,7 +359,7 @@ namespace WebLinq.Collections
                 }
 
                 _index = -1; // sentinel value
-                return _current != null;
+                return true;
             }
 
             public string Current => _current;
