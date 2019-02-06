@@ -496,43 +496,39 @@ namespace WebLinq.Tests
         {
             var strings = new Strings((string)null);
 
-            NAssert.AreEqual(1, strings.Count);
-            NAssert.Null(strings[0]);
-            NAssert.Null((string)strings);
-            NAssert.IsEmpty(strings.ToString());
-            NAssert.AreEqual(new string[] { null }, (string[])strings);
-            NAssert.AreEqual(new string[] { null }, strings.ToArray());
+            Assert.AreEqual(1, strings.Count);
+            Assert.Null(strings[0]);
+            Assert.Null((string)strings);
+            Assert.IsEmpty(strings.ToString());
+            Assert.AreEqual(new string[] { null }, (string[])strings);
+            Assert.AreEqual(new string[] { null }, strings.ToArray());
 
             var list = (IList<string>)strings;
-            NAssert.AreEqual(0, list.IndexOf(null));
-            NAssert.AreEqual(-1, list.IndexOf("foo"));
-            NAssert.True(list.Contains(null));
-            NAssert.False(list.Contains("foo"));
+            Assert.AreEqual(0, list.IndexOf(null));
+            Assert.AreEqual(-1, list.IndexOf("foo"));
+            Assert.True(list.Contains(null));
+            Assert.False(list.Contains("foo"));
             var array = new[] { "foo" };
             list.CopyTo(array, 0);
-            NAssert.AreEqual(null, array[0]);
+            Assert.AreEqual(null, array[0]);
 
-            NAssert.True(Strings.IsNullOrEmpty(strings));
+            Assert.True(Strings.IsNullOrEmpty(strings));
 
             using (var e = strings.GetEnumerator())
             {
-                NAssert.True(e.MoveNext());
-                NAssert.Null(e.Current);
-                NAssert.False(e.MoveNext());
+                Assert.True(e.MoveNext());
+                Assert.Null(e.Current);
+                Assert.False(e.MoveNext());
             }
         }
 
-        static class Assert
+        class Assert : NAssert
         {
-            public static void Null(object value) => NAssert.IsNull(value);
-            public static void True(bool condition) => NAssert.True(condition);
-            public static void False(bool condition) => NAssert.False(condition);
-            public static void Empty(IEnumerable collection) => NAssert.IsEmpty(collection);
-            public static void Equal<T>(T expected, T actual) => NAssert.That(actual, Is.EqualTo(expected));
-            public static void Equal(string[] expected, Strings actual) => NAssert.That(actual, Is.EqualTo(expected));
-            public static void Equal(string expected, string actual) => NAssert.AreEqual(actual, expected);
-            public static void Throws<T>(TestDelegate code) where T : Exception => NAssert.Throws<T>(code);
-            public static void Single<T>(IEnumerable<T> collection) => NAssert.That(collection.Count(), Is.EqualTo(1));
+            public static void Empty(IEnumerable collection) => IsEmpty(collection);
+            public static void Equal<T>(T expected, T actual) => That(actual, Is.EqualTo(expected));
+            public static void Equal(string[] expected, Strings actual) => That(actual, Is.EqualTo(expected));
+            public static void Equal(string expected, string actual) => AreEqual(actual, expected);
+            public static void Single<T>(IEnumerable<T> collection) => That(collection.Count(), Is.EqualTo(1));
         }
     }
 }
