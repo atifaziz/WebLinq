@@ -49,7 +49,7 @@ namespace WebLinq
             new HttpHeaderCollection(this, key, values);
 
         internal HttpHeaderCollection Set(HttpHeaders headers) =>
-            headers.Aggregate(this, (h, e) => h.Set(e.Key, new Strings(ImmutableArray.CreateRange(e.Value))));
+            headers.Aggregate(this, (h, e) => h.Set(e.Key, Strings.Sequence(e.Value)));
 
         public HttpHeaderCollection Remove(string key) =>
             RemoveCore(Empty, key, (hs, k, vs) => hs.Set(k, vs));

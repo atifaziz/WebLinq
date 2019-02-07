@@ -13,6 +13,11 @@ namespace WebLinq.Collections
     {
         public static Strings Array(params string[] values) =>
             new Strings(ImmutableArray.CreateRange(values));
+
+        public static Strings Sequence(IEnumerable<string> values)
+            => values is Strings strings
+             ? strings
+             : new Strings(ImmutableArray.CreateRange(values));
     }
 
     // Source:
