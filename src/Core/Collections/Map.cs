@@ -18,8 +18,6 @@ namespace WebLinq.Collections
 {
     using System.Collections.Generic;
 
-    public delegate IDictionary<TKey, TValue> MapMaker<TKey, TValue>(IDictionary<TKey, TValue> dictionary);
-
     public sealed class Map<TKey, TValue> : MapBase<TKey, TValue>
     {
         public static Map<TKey, TValue> Empty = new Map<TKey, TValue>(null);
