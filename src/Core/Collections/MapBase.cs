@@ -22,8 +22,8 @@ namespace WebLinq.Collections
     using System.Linq;
 
     // An immutable dictionary implementation that maintains a linked list
-    // of entires. Each node in the linked list contains a cached dictionary
-    // that is only built on first use, e.g. when a look is made or the
+    // of entries. Each node in the linked list contains a cached dictionary
+    // that is only built on first use, e.g. when a look-up is made or the
     // entries are iterated. The cache is built by walking the list nodes
     // from tail to head, with each node only being added if not already in
     // the dictionary. This way, newer nodes with the same key shadow older
