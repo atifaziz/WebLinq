@@ -365,13 +365,6 @@ namespace WebLinq.Collections
                _index = count == 0 ? -1 : 0;
             }
 
-            public Enumerator(ref Strings values)
-            {
-                _values = values._values;
-                _current = values._value;
-                _index = 0;
-            }
-
             public bool MoveNext()
             {
                 if (_index < 0)
