@@ -203,7 +203,7 @@ namespace WebLinq.Tests
         [Test]
         public void SetValues()
         {
-            var submission = SubmissionData.Set("vehicle", Strings.Values("Boat", "Van"));
+            var submission = SubmissionData.Set("vehicle", Strings.Array("Boat", "Van"));
 
             var (_, data) = Sample.Exercise(submission);
 

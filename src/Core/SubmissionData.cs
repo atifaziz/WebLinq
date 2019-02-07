@@ -144,7 +144,7 @@ namespace WebLinq
         /// </summary>
 
         public static ISubmissionData<Strings> GetValues(string name) =>
-            Create(data => Strings.Values(data.GetValues(name)));
+            Create(data => Strings.Array(data.GetValues(name)));
 
         /// <summary>
         /// Removes a field from submission.

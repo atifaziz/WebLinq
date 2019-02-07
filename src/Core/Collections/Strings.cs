@@ -11,7 +11,7 @@ namespace WebLinq.Collections
 
     partial struct Strings
     {
-        public static Strings Values(params string[] values) =>
+        public static Strings Array(params string[] values) =>
             new Strings(ImmutableArray.CreateRange(values));
     }
 
@@ -87,7 +87,7 @@ namespace WebLinq.Collections
         public string this[int index]
             => !_values.IsDefault ? _values[index]
              : index == 0 && _hasValue ? _value
-             : Array.Empty<string>()[0];
+             : System.Array.Empty<string>()[0];
 
         public override string ToString() =>
             GetStringValue() ?? string.Empty;
@@ -106,7 +106,7 @@ namespace WebLinq.Collections
         }
 
         public string[] ToArray() =>
-            GetArrayValue() ?? Array.Empty<string>();
+            GetArrayValue() ?? System.Array.Empty<string>();
 
         string[] GetArrayValue()
         {
@@ -114,7 +114,7 @@ namespace WebLinq.Collections
                 return new[] { _value };
 
             if (_values.IsDefault)
-                return Array.Empty<string>();
+                return System.Array.Empty<string>();
 
             var array = new string[Count];
             _values.CopyTo(array, 0);
