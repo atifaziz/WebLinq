@@ -123,7 +123,7 @@ namespace WebLinq
         /// Represents nothing.
         /// </summary>
 
-        public static ISubmissionData<Unit> None = Do(delegate { });
+        public static readonly ISubmissionData<Unit> None = Do(delegate { });
 
         /// <summary>
         /// Get the names of all the fields.
