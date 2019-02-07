@@ -20,6 +20,7 @@ namespace WebLinq
 
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Diagnostics;
     using System.Linq;
     using System.Net.Http.Headers;
@@ -28,7 +29,7 @@ namespace WebLinq
     #endregion
 
     [DebuggerDisplay("Count = {Count}")]
-    public sealed class HttpHeaderCollection : MapBase<string, IReadOnlyCollection<string>>
+    public sealed class HttpHeaderCollection : MapBase<string, Strings>
     {
         public static readonly HttpHeaderCollection Empty = new HttpHeaderCollection();
 
@@ -37,33 +38,25 @@ namespace WebLinq
         public HttpHeaderCollection() :
             base(StringComparer.OrdinalIgnoreCase) {}
 
-        HttpHeaderCollection(HttpHeaderCollection link, string key, IReadOnlyCollection<string> values) :
+        HttpHeaderCollection(HttpHeaderCollection link, string key, Strings values) :
             base(key, values, link.Comparer)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
-            if (values == null) throw new ArgumentNullException(nameof(values));
             _link = link;
         }
 
-        public HttpHeaderCollection Set(string key, string value) =>
-            Set(key, ReadOnlyCollection.Singleton(value));
-
-        public HttpHeaderCollection Set(string key, IEnumerable<string> values) =>
-            new HttpHeaderCollection(this, key, values as IReadOnlyCollection<string>
-                                                ?? Array.AsReadOnly(Value.ToArray()));
-
-        public HttpHeaderCollection Set(string key, IReadOnlyCollection<string> values) =>
+        public HttpHeaderCollection Set(string key, Strings values) =>
             new HttpHeaderCollection(this, key, values);
 
         internal HttpHeaderCollection Set(HttpHeaders headers) =>
-            headers.Aggregate(this, (h, e) => h.Set(e.Key, e.Value));
+            headers.Aggregate(this, (h, e) => h.Set(e.Key, new Strings(ImmutableArray.CreateRange(e.Value))));
 
         public HttpHeaderCollection Remove(string key) =>
             RemoveCore(Empty, key, (hs, k, vs) => hs.Set(k, vs));
 
         public override bool IsEmpty => _link == null;
 
-        protected override IEnumerable<KeyValuePair<string, IReadOnlyCollection<string>>> Nodes =>
+        protected override IEnumerable<KeyValuePair<string, Strings>> Nodes =>
             GetNodesCore(this, h => h._link);
     }
 }

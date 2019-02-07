@@ -247,7 +247,7 @@ namespace WebLinq
               {
                   var c = new StringContent(string.Empty) { Headers = { ContentType = null } };
                   foreach (var h in e.ContentHeaders)
-                      c.Headers.TryAddWithoutValidation(h.Key, h.Value);
+                      c.Headers.TryAddWithoutValidation(h.Key, h.Value.AsEnumerable());
                   var headers = c.Headers;
                   var actualMediaType = headers.ContentType?.MediaType;
                   if (actualMediaType == null)
