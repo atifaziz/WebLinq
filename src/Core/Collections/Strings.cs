@@ -402,4 +402,29 @@ namespace WebLinq.Collections
             public void Dispose() {}
         }
     }
+
+    partial struct Strings
+    {
+        public bool Any() => Count > 0;
+
+        public string First() =>
+            Count > 0 ? this[0] : throw new InvalidOperationException();
+
+        public string FirstOrDefault() =>
+            Count > 0 ? this[0] : null;
+
+        int? LastIndex => Count > 0 ? Count - 1 : (int?)null;
+
+        public string Last() =>
+            LastIndex is int i ? this[i] : throw new InvalidOperationException();
+
+        public string LastOrDefault() =>
+            LastIndex is int i ? this[i] : null;
+
+        public string Single() =>
+            Count == 1 ? this[0] : throw new InvalidOperationException();
+
+        public string SingleOrDefault() =>
+            Count == 1 ? this[0] : null;
+    }
 }
