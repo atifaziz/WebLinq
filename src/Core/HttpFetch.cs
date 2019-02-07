@@ -19,6 +19,8 @@ namespace WebLinq
     using System;
     using System.Diagnostics;
     using System.Net;
+    using System.Net.Http.Headers;
+    using System.Text;
 
     public static class HttpFetch
     {
@@ -48,11 +50,19 @@ namespace WebLinq
             Content = content;
         }
 
+        public HttpFetch<TContent> WithContent<TContent>(TContent content) =>
+            new HttpFetch<TContent>(Info, content);
+
         public bool IsSuccessStatusCode => Info.IsSuccessStatusCode;
         public bool IsSuccessStatusCodeInRange(int first, int last) => Info.IsSuccessStatusCodeInRange(first, last);
 
-        public HttpFetch<TContent> WithContent<TContent>(TContent content) =>
-            new HttpFetch<TContent>(Info, content);
+        public bool IsContentType(string type) => Info.IsContentType(type);
+        public string ContentMediaType         => Info.ContentMediaType;
+        public string ContentCharSet           => Info.ContentCharSet;
+        public Encoding ContentCharSetEncoding => Info.ContentCharSetEncoding;
+
+        public string ContentDispositionType     => Info.ContentDispositionType;
+        public string ContentDispositionFileName => Info.ContentDispositionFileName;
     }
 
     [DebuggerDisplay("Id = {Id}, StatusCode = {StatusCode} ({ReasonPhrase})")]
@@ -91,5 +101,39 @@ namespace WebLinq
 
         public bool IsSuccessStatusCode => IsSuccessStatusCodeInRange(200, 299);
         public bool IsSuccessStatusCodeInRange(int first, int last) => (int)StatusCode >= first && (int)StatusCode <= last;
+
+        (bool, MediaTypeHeaderValue Value) _contentType;
+
+        MediaTypeHeaderValue ContentType =>
+            this.LazyGet(ref _contentType,
+                         it => it.ContentHeaders.TryGetValue("Content-Type", out var value)
+                         ? MediaTypeHeaderValue.Parse(value)
+                         : null);
+
+        public bool IsContentType(string type) =>
+            string.Equals(ContentType?.MediaType, type, StringComparison.OrdinalIgnoreCase);
+
+        public string ContentMediaType => ContentType?.MediaType;
+        public string ContentCharSet => ContentType?.CharSet;
+
+        public Encoding ContentCharSetEncoding
+            => ContentType?.CharSet is string s
+             ? Encoding.GetEncoding(s)
+             : null;
+
+        (bool, ContentDispositionHeaderValue Value) _contentDisposition;
+
+        ContentDispositionHeaderValue ContentDisposition =>
+            this.LazyGet(ref _contentDisposition,
+                         it => it.ContentHeaders.TryGetValue("Content-Disposition", out var value)
+                             ? ContentDispositionHeaderValue.Parse(value)
+                             : null);
+
+        public string ContentDispositionType => ContentDisposition?.DispositionType;
+
+        public string ContentDispositionFileName
+            => ContentDisposition is ContentDispositionHeaderValue h
+             ? h.FileNameStar ?? h.FileName
+             : null;
     }
 }
