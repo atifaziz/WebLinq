@@ -11,7 +11,7 @@ namespace WebLinq.Collections
 
     partial struct Strings
     {
-        public static Strings Array(params string[] values) =>
+        public static Strings Array(params IReadOnlyCollection<string>[] values) =>
             new Strings(ImmutableArray.CreateRange(values));
 
         public static Strings Sequence(IEnumerable<string> values)

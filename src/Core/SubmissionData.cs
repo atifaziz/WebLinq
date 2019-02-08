@@ -18,13 +18,23 @@ namespace WebLinq
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.Specialized;
     using System.Linq;
     using System.Reactive;
+    using Collections;
+
+    public interface INameValueCollection
+    {
+        IReadOnlyCollection<string> AllKeys { get; }
+        Strings GetValues(string name);
+        void Remove(string name);
+        void Add(string name, string value);
+        string this[string name] { get; set; }
+        void Clear();
+    }
 
     public interface ISubmissionData<out T>
     {
-        T Run(NameValueCollection data);
+        T Run(INameValueCollection data);
     }
 
     public interface ISubmissionDataAction<out T> : ISubmissionData<Unit>
@@ -45,7 +55,7 @@ namespace WebLinq
         public SubmissionDataAction(ISubmissionData<T> submission) =>
             _submission = submission ?? throw new ArgumentNullException(nameof(submission));
 
-        public Unit Run(NameValueCollection data)
+        public Unit Run(INameValueCollection data)
         {
             _submission.Run(data);
             return Unit.Default;
@@ -56,17 +66,17 @@ namespace WebLinq
 
     public static partial class SubmissionData
     {
-        public static ISubmissionData<T> Create<T>(Func<NameValueCollection, T> runner) =>
+        public static ISubmissionData<T> Create<T>(Func<INameValueCollection, T> runner) =>
             new DelegatingSubmission<T>(runner);
 
         sealed class DelegatingSubmission<T> : ISubmissionData<T>
         {
-            readonly Func<NameValueCollection, T> _runner;
+            readonly Func<INameValueCollection, T> _runner;
 
-            public DelegatingSubmission(Func<NameValueCollection, T> runner) =>
+            public DelegatingSubmission(Func<INameValueCollection, T> runner) =>
                 _runner = runner ?? throw new ArgumentNullException(nameof(runner));
 
-            public T Run(NameValueCollection data) =>
+            public T Run(INameValueCollection data) =>
                 _runner(data ?? throw new ArgumentNullException(nameof(data)));
         }
 
@@ -97,10 +107,10 @@ namespace WebLinq
             Func<T, ISubmissionData<TResult>> f) =>
             Create(data => source.Select(f).Select(e => e.Run(data)).ToList());
 
-        internal static ISubmissionData<T> Do<T>(this ISubmissionData<T> submission, Action<NameValueCollection> action) =>
+        internal static ISubmissionData<T> Do<T>(this ISubmissionData<T> submission, Action<INameValueCollection> action) =>
             submission.Bind(x => Create(env => { action(env); return x; }));
 
-        internal static ISubmissionData<Unit> Do(Action<NameValueCollection> action) =>
+        internal static ISubmissionData<Unit> Do(Action<INameValueCollection> action) =>
             Create(env => { action(env); return Unit.Default; });
     }
 }
