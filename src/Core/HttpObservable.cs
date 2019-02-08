@@ -28,9 +28,9 @@ namespace WebLinq
         HttpOptions Options { get; }
         IHttpObservable WithOptions(HttpOptions options);
         Func<HttpConfig, HttpConfig> Configurer { get; }
-        Func<HttpFetchInfo, bool> Predicate { get; }
+        Func<HttpFetchInfo, bool> FilterPredicate { get; }
         IHttpObservable WithConfigurer(Func<HttpConfig, HttpConfig> modifier);
-        IHttpObservable WithPredicate(Func<HttpFetchInfo, bool> predicate);
+        IHttpObservable WithFilterPredicate(Func<HttpFetchInfo, bool> predicate);
         IObservable<HttpFetch<T>> ReadContent<T>(Func<HttpFetch<HttpContent>, Task<T>> reader);
     }
 
@@ -45,7 +45,7 @@ namespace WebLinq
 
         public static IHttpObservable SkipErroneousFetch(this IHttpObservable query) =>
             query.ReturnErroneousFetch()
-                 .Where(f => f.IsSuccessStatusCode);
+                 .Filter(f => f.IsSuccessStatusCode);
 
         public static IHttpObservable SetHeader(this IHttpObservable query, string name, string value) =>
             query.WithConfigurer(c => query.Configurer(c).WithHeader(name, value));
@@ -58,10 +58,10 @@ namespace WebLinq
             });
 
         public static IHttpObservable Do(this IHttpObservable query, Action<HttpFetchInfo> action) =>
-            query.Where(f => { action(f); return true; });
+            query.Filter(f => { action(f); return true; });
 
-        public static IHttpObservable Where(this IHttpObservable query, Func<HttpFetchInfo, bool> predicate) =>
-            query.WithPredicate(f => query.Predicate(f) && predicate(f));
+        public static IHttpObservable Filter(this IHttpObservable query, Func<HttpFetchInfo, bool> predicate) =>
+            query.WithFilterPredicate(f => query.FilterPredicate(f) && predicate(f));
 
         internal static IHttpObservable Return(Func<IHttpObservable, IObservable<HttpFetch<HttpContent>>> query) =>
             Return(HttpOptions.Default, _ => _, query, _ => true);
@@ -78,7 +78,7 @@ namespace WebLinq
                 from q in query
                 from e in q.WithConfigurer(ho.Configurer)
                            .WithOptions(ho.Options)
-                           .WithPredicate(ho.Predicate)
+                           .WithFilterPredicate(ho.FilterPredicate)
                            .ReadContent(f => Task.FromResult(f.Content))
                 select e);
 
@@ -98,34 +98,34 @@ namespace WebLinq
                 _query = query;
                 Options = options;
                 Configurer = configurer;
-                Predicate = predicate;
+                FilterPredicate = predicate;
             }
 
             public IDisposable Subscribe(IObserver<HttpFetch<Unit>> observer) =>
                 _query(this)
                     .Do(f => f.Content.Dispose())
                     .Select(f => f.WithContent(new Unit()))
-                    .Where(f => Predicate(f.Info))
+                    .Where(f => FilterPredicate(f.Info))
                     .Subscribe(observer);
 
             public HttpOptions Options { get; }
 
             public IHttpObservable WithOptions(HttpOptions options) =>
-                new Impl(_query, options, Configurer, Predicate);
+                new Impl(_query, options, Configurer, FilterPredicate);
 
             public Func<HttpConfig, HttpConfig> Configurer { get; }
 
             public IHttpObservable WithConfigurer(Func<HttpConfig, HttpConfig> configurer) =>
-                new Impl(_query, Options, configurer, Predicate);
+                new Impl(_query, Options, configurer, FilterPredicate);
 
-            public Func<HttpFetchInfo, bool> Predicate { get; }
+            public Func<HttpFetchInfo, bool> FilterPredicate { get; }
 
-            public IHttpObservable WithPredicate(Func<HttpFetchInfo, bool> predicate) =>
+            public IHttpObservable WithFilterPredicate(Func<HttpFetchInfo, bool> predicate) =>
                 new Impl(_query, Options, Configurer, predicate);
 
             public IObservable<HttpFetch<T>> ReadContent<T>(Func<HttpFetch<HttpContent>, Task<T>> reader) =>
                 from f in _query(this)
-                where Predicate(f.Info)
+                where FilterPredicate(f.Info)
                 from c in reader(f)
                 select f.WithContent(c);
         }

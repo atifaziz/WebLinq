@@ -9,7 +9,6 @@ namespace WebLinq.Tests
     using System.Net;
     using System.Reactive.Threading.Tasks;
     using NUnit.Framework;
-    using WebLinq;
     using static WebLinq.Modules.HttpModule;
 
     public class HttpQueryTests
@@ -842,7 +841,7 @@ namespace WebLinq.Tests
         }
 
         [Test]
-        public async Task WhereTrue()
+        public async Task FilterTrue()
         {
             var tt = new TestTransport().EnqueueText(string.Empty, HttpStatusCode.BadRequest);
 
@@ -851,14 +850,14 @@ namespace WebLinq.Tests
 
             await tt.Http.Get(new Uri("https://www.example.com/"))
                          .ReturnErroneousFetch()
-                         .Where(f =>
+                         .Filter(f =>
                          {
                              Assert.That(f, Is.InstanceOf<HttpFetchInfo>());
                              Assert.That(second, Is.Null);
                              first = f;
                              return f.StatusCode == HttpStatusCode.BadRequest;
                          })
-                         .Where(f =>
+                         .Filter(f =>
                          {
                              Assert.That(f, Is.InstanceOf<HttpFetchInfo>());
                              Assert.That(first, Is.Not.Null);
@@ -872,14 +871,14 @@ namespace WebLinq.Tests
         }
 
         [Test]
-        public async Task WhereFalse()
+        public async Task FilterFalse()
         {
             var tt = new TestTransport().EnqueueText(string.Empty);
 
             var result = await
                 tt.Http.Get(new Uri("https://www.example.com/"))
-                       .Where(f => f.StatusCode == HttpStatusCode.BadRequest)
-                       .Where(f => { Assert.Fail(); return true; })
+                       .Filter(f => f.StatusCode == HttpStatusCode.BadRequest)
+                       .Filter(f => { Assert.Fail(); return true; })
                        .Select(_ => { Assert.Fail(); return 42; })
                        .SingleOrDefaultAsync();
 
