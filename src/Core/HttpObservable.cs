@@ -50,6 +50,9 @@ namespace WebLinq
         public static IHttpObservable SetHeader(this IHttpObservable query, string name, string value) =>
             query.WithConfigurer(c => query.Configurer(c).WithHeader(name, value));
 
+        public static IHttpObservable SetUserAgent(this IHttpObservable query, string value) =>
+            query.WithConfigurer(c => query.Configurer(c).WithUserAgent(value));
+
         public static IObservable<HttpFetch<HttpContent>> Buffer(this IHttpObservable query) =>
             query.ReadContent(async f =>
             {
