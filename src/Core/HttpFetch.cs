@@ -131,9 +131,11 @@ namespace WebLinq
 
         public string ContentDispositionType => ContentDisposition?.DispositionType;
 
+        static readonly char[] Quote = { '"' };
+
         public string ContentDispositionFileName
             => ContentDisposition is ContentDispositionHeaderValue h
-             ? h.FileNameStar ?? h.FileName
+             ? (h.FileNameStar ?? h.FileName)?.Trim(Quote)
              : null;
     }
 }
