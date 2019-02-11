@@ -147,6 +147,8 @@ namespace WebLinq
             var accept = request.Headers.Accept.ToString();
             if (accept.Length > 0)
                 hwreq.Accept = accept;
+            else if (config.Headers.TryGetValue("Accept", out var configAccept))
+                hwreq.Accept = configAccept;
 
             var content = request.Content;
             foreach (var e in from e in request.Headers.Concat(content?.Headers ?? Enumerable.Empty<KeyValuePair<string, IEnumerable<string>>>())
