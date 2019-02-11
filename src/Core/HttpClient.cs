@@ -139,9 +139,10 @@ namespace WebLinq
             var userAgent = request.Headers.UserAgent.ToString();
             hwreq.UserAgent = userAgent.Length > 0 ? userAgent : config.UserAgent;
 
-            var referrer = request.Headers.Referrer;
-            if (referrer != null)
-                hwreq.Referer = referrer.ToString();
+            if (request.Headers.Referrer is Uri referrerUrl)
+                hwreq.Referer = referrerUrl.AbsoluteUri;
+            else if (config.Headers.TryGetValue("Referer", out var referrer))
+                hwreq.Referer = referrer.FirstOrDefault();
 
             var accept = request.Headers.Accept.ToString();
             if (accept.Length > 0)
