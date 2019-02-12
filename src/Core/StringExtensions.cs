@@ -20,6 +20,27 @@ namespace WebLinq
 
     static class StringExtensions
     {
+        public static (string, string) Split2(this string str, char delimiter)
+        {
+            if (str == null) throw new ArgumentNullException(nameof(str));
+            var i = str.IndexOf(delimiter);
+            return i >= 0
+                 ? (str.Substring(0, i), str.Substring(i + 1))
+                 : (str, null);
+        }
+
+        public static (string, string) Split2(this string str, string delimiter) =>
+            Split2(str, delimiter, StringComparison.Ordinal);
+
+        public static (string, string) Split2(this string str, string delimiter, StringComparison comparison)
+        {
+            if (str == null) throw new ArgumentNullException(nameof(str));
+            var i = str.IndexOf(delimiter, comparison);
+            return i >= 0
+                 ? (str.Substring(0, i), str.Substring(i + delimiter.Length))
+                 : (str, null);
+        }
+
         public static bool HasWhiteSpace(this string str) =>
             HasWhiteSpace(str, 0, str.Length);
 
