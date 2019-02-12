@@ -18,6 +18,7 @@ namespace WebLinq
 {
     using System;
     using System.Diagnostics;
+    using System.Globalization;
     using System.Net;
     using System.Net.Http.Headers;
     using System.Text;
@@ -63,6 +64,8 @@ namespace WebLinq
 
         public string ContentDispositionType     => Info.ContentDispositionType;
         public string ContentDispositionFileName => Info.ContentDispositionFileName;
+
+        public long? ContentLength => Info.ContentLength;
     }
 
     [DebuggerDisplay("Id = {Id}, StatusCode = {StatusCode} ({ReasonPhrase})")]
@@ -137,5 +140,13 @@ namespace WebLinq
             => ContentDisposition is ContentDispositionHeaderValue h
              ? (h.FileNameStar ?? h.FileName)?.Trim(Quote)
              : null;
+
+        (bool, long? Value) _contentLength;
+
+        public long? ContentLength =>
+            this.LazyGet(ref _contentLength,
+                         it => it.ContentHeaders.TryGetValue("Content-Length", out var str)
+                             ? long.Parse(str.Single(), NumberStyles.None, CultureInfo.InvariantCulture)
+                             : (long?) null);
     }
 }
