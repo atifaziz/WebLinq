@@ -21,6 +21,7 @@ namespace WebLinq.Sys
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
@@ -31,6 +32,61 @@ namespace WebLinq.Sys
     using Mannex.Diagnostics;
 
     #endregion
+
+    public sealed class SpawnOptions
+    {
+        public static readonly SpawnOptions Default = new SpawnOptions(
+            ProgramArguments.Var(),
+            workingDirectory: null,
+            environment: ImmutableDictionary<string, string>.Empty);
+
+        public ProgramArguments Arguments { get; private set; }
+        public string WorkingDirectory { get; private set; }
+        public IImmutableDictionary<string, string> Environment { get; private set; }
+
+        SpawnOptions(ProgramArguments arguments, string workingDirectory,
+                     IImmutableDictionary<string, string> environment)
+        {
+            Arguments = arguments;
+            WorkingDirectory = workingDirectory;
+            Environment = environment;
+        }
+
+        SpawnOptions(SpawnOptions options) :
+            this(options.Arguments, options.WorkingDirectory,
+                 options.Environment) {}
+
+        public SpawnOptions WithArguments(ProgramArguments value)
+        {
+            if (value == null) throw new ArgumentNullException(nameof(value));
+            return Arguments == value ? this : new SpawnOptions(this) {Arguments = value};
+        }
+
+        public SpawnOptions WithWorkingDirectory(string value) =>
+            WorkingDirectory == value ? this : new SpawnOptions(this) { WorkingDirectory = value };
+
+        public SpawnOptions WithEnvironment(IImmutableDictionary<string, string> value)
+        {
+            if (value == null) throw new ArgumentNullException(nameof(value));
+            return Environment == value ? this : new SpawnOptions(this) {Environment = value};
+        }
+    }
+
+    public sealed class ObservableSpawn<T> : IObservable<T>
+    {
+        public ObservableSpawn(SpawnOptions options) =>
+            Options = options ?? throw new ArgumentNullException(nameof(options));
+
+        public SpawnOptions Options { get; }
+
+        public ObservableSpawn<T> WithOptions(SpawnOptions value) =>
+            Options == value ? this : new ObservableSpawn<T>(value);
+
+        public IDisposable Subscribe(IObserver<T> observer)
+        {
+            throw new NotImplementedException();
+        }
+    }
 
     public interface ISpawner
     {
