@@ -291,7 +291,7 @@ namespace WebLinq.Samples
 
         static IObservable<object> AutoRedirection() =>
 
-            from e in Http.Get(FormatUri($@"http://httpbin.org/redirect-to
+            from e in Http.Get(HttpUrl.From($@"http://httpbin.org/redirect-to
                                                 ? url = {"http://example.com/"}"))
             select e.RequestUrl;
 
