@@ -1,7 +1,6 @@
 namespace WebLinq.Tests
 {
     using System;
-    using System.Linq;
     using NUnit.Framework;
 
     [TestFixture]
@@ -144,6 +143,33 @@ namespace WebLinq.Tests
                 Assert.False(url.Equals((object) null));
                 Assert.False(url.Equals((Uri) null));
             }
+        }
+
+        [Test]
+        public void Format()
+        {
+            var date = new DateTime(2007, 6, 29);
+            var url = HttpUrl.Format($@"
+                http://www.example.com/
+                    {date:yyyy}/
+                    {date:MM}/
+                    {date:dd}/
+                    {{123_456_789}}/
+                    {123_456_789}/
+                    info.html
+                    ?h={"foo bar"}
+                    &date={date:MMM dd, yyyy}");
+
+            Assert.That(url.ToString(),
+                Is.EqualTo("http://www.example.com/"
+                         + "2007/"
+                         + "06/"
+                         + "29/"
+                         + "%7B123_456_789%7D/"
+                         + "123456789/"
+                         + "info.html"
+                         + "?h=foo%20bar"
+                         + "&date=Jun%2029%2C%202007"));
         }
     }
 }

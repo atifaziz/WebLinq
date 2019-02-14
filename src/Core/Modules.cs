@@ -38,21 +38,6 @@ namespace WebLinq.Modules
 
     #endregion
 
-    public static class UriModule
-    {
-        public static Uri FormatUri(FormattableString formattableString)
-            => formattableString == null
-             ? throw new ArgumentNullException(nameof(formattableString))
-             : new Uri((FormatStringParser.Parse(formattableString.Format,
-                                                 (s, i, len) => s.HasWhiteSpace(i, len),
-                                                 delegate { return false; })
-                                          .Any(hws => hws)
-                        ? FormattableStringFactory.Create(
-                              string.Join(string.Empty, FormatStringParser.Parse(formattableString.Format, (s, i, len) => Regex.Replace(s.Substring(i, len), @"\s+", string.Empty), (s, i, len) => s.Substring(i, len))),
-                              formattableString.GetArguments())
-                        : formattableString).ToString(UriFormatProvider.InvariantCulture));
-    }
-
     public static class HttpModule
     {
         public static IHttpClient Http => HttpClient.Default;

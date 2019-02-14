@@ -24,7 +24,6 @@ namespace WebLinq.Samples
     using static Modules.HttpModule;
     using static Modules.SpawnModule;
     using static Modules.XmlModule;
-    using static Modules.UriModule;
 
     #endregion
 
@@ -291,8 +290,8 @@ namespace WebLinq.Samples
 
         static IObservable<object> AutoRedirection() =>
 
-            from e in Http.Get(HttpUrl.From($@"http://httpbin.org/redirect-to
-                                                ? url = {"http://example.com/"}"))
+            from e in Http.Get(HttpUrl.Format($@"http://httpbin.org/redirect-to
+                                                 ? url = {"http://example.com/"}"))
             select e.RequestUrl;
 
         static IObservable<object> FormPost() =>

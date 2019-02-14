@@ -17,9 +17,6 @@
 namespace WebLinq
 {
     using System;
-    using System.Linq;
-    using System.Runtime.CompilerServices;
-    using System.Text.RegularExpressions;
     using Collections;
 
     public enum HttpProtocol { Http, Https }
@@ -32,6 +29,9 @@ namespace WebLinq
     {
         readonly Uri _uri;
 
+        public HttpUrl(string uri) :
+            this(Parse(uri)) {}
+
         public HttpUrl(Uri uri)
         {
             _uri = uri is Uri some && !IsValid(some)
@@ -39,9 +39,6 @@ namespace WebLinq
                  : uri ?? throw new ArgumentNullException(nameof(uri));
             _pathSegments = default;
         }
-
-        public HttpUrl(string uri) =>
-            (_uri, _pathSegments) = (Parse(uri), default);
 
         public static HttpUrl From(HttpProtocol protocol, string host,
                                    string path = null, string query = null,
@@ -67,17 +64,10 @@ namespace WebLinq
             return new HttpUrl(builder.Uri);
         }
 
-        public static HttpUrl From(FormattableString formattableString)
+        public static HttpUrl Format(FormattableString formattableString)
             => formattableString == null
              ? throw new ArgumentNullException(nameof(formattableString))
-             : new HttpUrl((FormatStringParser.Parse(formattableString.Format,
-                                                    (s, i, len) => s.HasWhiteSpace(i, len),
-                                                    delegate { return false; })
-                                             .Any(hws => hws)
-                           ? FormattableStringFactory.Create(
-                                 string.Join(string.Empty, FormatStringParser.Parse(formattableString.Format, (s, i, len) => Regex.Replace(s.Substring(i, len), @"\s+", string.Empty), (s, i, len) => s.Substring(i, len))),
-                                 formattableString.GetArguments())
-                           : formattableString).ToString(UriFormatProvider.InvariantCulture));
+             : new HttpUrl(UriFormatter.Format(formattableString));
 
         public static bool IsValid(Uri uri)
         {
