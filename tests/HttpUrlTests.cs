@@ -171,5 +171,43 @@ namespace WebLinq.Tests
                          + "?h=foo%20bar"
                          + "&date=Jun%2029%2C%202007"));
         }
+
+        [TestCase("http://localhost/foo/bar?one=1&two=2&three=3", "?1=one&2=two&3=three", "http://localhost/foo/bar?1=one&2=two&3=three")]
+        [TestCase("http://localhost/foo/bar"                    , "?one=1&two=2&three=3", "http://localhost/foo/bar?one=1&two=2&three=3")]
+        [TestCase("http://localhost/foo/bar?"                   , "?one=1&two=2&three=3", "http://localhost/foo/bar?one=1&two=2&three=3")]
+        [TestCase("http://localhost/foo/bar?one=1&two=2&three=3", "?"                   , "http://localhost/foo/bar?")]
+        [TestCase("http://localhost/foo/bar"                    , null                  , "http://localhost/foo/bar")]
+        [TestCase("http://localhost/foo/bar?"                   , null                  , "http://localhost/foo/bar")]
+        [TestCase("http://localhost/foo/bar?one=1&two=2&three=3", null                  , "http://localhost/foo/bar")]
+        public void WithQuery(string input, string query, string expected)
+        {
+            Assert.That(new HttpUrl(input).WithQuery(query), Is.EqualTo(new HttpUrl(expected)));
+            Assert.That(new HttpUrl(input).WithQuery(new QueryString(query)), Is.EqualTo(new HttpUrl(expected)));
+        }
+
+        [TestCase("http://localhost/foo/bar?one=1"      , "?two=2&three=3"      , "http://localhost/foo/bar?one=1&two=2&three=3")]
+        [TestCase("http://localhost/foo/bar"            , "?one=1&two=2&three=3", "http://localhost/foo/bar?one=1&two=2&three=3")]
+        [TestCase("http://localhost/foo/bar?"           , "?one=1&two=2&three=3", "http://localhost/foo/bar?one=1&two=2&three=3")]
+        [TestCase("http://localhost/foo/bar?one=1&two=2", "?"                   , "http://localhost/foo/bar?one=1&two=2")]
+        [TestCase("http://localhost/foo/bar"            , "?"                   , "http://localhost/foo/bar?")]
+        [TestCase("http://localhost/foo/bar?"           , "?"                   , "http://localhost/foo/bar?")]
+        [TestCase("http://localhost/foo/bar"            , null                  , "http://localhost/foo/bar")]
+        [TestCase("http://localhost/foo/bar?"           , null                  , "http://localhost/foo/bar?")]
+        [TestCase("http://localhost/foo/bar?one=1&two=2", null                  , "http://localhost/foo/bar?one=1&two=2")]
+        public void AppendQuery(string input, string query, string expected)
+        {
+            Assert.That(new HttpUrl(input).AppendQuery(query), Is.EqualTo(new HttpUrl(expected)));
+            Assert.That(new HttpUrl(input).AppendQuery(new QueryString(query)), Is.EqualTo(new HttpUrl(expected)));
+        }
+
+        [TestCase("http://localhost/foo/bar"            )]
+        [TestCase("http://localhost/foo/bar?"           )]
+        [TestCase("http://localhost/foo/bar?one=1&two=2")]
+        public void ClearQuery(string input)
+        {
+            var url = new HttpUrl(input);
+            var expected = HttpUrl.From(url.Protocol, url.Host, url.Port, url.Path, null, url.Fragment);
+            Assert.That(url.ClearQuery(), Is.EqualTo(expected));
+        }
     }
 }

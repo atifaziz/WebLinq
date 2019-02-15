@@ -118,6 +118,24 @@ namespace WebLinq
         public QueryString Query      => _uri?.Query is string s ? new QueryString(s) : default;
         public string      Fragment   => _uri?.Fragment ?? string.Empty;
 
+        public HttpUrl WithQuery(string value) =>
+            value == null ? ClearQuery() : WithQuery(new QueryString(value));
+
+        public HttpUrl WithQuery(QueryString value)
+            => _uri == null ? throw new InvalidOperationException()
+             : value == Query ? this
+             : new HttpUrl(new UriBuilder(_uri) { Query = value.Value }.Uri);
+
+        public HttpUrl AppendQuery(string value) =>
+            value == null ? this : AppendQuery(new QueryString(value));
+
+        public HttpUrl AppendQuery(QueryString value) =>
+            WithQuery(Query + value);
+
+        public HttpUrl ClearQuery()
+            => _uri == null ? throw new InvalidOperationException()
+             : new HttpUrl(new UriBuilder(_uri) { Query = null }.Uri);
+
         public HttpUrl WithUserInfo(string userInfo)
         {
             if (_uri == null)
@@ -200,5 +218,8 @@ namespace WebLinq
         public static bool operator !=(Uri left, HttpUrl right) => !right.Equals(left);
 
         public static implicit operator Uri(HttpUrl url) => url._uri;
+
+        public static HttpUrl operator +(HttpUrl url, QueryString query) =>
+            url.AppendQuery(query);
     }
 }

@@ -1,14 +1,15 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using NUnit.Framework;
-using StringValues = WebLinq.Collections.Strings;
-
 namespace WebLinq.Tests
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using NUnit.Framework;
+    using Collections;
+
+    [TestFixture]
     public class QueryStringTests
     {
         [Test]
@@ -80,15 +81,15 @@ namespace WebLinq.Tests
         }
 
         [Test]
-        public void CreateFromListStringValues_Success()
+        public void CreateFromListStrings_Success()
         {
             var query = QueryString.Create(new[]
             {
-                new KeyValuePair<string, StringValues>("key1", new StringValues("value1")),
-                new KeyValuePair<string, StringValues>("key2", new StringValues("value2")),
-                new KeyValuePair<string, StringValues>("key3", new StringValues("value3")),
-                new KeyValuePair<string, StringValues>("key4", new StringValues()),
-                new KeyValuePair<string, StringValues>("key5", new StringValues("")),
+                new KeyValuePair<string, Strings>("key1", new Strings("value1")),
+                new KeyValuePair<string, Strings>("key2", new Strings("value2")),
+                new KeyValuePair<string, Strings>("key3", new Strings("value3")),
+                new KeyValuePair<string, Strings>("key4", new Strings()),
+                new KeyValuePair<string, Strings>("key5", new Strings("")),
             });
             Assert.AreEqual("?key1=value1&key2=value2&key3=value3&key4=&key5=", query.Value);
         }

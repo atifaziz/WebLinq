@@ -1,25 +1,25 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Text.Encodings.Web;
-using StringValues = WebLinq.Collections.Strings;
-
 // Source:
 // https://github.com/aspnet/AspNetCore/blob/574be0d22c1678ed5f6db990aec78b4db587b267/src/Http/Http.Abstractions/src/QueryString.cs
 //
 // This is a slightly modified version from the snapshot above with the
 // following changes:
 //
-// - Moved from namespace Microsoft.Extensions.Primitives to one belonging
-//   to this project.
+// - Moved from namespace Microsoft.AspNetCore.Http to one belonging to this
+//   project.
 // - Renamed from StringValues to Strings.
 // - Re-styled to use project conventions.
 
 namespace WebLinq
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Text;
+    using System.Text.Encodings.Web;
+    using Collections;
+
     /// <summary>
     /// Provides correct handling for QueryString value when needed to
     /// reconstruct a request or redirect URI string
@@ -154,7 +154,7 @@ namespace WebLinq
         /// </summary>
         /// <returns>The resulting <see cref="QueryString"/></returns>
 
-        public static QueryString Create(IEnumerable<KeyValuePair<string, StringValues>> parameters)
+        public static QueryString Create(IEnumerable<KeyValuePair<string, Strings>> parameters)
         {
             var builder = new StringBuilder();
             var first = true;
@@ -162,7 +162,7 @@ namespace WebLinq
             foreach (var pair in parameters)
             {
                 // If nothing in this pair.Values, append null value and continue
-                if (StringValues.IsNullOrEmpty(pair.Value))
+                if (Strings.IsNullOrEmpty(pair.Value))
                 {
                     AppendKeyValuePair(builder, pair.Key, null, first);
                     first = false;
@@ -180,7 +180,7 @@ namespace WebLinq
         }
 
         public QueryString Add(QueryString other)
-            => !HasValue || Value.Equals("?", StringComparison.Ordinal) ? other
+            => (!HasValue || Value.Equals("?", StringComparison.Ordinal)) && other.HasValue ? other
              : !other.HasValue || other.Value.Equals("?", StringComparison.Ordinal) ? this
                // ?name1=value1 Add ?name2=value2 returns ?name1=value1&name2=value2
              : new QueryString(_value + "&" + other.Value.Substring(1));
