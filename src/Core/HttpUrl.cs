@@ -97,18 +97,26 @@ namespace WebLinq
         }
 
         public HttpProtocol Protocol
-            => _uri?.Scheme is string scheme && scheme == Uri.UriSchemeHttps
+            => _uri?.Scheme is string scheme
+               && scheme == Uri.UriSchemeHttps
              ? HttpProtocol.Https
              : HttpProtocol.Http;
 
-        public string UserInfo  => _uri?.UserInfo;
-        public string User      => UserInfo is string ui ? ui.Split2(':').Item1 : default;
-        public string Password  => UserInfo is string ui ? ui.Split2(':').Item2 ?? string.Empty : default;
-        public string Host      => _uri?.Host;
-        public int    Port      => _uri?.Port ?? 0;
-        public string Path      => _uri?.AbsolutePath;
-        public string Query     => _uri?.Query;
-        public string Fragment  => _uri?.Fragment;
+        public string UriScheme
+            => _uri == null ? string.Empty
+             : Protocol == HttpProtocol.Https ? Uri.UriSchemeHttps
+             : Uri.UriSchemeHttp;
+
+        public string UserInfo => _uri?.UserInfo ?? string.Empty;
+        public string User     => _uri?.UserInfo.Split2(':').Item1 ?? string.Empty;
+        public string Password => _uri?.UserInfo.Split2(':').Item2 ?? string.Empty;
+
+        public string Host => _uri?.Host ?? string.Empty;
+        public int    Port => _uri?.Port ?? 0;
+
+        public string      Path       => _uri?.AbsolutePath ?? string.Empty;
+        public QueryString Query      => _uri?.Query is string s ? new QueryString(s) : default;
+        public string      Fragment   => _uri?.Fragment ?? string.Empty;
 
         public HttpUrl WithUserInfo(string userInfo)
         {
@@ -131,7 +139,7 @@ namespace WebLinq
             // While UriBuilder separates user-information components such as
             // UserName and Password, Uri doesn't. There are also
             // implementation inconsistencies like Uri being happy with
-            // "http://:secret@example.com/" but UriBuilder think it's invalid.
+            // "http://:secret@example.com/" but UriBuilder thinks it's invalid.
             // So use UriBuilder to blow away the user-information component
             // completely and then inject it into the Uri manually.
             //

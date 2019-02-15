@@ -6,32 +6,31 @@ namespace WebLinq.Tests
     [TestFixture]
     public class HttpUrlTests
     {
-        [Test]
-        public void Default()
+        public class Default
         {
-            var url = default(HttpUrl);
+            [Test] public void String          () => Assert.That(default(HttpUrl).ToString()    , Is.Empty);
+            [Test] public void Protocol        () => Assert.That(default(HttpUrl).Protocol      , Is.EqualTo(HttpProtocol.Http));
+            [Test] public void UriScheme       () => Assert.That(default(HttpUrl).UriScheme     , Is.Empty);
+            [Test] public void UserInfo        () => Assert.That(default(HttpUrl).UserInfo      , Is.Empty);
+            [Test] public void User            () => Assert.That(default(HttpUrl).User          , Is.Empty);
+            [Test] public void Password        () => Assert.That(default(HttpUrl).Password      , Is.Empty);
+            [Test] public void Host            () => Assert.That(default(HttpUrl).Host          , Is.Empty);
+            [Test] public void Port            () => Assert.That(default(HttpUrl).Port          , Is.Zero );
+            [Test] public void Path            () => Assert.That(default(HttpUrl).Path          , Is.Empty);
+            [Test] public void PathSegments    () => Assert.That(default(HttpUrl).PathSegments  , Is.Empty);
+            [Test] public void Query           () => Assert.That(default(HttpUrl).Query.HasValue, Is.False);
+            [Test] public void Fragment        () => Assert.That(default(HttpUrl).Fragment      , Is.Empty);
 
-            Assert.That(url.ToString()   , Is.Empty);
-            Assert.That(url.Protocol     , Is.EqualTo(HttpProtocol.Http));
-            Assert.That(url.UserInfo     , Is.Null);
-            Assert.That(url.User         , Is.Null);
-            Assert.That(url.Password     , Is.Null);
-            Assert.That(url.Host         , Is.Null);
-            Assert.That(url.Port         , Is.Zero);
-            Assert.That(url.Path         , Is.Null);
-            Assert.That(url.PathSegments , Is.Empty);
-            Assert.That(url.Query        , Is.Null);
-            Assert.That(url.Fragment     , Is.Null);
-            Assert.That(url.GetHashCode(), Is.Zero);
-            Assert.That((Uri) url        , Is.Null);
+            [Test] public void HashCode        () => Assert.That(default(HttpUrl).GetHashCode() , Is.Zero);
 
-            Assert.True(url.Equals(url));
-            Assert.True(url.Equals(default(HttpUrl)));
-            Assert.True(url.Equals((object) null));
-            Assert.True(url.Equals((Uri) null));
+            [Test] public void UriConversion   () => Assert.That((Uri) default(HttpUrl)         , Is.Null);
 
-            Assert.True(url == default(HttpUrl));
-            Assert.True(url == (Uri) null);
+            [Test] public void Equals          () => Assert.True(default(HttpUrl).Equals(default(HttpUrl)));
+            [Test] public void EqualsNullObject() => Assert.True(default(HttpUrl).Equals((object) null));
+            [Test] public void EqualsNullUri   () => Assert.True(default(HttpUrl).Equals((Uri) null));
+
+            [Test] public void OpEquals        () => Assert.True(default(HttpUrl) == default(HttpUrl));
+            [Test] public void OpEqualsNullUri () => Assert.True(default(HttpUrl) == (Uri) null);
         }
 
         [TestCase("http://www.example.com/",
@@ -119,13 +118,14 @@ namespace WebLinq.Tests
             {
                 Assert.That(url.ToString()   , Is.EqualTo(urlString));
                 Assert.That(url.Protocol     , Is.EqualTo(protocol));
+                Assert.That(url.UriScheme    , Is.EqualTo(protocol.ToString()).IgnoreCase);
                 Assert.That(url.UserInfo     , Is.EqualTo(userInfo));
                 Assert.That(url.User         , Is.EqualTo(user));
                 Assert.That(url.Password     , Is.EqualTo(password));
                 Assert.That(url.Host         , Is.EqualTo(host));
                 Assert.That(url.Port         , Is.EqualTo(port));
                 Assert.That(url.Path         , Is.EqualTo(path));
-                Assert.That(url.Query        , Is.EqualTo(query));
+                Assert.That(url.Query        , Is.EqualTo(new QueryString(query)));
                 Assert.That(url.Fragment     , Is.EqualTo(fragment));
                 Assert.That(url.GetHashCode(), Is.Not.Zero);
 
