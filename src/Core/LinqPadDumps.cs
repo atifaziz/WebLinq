@@ -55,6 +55,15 @@ namespace WebLinq
     }
 }
 
+namespace WebLinq.Collections
+{
+    partial struct Strings
+    {
+        internal object ToDump()
+            => Count > 1 ? this : (object) ToString();
+    }
+}
+
 namespace WebLinq.Html
 {
     using System;
