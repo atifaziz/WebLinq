@@ -45,6 +45,7 @@ namespace WebLinq
         public QueryCollection(QueryCollection collection)
         {
             _entries = collection._entries;
+            _keys = collection._keys;
             _dictionary = collection._dictionary;
         }
 
