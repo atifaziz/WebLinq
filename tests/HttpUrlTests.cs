@@ -2,6 +2,7 @@ namespace WebLinq.Tests
 {
     using System;
     using NUnit.Framework;
+    using Collections;
 
     [TestFixture]
     public class HttpUrlTests
@@ -208,6 +209,33 @@ namespace WebLinq.Tests
             var url = new HttpUrl(input);
             var expected = HttpUrl.From(url.Protocol, url.Host, url.Port, url.Path, null, url.Fragment);
             Assert.That(url.ClearQuery(), Is.EqualTo(expected));
+        }
+
+        [Test]
+        public void Params()
+        {
+            var url = new HttpUrl("http://localhost/foo/bar?one=1&two=2&three=3");
+            var @params = url.Params;
+            Assert.That(@params.Count, Is.EqualTo(3));
+            Assert.That(@params.Keys, Is.EqualTo(new[] { "one", "two", "three" }));
+            Assert.That(@params.ContainsKey("zero"), Is.False);
+            Assert.That(@params.ContainsKey("one"), Is.True);
+            Assert.That(@params.ContainsKey("two"), Is.True);
+            Assert.That(@params.ContainsKey("three"), Is.True);
+            Assert.That(@params.ContainsKey("four"), Is.False);
+            Assert.That(@params["one"], Is.EqualTo((Strings) "1"));
+            Assert.That(@params["two"], Is.EqualTo((Strings) "2"));
+            Assert.That(@params["three"], Is.EqualTo((Strings) "3"));
+        }
+
+        [Test]
+        public void Params2()
+        {
+            var url = new HttpUrl("http://localhost/foo/bar?four&four&four&four");
+            var @params = url.Params;
+            Assert.That(@params.Count, Is.EqualTo(1));
+            Assert.That(@params.Keys, Is.EqualTo(new[] { "four" }));
+            Assert.That(@params["four"], Is.EqualTo(new string[] { null, null, null, null }));
         }
     }
 }

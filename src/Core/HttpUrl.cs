@@ -38,6 +38,7 @@ namespace WebLinq
                  ? throw new ArgumentException(null, nameof(uri))
                  : uri ?? throw new ArgumentNullException(nameof(uri));
             _pathSegments = default;
+            _params = default;
         }
 
         public static HttpUrl From(HttpProtocol protocol, string host,
@@ -184,6 +185,13 @@ namespace WebLinq
             => _uri == null
              ? Strings.Empty
              : this.LazyGet(ref _pathSegments, it => Strings.Array(it._uri.Segments));
+
+        (bool, QueryCollection) _params;
+
+        public QueryCollection Params
+            => _uri == null
+             ? QueryCollection.Empty
+             : this.LazyGet(ref _params, it => QueryHelpers.ParseAsParams(it.Query.Value));
 
         public override string ToString() =>
             _uri?.AbsoluteUri ?? string.Empty;
