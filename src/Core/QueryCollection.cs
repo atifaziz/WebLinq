@@ -21,9 +21,6 @@ namespace WebLinq
     using System.Linq;
     using Collections;
 
-    /// <summary>
-    /// The HttpRequest query string collection
-    /// </summary>
     public class QueryCollection : IReadOnlyCollection<KeyValuePair<string, Strings>>
     {
         public static readonly QueryCollection Empty = new QueryCollection();
