@@ -86,7 +86,7 @@ namespace WebLinq
                     if (delimiterIndex > scanIndex)
                     {
                         var name = UnescapeDataString(queryString.Substring(scanIndex, delimiterIndex - scanIndex));
-                        yield return KeyValuePair.Create(name, Strings.Empty);
+                        yield return KeyValuePair.Create(name, (Strings) null);
                     }
                 }
 
