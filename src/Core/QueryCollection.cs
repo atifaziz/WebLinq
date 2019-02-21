@@ -34,7 +34,7 @@ namespace WebLinq
 
         ImmutableDictionary<string, Strings> Dictionary
             => Count > 4
-             ? this.LazyGet(ref _dictionary, it => ImmutableDictionary.CreateRange(_entries))
+             ? this.LazyGet(ref _dictionary, it => ImmutableDictionary.CreateRange(it._entries))
              : null;
 
         QueryCollection() {}
@@ -75,7 +75,7 @@ namespace WebLinq
         public IReadOnlyCollection<string> Keys
             => Count == 0
              ? Array.Empty<string>()
-             : this.LazyGet(ref _keys, it => ImmutableArray.CreateRange(from e in this select e.Key));
+             : this.LazyGet(ref _keys, it => ImmutableArray.CreateRange(from e in it select e.Key));
 
         /// <summary>
         /// Determines whether the <see cref="QueryCollection" /> contains a
