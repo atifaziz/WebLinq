@@ -222,8 +222,10 @@ namespace WebLinq
         {
             builder.Append(first ? "?" : "&");
             builder.Append(Encode(key));
+            if (value == null)
+                return;
             builder.Append("=");
-            if (!string.IsNullOrEmpty(value))
+            if (value.Length > 0)
                 builder.Append(Encode(value));
         }
 

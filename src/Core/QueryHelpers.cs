@@ -22,29 +22,10 @@ namespace WebLinq
 
     static class QueryHelpers
     {
-        public static QueryCollection ParseAsParams(string queryString)
-        {
-            var entries = new List<KeyValuePair<string, Strings>>();
-            var indexByKey = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        public static QueryCollection ParseAsParams(string queryString) =>
+            new QueryCollection(ImmutableArray.CreateRange(Parse(queryString)));
 
-            foreach (var (name, value) in Parse(queryString))
-            {
-                if (indexByKey.TryGetValue(name, out var i))
-                {
-                    var (k, vs) = entries[i];
-                    entries[i] = KeyValuePair.Create(k, new Strings(ImmutableArray.CreateRange(vs).Add(value)));
-                }
-                else
-                {
-                    indexByKey.Add(name, entries.Count);
-                    entries.Add(KeyValuePair.Create(name, value));
-                }
-            }
-
-            return new QueryCollection(ImmutableArray.CreateRange(entries));
-        }
-
-        public static IEnumerable<KeyValuePair<string, Strings>> Parse(string queryString)
+        public static IEnumerable<KeyValuePair<string, string>> Parse(string queryString)
         {
             if (string.IsNullOrEmpty(queryString) || queryString == "?")
                 yield break;
@@ -75,7 +56,7 @@ namespace WebLinq
                     var name  = UnescapeDataString(queryString.Substring(scanIndex, equalIndex - scanIndex));
                     var value = UnescapeDataString(queryString.Substring(equalIndex + 1, delimiterIndex - equalIndex - 1));
 
-                    yield return KeyValuePair.Create(name, (Strings) value);
+                    yield return KeyValuePair.Create(name, value);
 
                     equalIndex = queryString.IndexOf('=', delimiterIndex);
                     if (equalIndex == -1)
@@ -86,7 +67,7 @@ namespace WebLinq
                     if (delimiterIndex > scanIndex)
                     {
                         var name = UnescapeDataString(queryString.Substring(scanIndex, delimiterIndex - scanIndex));
-                        yield return KeyValuePair.Create(name, (Strings) null);
+                        yield return KeyValuePair.Create(name, (string)null);
                     }
                 }
 

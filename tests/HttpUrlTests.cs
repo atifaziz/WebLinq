@@ -233,9 +233,13 @@ namespace WebLinq.Tests
         {
             var url = new HttpUrl("http://localhost/foo/bar?four&four&four&four");
             var @params = url.Params;
-            Assert.That(@params.Count, Is.EqualTo(1));
+            Assert.That(@params.Count, Is.EqualTo(4));
             Assert.That(@params.Keys, Is.EqualTo(new[] { "four" }));
-            Assert.That(@params["four"], Is.EqualTo(new string[] { null, null, null, null }));
+            var expected = Strings.Array(null, null, null, null);
+            var strings = @params["four"];
+            Assert.That(strings.Count, Is.EqualTo(expected.Count));
+            Assert.True(strings == expected);
+            Assert.That(strings, Is.EqualTo(expected));
         }
     }
 }

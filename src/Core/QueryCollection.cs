@@ -21,25 +21,27 @@ namespace WebLinq
     using System.Linq;
     using Collections;
 
-    public class QueryCollection : IReadOnlyCollection<KeyValuePair<string, Strings>>
+    public class QueryCollection : IReadOnlyCollection<KeyValuePair<string, string>>
     {
         public static readonly QueryCollection Empty = new QueryCollection();
 
-        ImmutableArray<KeyValuePair<string, Strings>> _entries;
+        ImmutableArray<KeyValuePair<string, string>> _entries;
         (bool, IReadOnlyCollection<string>) _keys;
         (bool, ImmutableDictionary<string, Strings>) _dictionary;
 
         static readonly Enumerator EmptyEnumerator = new Enumerator();
-        static readonly IEnumerator<KeyValuePair<string, Strings>> BoxedEmptyEnumerator = EmptyEnumerator;
+        static readonly IEnumerator<KeyValuePair<string, string>> BoxedEmptyEnumerator = EmptyEnumerator;
 
         ImmutableDictionary<string, Strings> Dictionary
             => Count > 4
-             ? this.LazyGet(ref _dictionary, it => ImmutableDictionary.CreateRange(it._entries))
+             ? this.LazyGet(ref _dictionary,
+                            it => ImmutableDictionary.CreateRange(StringComparer.OrdinalIgnoreCase,
+                                                                  it.Groups))
              : null;
 
         QueryCollection() {}
 
-        public QueryCollection(ImmutableArray<KeyValuePair<string, Strings>> entries) =>
+        public QueryCollection(ImmutableArray<KeyValuePair<string, string>> entries) =>
             _entries = entries;
 
         public QueryCollection(QueryCollection collection)
@@ -48,6 +50,11 @@ namespace WebLinq
             _keys = collection._keys;
             _dictionary = collection._dictionary;
         }
+
+        ImmutableArray<string>.Builder _arrayBuilder;
+
+        ImmutableArray<string>.Builder ArrayBuilder =>
+            _arrayBuilder ?? (_arrayBuilder = ImmutableArray.CreateBuilder<string>(0));
 
         /// <summary>
         /// Get or sets the associated value from the collection as a single
@@ -76,7 +83,9 @@ namespace WebLinq
         public IReadOnlyCollection<string> Keys
             => Count == 0
              ? Array.Empty<string>()
-             : this.LazyGet(ref _keys, it => ImmutableArray.CreateRange(from e in it select e.Key));
+             : this.LazyGet(ref _keys,
+                            it => ImmutableArray.CreateRange(it.Select(e => e.Key)
+                                                               .Distinct(StringComparer.OrdinalIgnoreCase)));
 
         /// <summary>
         /// Determines whether the <see cref="QueryCollection" /> contains a
@@ -101,6 +110,17 @@ namespace WebLinq
             return false;
         }
 
+        (bool, ImmutableArray<KeyValuePair<string, Strings>>) _groups;
+
+        public ImmutableArray<KeyValuePair<string, Strings>> Groups =>
+            this.LazyGet(ref _groups,
+                         it => it._entries
+                                 .GroupBy(e => e.Key,
+                                          e => e.Value,
+                                          (k, vs) => KeyValuePair.Create(k, Strings.Sequence(vs)),
+                                          StringComparer.OrdinalIgnoreCase)
+                                 .ToImmutableArray());
+
         /// <summary>
         /// Retrieves a value from the collection.
         /// </summary>
@@ -112,21 +132,43 @@ namespace WebLinq
 
         public bool TryGetValue(string key, out Strings value)
         {
-            if (Count == 0)
+            if (Count > 0)
             {
-                value = default;
-                return false;
-            }
+                var dict = Dictionary;
+                if (dict != null)
+                    return dict.TryGetValue(key, out value);
 
-            var dict = Dictionary;
-            if (dict != null)
-                return dict.TryGetValue(key, out value);
+                var values = Strings.Empty;
+                var count = 0;
 
-            foreach (var e in _entries)
-            {
-                if (string.Equals(e.Key, key, StringComparison.OrdinalIgnoreCase))
+                foreach (var (k, v) in _entries)
                 {
-                    value = e.Value;
+                    if (string.Equals(k, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (count == 0)
+                            values = v;
+                        count++;
+                    }
+                }
+
+                if (count == 1)
+                {
+                    value = values;
+                    return true;
+                }
+
+                if (count > 1)
+                {
+                    var array = ArrayBuilder;
+                    array.Capacity = count;
+
+                    foreach (var (k, v) in _entries)
+                    {
+                        if (string.Equals(k, key, StringComparison.OrdinalIgnoreCase))
+                            array.Add(v);
+                    }
+
+                    value = new Strings(array.MoveToImmutable());
                     return true;
                 }
             }
@@ -159,7 +201,7 @@ namespace WebLinq
         /// An <see cref="IEnumerator{T}" /> object that can be used to iterate
         /// through the collection.</returns>
 
-        IEnumerator<KeyValuePair<string, Strings>> IEnumerable<KeyValuePair<string, Strings>>.GetEnumerator()
+        IEnumerator<KeyValuePair<string, string>> IEnumerable<KeyValuePair<string, string>>.GetEnumerator()
             => Count == 0
              ? BoxedEmptyEnumerator // Non-boxed Enumerator
              : new Enumerator(_entries.GetEnumerator());
@@ -180,13 +222,13 @@ namespace WebLinq
             }
         }
 
-        public struct Enumerator : IEnumerator<KeyValuePair<string, Strings>>
+        public struct Enumerator : IEnumerator<KeyValuePair<string, string>>
         {
             // Do NOT make this readonly, or MoveNext will not work
-            ImmutableArray<KeyValuePair<string, Strings>>.Enumerator _enumerator;
+            ImmutableArray<KeyValuePair<string, string>>.Enumerator _enumerator;
             readonly bool _notEmpty;
 
-            internal Enumerator(ImmutableArray<KeyValuePair<string, Strings>>.Enumerator enumerator)
+            internal Enumerator(ImmutableArray<KeyValuePair<string, string>>.Enumerator enumerator)
             {
                 _enumerator = enumerator;
                 _notEmpty = true;
@@ -195,7 +237,7 @@ namespace WebLinq
             public bool MoveNext() =>
                 _notEmpty && _enumerator.MoveNext();
 
-            public KeyValuePair<string, Strings> Current =>
+            public KeyValuePair<string, string> Current =>
                 _notEmpty ? _enumerator.Current : default;
 
             public void Dispose() {}
