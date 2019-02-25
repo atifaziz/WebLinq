@@ -19,9 +19,10 @@ namespace WebLinq
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Linq;
+    using MoreLinq;
     using Collections;
 
-    public class QueryCollection : IReadOnlyCollection<KeyValuePair<string, string>>
+    public partial class QueryCollection : IReadOnlyCollection<KeyValuePair<string, string>>
     {
         public static readonly QueryCollection Empty = new QueryCollection();
 
@@ -245,6 +246,30 @@ namespace WebLinq
             object IEnumerator.Current => Current;
 
             void IEnumerator.Reset() => throw new NotSupportedException();
+        }
+    }
+
+    partial class QueryCollection
+    {
+        public QueryCollection Merge(IEnumerable<KeyValuePair<string, string>> source)
+        {
+            if (source == null) throw new ArgumentNullException(nameof(source));
+
+            source = source.ToArray();
+
+            var join =
+                Groups.GroupJoin(source, e => e.Key,
+                                         e => e.Key,
+                                         (a, b) => KeyValuePair.Create(a.Key, a.Value.Concat(from e in b select e.Value)),
+                                         StringComparer.OrdinalIgnoreCase)
+                      .SelectMany(e => from v in e.Value
+                                       select KeyValuePair.Create(e.Key, v))
+                      .ToArray();
+
+            var array = ImmutableArray.CreateBuilder<KeyValuePair<string, string>>();
+            array.AddRange(join);
+            array.AddRange(source.ExceptBy(join, e => e.Key, StringComparer.OrdinalIgnoreCase));
+            return new QueryCollection(array.ToImmutable());
         }
     }
 }
