@@ -251,25 +251,28 @@ namespace WebLinq
 
     partial class QueryCollection
     {
-        public QueryCollection Merge(IEnumerable<KeyValuePair<string, string>> source)
+        public QueryCollection Merge(IEnumerable<KeyValuePair<string, string>> source) =>
+            Merge(source, (_, lhs, rhs) => rhs.Count > 0 ? rhs : lhs);
+
+        public QueryCollection Merge(IEnumerable<KeyValuePair<string, string>> source,
+                                     Func<string, Strings, Strings, Strings> selector)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
+            if (selector == null) throw new ArgumentNullException(nameof(selector));
 
-            source = source.ToArray();
+            var merge =
+                from ms in
+                    this.FullGroupJoin(
+                        source,
+                        e => e.Key, e => e.Key,
+                        (k, lhs, rhs) =>
+                            KeyValuePair.Create(k, selector(k, Strings.Sequence(from e in lhs select e.Value),
+                                                               Strings.Sequence(from e in rhs select e.Value))),
+                        StringComparer.OrdinalIgnoreCase)
+                from v in ms.Value
+                select KeyValuePair.Create(ms.Key, v);
 
-            var join =
-                Groups.GroupJoin(source, e => e.Key,
-                                         e => e.Key,
-                                         (a, b) => KeyValuePair.Create(a.Key, a.Value.Concat(from e in b select e.Value)),
-                                         StringComparer.OrdinalIgnoreCase)
-                      .SelectMany(e => from v in e.Value
-                                       select KeyValuePair.Create(e.Key, v))
-                      .ToArray();
-
-            var array = ImmutableArray.CreateBuilder<KeyValuePair<string, string>>();
-            array.AddRange(join);
-            array.AddRange(source.ExceptBy(join, e => e.Key, StringComparer.OrdinalIgnoreCase));
-            return new QueryCollection(array.ToImmutable());
+            return new QueryCollection(ImmutableArray.CreateRange(merge));
         }
     }
 }
