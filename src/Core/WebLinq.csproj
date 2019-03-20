@@ -30,7 +30,7 @@
   <ItemGroup>
     <PackageReference Include="Dsv" Version="1.3.1" />
     <PackageReference Include="Fizzler.Systems.HtmlAgilityPack" Version="1.2.0" />
-    <PackageReference Include="HtmlAgilityPack" Version="1.5.1" />
+    <PackageReference Include="HtmlAgilityPack" Version="1.11.0" />
     <PackageReference Include="Mannex" Version="3.0.0-rc1" />
     <PackageReference Include="System.Collections.Immutable" Version="1.5.0" />
     <PackageReference Include="System.Reactive" Version="4.0.0" />
