@@ -90,9 +90,18 @@ namespace WebLinq.Sys
                     try
                     {
                         var pid = process.Id;
-                        await process.AsTask(p => new Exception($"Process \"{Path.GetFileName(path)}\" (launched as the ID {pid}) ended with the non-zero exit code {p.ExitCode}."))
-                                     .DontContinueOnCapturedContext();
+                        var error = await
+                            process.AsTask(dispose: false,
+                                           p => p.ExitCode != 0 ? new Exception($"Process \"{Path.GetFileName(path)}\" (launched as the ID {pid}) ended with the non-zero exit code {p.ExitCode}.")
+                                                                : null,
+                                           e => e,
+                                           e => e)
+                                   .DontContinueOnCapturedContext();
+
                         await drainer(null).DontContinueOnCapturedContext();
+
+                        if (error != null)
+                            throw error;
 
                         bc.CompleteAdding();
                     }
