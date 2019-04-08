@@ -480,8 +480,7 @@ namespace WebLinq.Samples
                       .Content()
 
             from signed in
-                from ls in Spawn("nuget", ProgramArguments.Var("verify", "-Signatures", nupkg.Path)).ToArray()
-                select string.Join(Environment.NewLine, ls) into output
+                from output in Spawn("nuget", ProgramArguments.Var("verify", "-Signatures", nupkg.Path)).Delimited(Environment.NewLine)
                 select Regex.Match(output, @"(?<=\bSignature +type *: *)(Repository|Author)\b",
                                    RegexOptions.IgnoreCase | RegexOptions.CultureInvariant).Value
             where signed.Length > 0
