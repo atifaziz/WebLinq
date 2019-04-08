@@ -6,6 +6,7 @@ namespace WebLinq.Samples
     using System.Collections.Generic;
     using System.Data;
     using System.Globalization;
+    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Reactive.Linq;
@@ -16,6 +17,7 @@ namespace WebLinq.Samples
     using Collections;
     using Html;
     using Modules;
+    using Newtonsoft.Json;
     using Sys;
     using Text;
     using Xsv;
@@ -47,6 +49,9 @@ namespace WebLinq.Samples
                     new { Title = nameof(AutoRedirection)       , Query = AutoRedirection()        , IsWindowsOnly = false },
                     new { Title = nameof(FormPost)              , Query = FormPost()               , IsWindowsOnly = false },
                     new { Title = nameof(ITunesMovies)          , Query = ITunesMovies("Bollywood"), IsWindowsOnly = false },
+                    new { Title = nameof(NuGetSignedStatusForMostDownloadedPackages),
+                                                                  Query = NuGetSignedStatusForMostDownloadedPackages(true),
+                                                                                                     IsWindowsOnly = false },
                 }
                 where args.Length == 0
                    || args.Any(a => s.Title.Equals(a, StringComparison.OrdinalIgnoreCase))
@@ -388,5 +393,105 @@ namespace WebLinq.Samples
                 page.PageNumber,
                 SourceUrl = page.Url.AbsoluteUri,
             };
+
+        //
+        // The following sample was lifted from a scraping application that was
+        // discussed in the following by blog entry by Phil Haack:
+        //
+        //   "Why NuGet Package Signing Is Not (Yet) for Me"
+        //   https://haacked.com/archive/2019/04/03/nuget-package-signing/
+        //
+        // The original application can be found at:
+        // https://github.com/Haacked/NugetSignChecker
+        //
+        // The specific version of the program was:
+        // https://github.com/Haacked/NugetSignChecker/blob/2cf8edda3108a306a28fc573922b4890d48576e2/src/Program.cs
+        //
+
+        #region Copyright (c) 2019 Phil Haack
+        //
+        // Permission is hereby granted, free of charge, to any person obtaining a copy
+        // of this software and associated documentation files (the "Software"), to deal
+        // in the Software without restriction, including without limitation the rights
+        // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+        // copies of the Software, and to permit persons to whom the Software is
+        // furnished to do so, subject to the following conditions:
+        //
+        // The above copyright notice and this permission notice shall be included in all
+        // copies or substantial portions of the Software.
+        //
+        // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+        // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+        // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+        // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+        // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+        // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+        // SOFTWARE.
+        //
+        #endregion
+
+        static IObservable<object> NuGetSignedStatusForMostDownloadedPackages(bool communityPackagesOnly,
+                                                                              int top = 100) =>
+            from e in
+                Observable.Merge(maxConcurrent: 4, sources:
+                    from page in
+                        Http.Get(new Uri("https://www.nuget.org/stats/packages"))
+                            .Html()
+                            .Content()
+
+                    let prototype = new { versions = default(string[]) }
+
+                    from id in
+                        Enumerable.Take(count: top, source:
+                            from tr in
+                                page.QuerySelectorAll("table[data-bind]")
+                                    .Single(e => e.GetAttributeValue("data-bind") == "visible: " + (communityPackagesOnly ? "!showAllPackageDownloads()" : "showAllPackageDownloads"))
+                                    .QuerySelectorAll("tr")
+                                    .Skip(1)
+                            where tr.QuerySelector("td") != null
+                            select tr.QuerySelectorAll("td")
+                                     .Select(td => td.InnerText.Trim())
+                                     .ElementAt(1)
+                            into id
+                            group id by id.Split('.')[0] into g
+                            select g.First())
+
+                    select
+                        from json in
+                            Http.Get(new Uri($"https://api.nuget.org/v3-flatcontainer/{id}/index.json"))
+                                .Text()
+                                .Content()
+                        let version = JsonConvert.DeserializeAnonymousType(json, prototype)
+                                                 .versions.LastOrDefault()
+                        select new
+                        {
+                            Id            = id,
+                            Version       = version,
+                            NuPkgFileName = $"{id}.{version}.nupkg"
+                        })
+
+            let downloadPath = Path.Combine(Path.GetTempPath(), e.NuPkgFileName)
+
+            from nupkg in
+                File.Exists(downloadPath)
+                ? Observable.Return(new LocalFileContent(downloadPath))
+                : Http.Get(new Uri($"https://api.nuget.org/v3-flatcontainer/{e.Id}/{e.Version}/{e.NuPkgFileName}"))
+                      .Download(downloadPath)
+                      .Content()
+
+            from signed in
+                from ls in Spawn("nuget", ProgramArguments.Var("verify", "-Signatures", nupkg.Path)).ToArray()
+                select string.Join(Environment.NewLine, ls) into output
+                select Regex.Match(output, @"(?<=\bSignature +type *: *)(Repository|Author)\b",
+                                   RegexOptions.IgnoreCase | RegexOptions.CultureInvariant).Value
+            where signed.Length > 0
+            select new
+            {
+                e.Id,
+                e.Version,
+                Signed = signed,
+            };
+
+        // End of "Copyright (c) 2019 Phil Haack"
     }
 }
