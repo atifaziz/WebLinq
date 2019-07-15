@@ -292,7 +292,7 @@ namespace WebLinq.Samples
 
             from e in Http.Get(HttpUrl.Format($@"http://httpbin.org/redirect-to
                                                  ? url = {"http://example.com/"}"))
-            select e.RequestUrl;
+            select (object)e.RequestUrl;
 
         static IObservable<object> FormPost() =>
 

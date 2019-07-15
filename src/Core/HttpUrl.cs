@@ -227,6 +227,9 @@ namespace WebLinq
 
         public static implicit operator Uri(HttpUrl url) => url._uri;
 
+        [Obsolete]
+        public static implicit operator HttpUrl(Uri uri) => new HttpUrl(uri);
+
         public static HttpUrl operator +(HttpUrl url, QueryString query) =>
             url.AppendQuery(query);
     }

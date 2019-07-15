@@ -36,10 +36,10 @@ namespace WebLinq.Html
         public static IObservable<HttpFetch<T>> Links<T>(this IObservable<HttpFetch<ParsedHtml>> query, Func<string, HtmlObject, T> selector) =>
             Links(query, null, selector);
 
-        public static IObservable<HttpFetch<string>> Links(this IObservable<HttpFetch<ParsedHtml>> query, Uri baseUrl) =>
+        public static IObservable<HttpFetch<string>> Links(this IObservable<HttpFetch<ParsedHtml>> query, HttpUrl baseUrl) =>
             Links(query, baseUrl, (href, _) => href);
 
-        public static IObservable<HttpFetch<T>> Links<T>(this IObservable<HttpFetch<ParsedHtml>> query, Uri baseUrl, Func<string, HtmlObject, T> selector) =>
+        public static IObservable<HttpFetch<T>> Links<T>(this IObservable<HttpFetch<ParsedHtml>> query, HttpUrl baseUrl, Func<string, HtmlObject, T> selector) =>
             from html in query
             from link in html.Content.Links((href, ho) => html.WithContent(selector(href, ho)))
             select link;

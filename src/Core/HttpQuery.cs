@@ -41,7 +41,7 @@ namespace WebLinq
     {
         static readonly int MaximumAutomaticRedirections = WebRequest.CreateHttp("http://localhost/").MaximumAutomaticRedirections;
 
-        static async Task<HttpFetch<HttpContent>> SendAsync(IHttpClient http, HttpConfig config, int id, HttpMethod method, Uri url, HttpContent content = null, HttpOptions options = null)
+        static async Task<HttpFetch<HttpContent>> SendAsync(IHttpClient http, HttpConfig config, int id, HttpMethod method, HttpUrl url, HttpContent content = null, HttpOptions options = null)
         {
             http = http.WithConfig(config);
 
@@ -56,7 +56,7 @@ namespace WebLinq
                         {
                             Config   = cfg,
                             Method   = default(HttpMethod),
-                            Url      = default(Uri),
+                            Url      = default(HttpUrl),
                             Content  = default(HttpContent),
                             Response = rsp,
                         },
@@ -83,9 +83,9 @@ namespace WebLinq
         }
 
         static async Task<T> HttpFetchAsync<T>(IHttpClient http, HttpConfig config,
-            HttpMethod method, Uri url, HttpContent content, HttpOptions options,
+            HttpMethod method, HttpUrl url, HttpContent content, HttpOptions options,
             Func<HttpConfig, HttpResponseMessage, T> responseSelector,
-            Func<HttpConfig, HttpMethod, Uri, HttpContent, T> redirectionSelector)
+            Func<HttpConfig, HttpMethod, HttpUrl, HttpContent, T> redirectionSelector)
         {
             var request = new HttpRequestMessage
             {
@@ -159,31 +159,34 @@ namespace WebLinq
                     sc == HttpStatusCode.RedirectMethod || // 303
                     sc == HttpStatusCode.RedirectKeepVerb) // 307
                 {
-                    var redirectionUrl = response.Headers.Location?.AsRelativeTo(response.RequestMessage.RequestUri);
-                    if (redirectionUrl == null)
+                    switch (response.Headers.Location?.AsRelativeTo(response.RequestMessage.RequestUri))
                     {
-                        // 300
-                        // If the server has a preferred choice of representation,
-                        // it SHOULD include the specific URI for that
-                        // representation in the Location field; user agents MAY
-                        // use the Location field value for automatic redirection.
+                        case null:
+                        {
+                            // 300
+                            // If the server has a preferred choice of representation,
+                            // it SHOULD include the specific URI for that
+                            // representation in the Location field; user agents MAY
+                            // use the Location field value for automatic redirection.
 
-                        if (sc != HttpStatusCode.Ambiguous)
-                            throw new ProtocolViolationException("Server did not supply a URL for a redirection response.");
-                    }
-                    else
-                    {
-                        if (redirectionUrl.Scheme == "ws" || redirectionUrl.Scheme == "wss")
-                            throw new NotSupportedException($"Redirection to a WebSocket URL ({redirectionUrl}) is not supported.");
+                            if (sc != HttpStatusCode.Ambiguous)
+                                throw new ProtocolViolationException("Server did not supply a URL for a redirection response.");
+                            break;
+                        }
+                        case Uri redirectionUrl:
+                        {
+                            if (redirectionUrl.Scheme == "ws" || redirectionUrl.Scheme == "wss")
+                                throw new NotSupportedException($"Redirection to a WebSocket URL ({redirectionUrl}) is not supported.");
 
-                        if (redirectionUrl.Scheme != Uri.UriSchemeHttp && redirectionUrl.Scheme != Uri.UriSchemeHttps)
-                            throw new ProtocolViolationException(
-                                $"Server sent a redirection response where the redirection URL ({redirectionUrl}) scheme was neither HTTP nor HTTPS.");
+                            if (redirectionUrl.Scheme != Uri.UriSchemeHttp && redirectionUrl.Scheme != Uri.UriSchemeHttps)
+                                throw new ProtocolViolationException(
+                                    $"Server sent a redirection response where the redirection URL ({redirectionUrl}) scheme was neither HTTP nor HTTPS.");
 
-                        return sc == HttpStatusCode.RedirectMethod
-                            || method == HttpMethod.Post && (sc == HttpStatusCode.Moved || sc == HttpStatusCode.Redirect)
-                             ? redirectionSelector(config, HttpMethod.Get, redirectionUrl, null)
-                             : redirectionSelector(config, method, redirectionUrl, content);
+                            return sc == HttpStatusCode.RedirectMethod
+                                || method == HttpMethod.Post && (sc == HttpStatusCode.Moved || sc == HttpStatusCode.Redirect)
+                                 ? redirectionSelector(config, HttpMethod.Get, new HttpUrl(redirectionUrl), null)
+                                 : redirectionSelector(config, method, new HttpUrl(redirectionUrl), content);
+                        }
                     }
                 }
 
@@ -200,34 +203,34 @@ namespace WebLinq
             }
         }
 
-        public static IHttpObservable Get(this IHttpObservable query, Uri url) =>
+        public static IHttpObservable Get(this IHttpObservable query, HttpUrl url) =>
             HttpObservable.Return(
                 from first in query
                 select first.Client.Get(url));
 
-        public static IHttpObservable Get(this IHttpClient http, Uri url) =>
+        public static IHttpObservable Get(this IHttpClient http, HttpUrl url) =>
             HttpObservable.Return(ho =>
                 // TODO Use DeferAsync
                 Observable.Defer(() =>
                     SendAsync(http, ho.Configurer(http.Config), 0, HttpMethod.Get, url, options: ho.Options)
                         .ToObservable()));
 
-        public static IHttpObservable Post(this IHttpObservable query, Uri url, NameValueCollection data) =>
+        public static IHttpObservable Post(this IHttpObservable query, HttpUrl url, NameValueCollection data) =>
             HttpObservable.Return(
                 from f in query
                 select f.Client.Post(url, data));
 
-        public static IHttpObservable Post(this IHttpObservable query, Uri url, HttpContent content) =>
+        public static IHttpObservable Post(this IHttpObservable query, HttpUrl url, HttpContent content) =>
             HttpObservable.Return(
                 from f in query
                 select f.Client.Post(url, content));
 
-        public static IHttpObservable Post(this IHttpClient http, Uri url, NameValueCollection data) =>
+        public static IHttpObservable Post(this IHttpClient http, HttpUrl url, NameValueCollection data) =>
             http.Post(url, new FormUrlEncodedContent(from i in Enumerable.Range(0, data.Count)
                                                      from v in data.GetValues(i)
                                                      select data.GetKey(i).AsKeyTo(v)));
 
-        public static IHttpObservable Post(this IHttpClient http, Uri url, HttpContent content) =>
+        public static IHttpObservable Post(this IHttpClient http, HttpUrl url, HttpContent content) =>
             HttpObservable.Return(ho =>
                 // TODO Use DeferAsync
                 Observable.Defer(() =>
@@ -275,13 +278,13 @@ namespace WebLinq
         public static IHttpObservable Submit(this IObservable<HttpFetch<ParsedHtml>> query, int formIndex, NameValueCollection data) =>
             Submit(query, null, formIndex, null, data);
 
-        public static IHttpObservable SubmitTo(this IObservable<HttpFetch<ParsedHtml>> query, Uri url, string formSelector, NameValueCollection data) =>
+        public static IHttpObservable SubmitTo(this IObservable<HttpFetch<ParsedHtml>> query, HttpUrl url, string formSelector, NameValueCollection data) =>
             Submit(query, formSelector, null, url, data);
 
-        public static IHttpObservable SubmitTo(this IObservable<HttpFetch<ParsedHtml>> query, Uri url, int formIndex, NameValueCollection data) =>
+        public static IHttpObservable SubmitTo(this IObservable<HttpFetch<ParsedHtml>> query, HttpUrl url, int formIndex, NameValueCollection data) =>
             Submit(query, null, formIndex, url, data);
 
-        internal static IHttpObservable Submit(this IObservable<HttpFetch<ParsedHtml>> query, string formSelector, int? formIndex, Uri url, ISubmissionData<Unit> data) =>
+        internal static IHttpObservable Submit(this IObservable<HttpFetch<ParsedHtml>> query, string formSelector, int? formIndex, HttpUrl url, ISubmissionData<Unit> data) =>
             HttpObservable.Return(
                 from html in query
                 select Submit(html.Client, html.Content, formSelector, formIndex, url, _ => data));
@@ -292,10 +295,10 @@ namespace WebLinq
         public static IHttpObservable Submit(this IHttpClient http, ParsedHtml html, int formIndex, ISubmissionData<Unit> data) =>
             Submit(http, html, null, formIndex, null, _ => data);
 
-        public static IHttpObservable SubmitTo(this IHttpClient http, Uri url, ParsedHtml html, string formSelector, ISubmissionData<Unit> data) =>
+        public static IHttpObservable SubmitTo(this IHttpClient http, HttpUrl url, ParsedHtml html, string formSelector, ISubmissionData<Unit> data) =>
             Submit(http, html, formSelector, null, url, _ => data);
 
-        public static IHttpObservable SubmitTo(this IHttpClient http, Uri url, ParsedHtml html, int formIndex, ISubmissionData<Unit> data) =>
+        public static IHttpObservable SubmitTo(this IHttpClient http, HttpUrl url, ParsedHtml html, int formIndex, ISubmissionData<Unit> data) =>
             Submit(http, html, null, formIndex, url, _ => data);
 
         public static IHttpObservable Submit(this IHttpClient http, ParsedHtml html, string formSelector, Func<HtmlForm, ISubmissionData<Unit>> data) =>
@@ -304,13 +307,13 @@ namespace WebLinq
         public static IHttpObservable Submit(this IHttpClient http, ParsedHtml html, int formIndex, Func<HtmlForm, ISubmissionData<Unit>> data) =>
             Submit(http, html, null, formIndex, null, data);
 
-        public static IHttpObservable SubmitTo(this IHttpClient http, Uri url, ParsedHtml html, string formSelector, Func<HtmlForm, ISubmissionData<Unit>> data) =>
+        public static IHttpObservable SubmitTo(this IHttpClient http, HttpUrl url, ParsedHtml html, string formSelector, Func<HtmlForm, ISubmissionData<Unit>> data) =>
             Submit(http, html, formSelector, null, url, data);
 
-        public static IHttpObservable SubmitTo(this IHttpClient http, Uri url, ParsedHtml html, int formIndex, Func<HtmlForm, ISubmissionData<Unit>> data) =>
+        public static IHttpObservable SubmitTo(this IHttpClient http, HttpUrl url, ParsedHtml html, int formIndex, Func<HtmlForm, ISubmissionData<Unit>> data) =>
             Submit(http, html, null, formIndex, url, data);
 
-        static IHttpObservable Submit(IObservable<HttpFetch<ParsedHtml>> query, string formSelector, int? formIndex, Uri url, NameValueCollection data) =>
+        static IHttpObservable Submit(IObservable<HttpFetch<ParsedHtml>> query, string formSelector, int? formIndex, HttpUrl url, NameValueCollection data) =>
             HttpObservable.Return(
                 from html in query
                 select Submit(html.Client, html.Content, formSelector, formIndex, url, data));
@@ -321,10 +324,10 @@ namespace WebLinq
         public static IHttpObservable Submit(this IHttpClient http, ParsedHtml html, int formIndex, NameValueCollection data) =>
             Submit(http, html, null, formIndex, null, data);
 
-        public static IHttpObservable SubmitTo(this IHttpClient http, Uri url, ParsedHtml html, string formSelector, NameValueCollection data) =>
+        public static IHttpObservable SubmitTo(this IHttpClient http, HttpUrl url, ParsedHtml html, string formSelector, NameValueCollection data) =>
             Submit(http, html, formSelector, null, url, data);
 
-        public static IHttpObservable SubmitTo(this IHttpClient http, Uri url, ParsedHtml html, int formIndex, NameValueCollection data) =>
+        public static IHttpObservable SubmitTo(this IHttpClient http, HttpUrl url, ParsedHtml html, int formIndex, NameValueCollection data) =>
             Submit(http, html, null, formIndex, url, data);
 
         internal static IHttpObservable Submit(IHttpClient http,

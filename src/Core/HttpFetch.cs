@@ -42,7 +42,7 @@ namespace WebLinq
         public string ReasonPhrase                 => Info.ReasonPhrase;
         public HttpHeaderCollection Headers        => Info.Headers;
         public HttpHeaderCollection ContentHeaders => Info.ContentHeaders;
-        public Uri RequestUrl                      => Info.RequestUrl;
+        public HttpUrl RequestUrl                  => Info.RequestUrl;
         public HttpHeaderCollection RequestHeaders => Info.RequestHeaders;
 
         public HttpFetch(HttpFetchInfo info, T content)
@@ -78,7 +78,7 @@ namespace WebLinq
         public string ReasonPhrase                 { get; }
         public HttpHeaderCollection Headers        { get; }
         public HttpHeaderCollection ContentHeaders { get; }
-        public Uri RequestUrl                      { get; }
+        public HttpUrl RequestUrl                  { get; }
         public HttpHeaderCollection RequestHeaders { get; }
 
         public HttpFetchInfo(int id,
@@ -88,7 +88,7 @@ namespace WebLinq
             string reasonPhrase,
             HttpHeaderCollection headers,
             HttpHeaderCollection contentHeaders,
-            Uri requestUrl,
+            HttpUrl requestUrl,
             HttpHeaderCollection requestHeaders)
         {
             Id             = id;
