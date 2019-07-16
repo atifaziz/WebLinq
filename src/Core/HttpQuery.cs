@@ -104,10 +104,21 @@ namespace WebLinq
                 if (response.Headers.TryGetValues("Set-Cookie", out var setCookies))
                 {
                     var cc = new CookieContainer();
-                    foreach (var cookie in setCookies)
+
+                    foreach (var cookie in
+                        //
+                        // Manually split cookies, which is a workaround for the
+                        // following compatibility bug:
+                        // https://github.com/dotnet/corefx/issues/33122
+                        //
+                        from cookies in setCookies
+                        from cookie in cookies.Split(StringDelimitersStock.Comma)
+                        select cookie.Trim() into cookie
+                        where cookie.Length > 0
+                        select cookie)
                     {
                         try { cc.SetCookies(url, cookie); }
-                        catch (CookieException) { /* ignore bad cookies */}
+                        catch (CookieException) { /* ignore bad cookies */ }
                     }
 
                     var mergedCookies =
