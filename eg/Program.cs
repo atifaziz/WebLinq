@@ -40,7 +40,6 @@ namespace WebLinq.Samples
             var samples =
                 from s in new[]
                 {
-                    new { Title = nameof(GoogleSearch)          , Query = GoogleSearch()           , IsWindowsOnly = false },
                     new { Title = nameof(QueenSongs)            , Query = QueenSongs()             , IsWindowsOnly = false },
                     new { Title = nameof(ScheduledTasksViaSpawn), Query = ScheduledTasksViaSpawn() , IsWindowsOnly = true  },
                     new { Title = nameof(TopHackerNews)         , Query = TopHackerNews(100)       , IsWindowsOnly = false },
@@ -72,6 +71,9 @@ namespace WebLinq.Samples
         }
 
         static IObservable<object> GoogleSearch() =>
+
+            // This no longer works since Google seems to have changed their
+            // result pages to use obfuscated/minified CSS class names.
 
             from sr in Http.Get(new Uri("http://google.com/"))
                            .Submit(0, SubmissionData.Set("q", "foobar"))
