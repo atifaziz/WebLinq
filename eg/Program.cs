@@ -32,6 +32,8 @@ namespace WebLinq.Samples
     {
         static void Wain(string[] args)
         {
+            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+
             var ruler1 = new string('=', Console.BufferWidth - 1);
             var ruler2 = new string('-', Console.BufferWidth - 1);
 
