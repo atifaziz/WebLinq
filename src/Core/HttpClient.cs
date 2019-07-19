@@ -114,7 +114,15 @@ namespace WebLinq
 
         static async Task<HttpResponseMessage> Send(HttpRequestMessage request, HttpConfig config)
         {
-            var hwreq = WebRequest.CreateHttp(request.RequestUri);
+            var requestUrl = request.RequestUri;
+
+            // Following is workaround for a compatibility bug in .NET Core:
+            // https://github.com/dotnet/corefx/issues/39618
+
+            if (requestUrl.Fragment.Length > 0)
+                requestUrl = new Uri(requestUrl.GetComponents(UriComponents.AbsoluteUri & ~UriComponents.Fragment, UriFormat.SafeUnescaped));
+
+            var hwreq = WebRequest.CreateHttp(requestUrl);
 
             hwreq.Method                = request.Method.Method;
             hwreq.Timeout               = (int)config.Timeout.TotalMilliseconds;
