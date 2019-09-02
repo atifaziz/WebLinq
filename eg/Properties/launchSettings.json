@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "WebLinq.Samples": {
-      "commandName": "Project",
-      "commandLineArgs": "Test"
-    }
-  }
-}
