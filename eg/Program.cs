@@ -12,7 +12,6 @@ namespace WebLinq.Samples
     using System.Reactive.Linq;
     using System.Runtime.InteropServices;
     using System.Text.RegularExpressions;
-    using System.Web;
     using System.Xml.Linq;
     using Collections;
     using Html;
@@ -25,6 +24,7 @@ namespace WebLinq.Samples
     using static Modules.SpawnModule;
     using static Modules.XmlModule;
     using static Modules.UriModule;
+    using static MoreLinq.Extensions.IndexExtension;
 
     #endregion
 
@@ -40,6 +40,7 @@ namespace WebLinq.Samples
             var samples =
                 from s in new[]
                 {
+                    new { Title = nameof(DuckDuckGo)            , Query = DuckDuckGo()             , IsWindowsOnly = false },
                     new { Title = nameof(QueenSongs)            , Query = QueenSongs()             , IsWindowsOnly = false },
                     new { Title = nameof(ScheduledTasksViaSpawn), Query = ScheduledTasksViaSpawn() , IsWindowsOnly = true  },
                     new { Title = nameof(TopHackerNews)         , Query = TopHackerNews(100)       , IsWindowsOnly = false },
@@ -70,29 +71,26 @@ namespace WebLinq.Samples
             }
         }
 
-        static IObservable<object> GoogleSearch() =>
+        static IObservable<object> DuckDuckGo() =>
 
-            // This no longer works since Google seems to have changed their
-            // result pages to use obfuscated/minified CSS class names.
-
-            from sr in Http.Get(new Uri("http://google.com/"))
-                           .Submit(0, SubmissionData.Set("q", "foobar"))
-                           .Html()
-                           .Expand(curr =>
-                           {
-                               var next = curr.Content.TryBaseHref(curr.Content.QuerySelectorAll("#foot a.fl")
-                                                                               .Last() // Next
-                                                                               .GetAttributeValue("href"));
-                               return curr.Client.Get(new Uri(next)).Html();
-                           })
-                           .TakeWhile(h => (int.TryParse(HttpUtility.ParseQueryString(h.Content.BaseUrl.Query)["start"], out var n) ? n : 1) < 30)
+            from sr in
+                Http.WithConfig(Http.Config.WithUserAgent("WebLINQ/1.0"))
+                    .Get(new Uri("http://duckduckgo.com/html/"))
+                    .Submit("form[name=x]", SubmissionData.Set("q", "foobar"))
+                    .Html()
+                    .Expand(curr =>
+                    {
+                        var next = curr.Content.Forms.Index().Single(f => f.Value.Element.QuerySelector("input[type=submit][value=Next]") != null);
+                        return curr.Client.Submit(curr.Content, next.Key, SubmissionData.None).Html();
+                    })
+                    .Take(3)
             select sr.Content into sr
-            from r in sr.QuerySelectorAll(".g")
+            from r in sr.QuerySelectorAll(".results > .result")
             select new
             {
-                Title = r.QuerySelector(".r")?.NormalInnerText,
-                Summary = r.QuerySelector(".st")?.NormalInnerText,
-                Href = sr.TryBaseHref(r.QuerySelector(".r a")?.GetAttributeValue("href")),
+                Title = r.QuerySelector("h2")?.NormalInnerText,
+                Summary = r.QuerySelector(".result__snippet")?.NormalInnerText,
+                Href = sr.TryBaseHref(r.QuerySelector(".result__url")?.GetAttributeValue("href")),
             }
             into e
             where !string.IsNullOrWhiteSpace(e.Title)
