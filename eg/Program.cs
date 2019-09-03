@@ -347,31 +347,32 @@ namespace WebLinq.Samples
                     select e,
                     ap => // ap = alpha page
                         from html in home.Client.Get(ap.Url).Html()
+                        let nps =
+                            from a in html.Content.QuerySelectorAll("ul.list.paginate a[href^=https]")
+                            where !a.HasClass("paginate-more")
+                            select new
+                            {
+                                PageNumber = int.Parse(a.NormalInnerText, NumberStyles.None, CultureInfo.InvariantCulture),
+                                Url = new Uri(home.Content.TryBaseHref(a.GetAttributeValue("href"))),
+                            }
+                            into e
+                            // We always have page 1 (which we prepend later, below)
+                            // so take pages 2 and onward
+                            where e.PageNumber > 1
+                            select e
                         from part in
                             Observable
-                                .For(
-                                    from a in html.Content.QuerySelectorAll("ul.list.paginate a[href^=https]")
-                                    where !a.HasClass("paginate-more")
-                                    select new
-                                    {
-                                        PageNumber = int.Parse(a.NormalInnerText, NumberStyles.None, CultureInfo.InvariantCulture),
-                                        Url = new Uri(home.Content.TryBaseHref(a.GetAttributeValue("href"))),
-                                    }
-                                    into e
-                                    // We always have page 1 (which we prepend later, below)
-                                    // so take pages 2 and onward
-                                    where e.PageNumber > 1
-                                    select e,
-                                    np => // np = numbered page
-                                        from page in html.Client.Get(np.Url).Html().Content()
-                                        select new
-                                        {
-                                            np.Url,
-                                            np.PageNumber,
-                                            Html = page
-                                        }
-                                        into e
-                                        select e)
+                                .For(from e in nps.Distinct() // unordered so...
+                                     orderby e.PageNumber     // ...re-sort
+                                     select e,
+                                     np => // np = numbered page
+                                         from page in html.Client.Get(np.Url).Html().Content()
+                                         select new
+                                         {
+                                             np.Url,
+                                             np.PageNumber,
+                                             Html = page
+                                         })
                                 // We always have page 1 so start with it
                                 .StartWith(new
                                 {
