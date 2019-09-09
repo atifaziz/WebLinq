@@ -232,27 +232,5 @@ namespace WebLinq.Modules
 
         public static ISpawnObservable<T> Spawn<T>(string path, ProgramArguments args, Func<string, T> stdoutSelector, Func<string, T> stderrSelector) =>
             Spawner.Default.Spawn(path, args, stdoutSelector, stderrSelector);
-
-        //
-
-        [Obsolete("Use the " + nameof(Spawn) + " overload taking" + nameof(ProgramArguments) + " instead.")]
-        public static ISpawnObservable<string> Spawn(string path, string args) =>
-            Spawn(path, ProgramArguments.Parse(args));
-
-        [Obsolete("Use the " + nameof(Spawn) + " overload taking" + nameof(ProgramArguments) + " instead.")]
-        public static ISpawnObservable<string> Spawn(string path, string args, string workingDirectory) =>
-            Spawn(path, args).WorkingDirectory(workingDirectory);
-
-        [Obsolete("Use the " + nameof(Spawn) + " overload taking" + nameof(ProgramArguments) + " instead.")]
-        public static ISpawnObservable<KeyValuePair<T, string>> Spawn<T>(string path, string args, T stdoutKey, T stderrKey) =>
-            Spawn(path, ProgramArguments.Parse(args), stdoutKey, stderrKey);
-
-        [Obsolete("Use the " + nameof(Spawn) + " overload taking" + nameof(ProgramArguments) + " instead.")]
-        public static IObservable<KeyValuePair<T, string>> Spawn<T>(string path, string args, string workingDirectory, T stdoutKey, T stderrKey) =>
-            Spawn(path, args, stdoutKey, stderrKey).WorkingDirectory(workingDirectory);
-
-        [Obsolete("Use the " + nameof(Spawn) + " overload taking" + nameof(ProgramArguments) + " instead.")]
-        public static IObservable<T> Spawn<T>(string path, string args, Func<string, T> stdoutSelector, Func<string, T> stderrSelector) =>
-            Spawn(path, ProgramArguments.Parse(args), stdoutSelector, stderrSelector);
     }
 }
