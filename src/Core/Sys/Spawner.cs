@@ -32,29 +32,73 @@ namespace WebLinq.Sys
 
     #endregion
 
+    public interface ISpawnObservable<out T> : IObservable<T>
+    {
+        SpawnOptions Options { get; }
+        ISpawnObservable<T> WithOptions(SpawnOptions options);
+    }
+
+    static class SpawnObservable
+    {
+        public static ISpawnObservable<T> Create<T>(SpawnOptions options, Func<IObserver<T>, SpawnOptions, IDisposable> subscriber) =>
+            new Implementation<T>(options, subscriber);
+
+        sealed class Implementation<T> : ISpawnObservable<T>
+        {
+            readonly Func<IObserver<T>, SpawnOptions, IDisposable> _subscriber;
+
+            public Implementation(SpawnOptions options, Func<IObserver<T>, SpawnOptions, IDisposable> subscriber)
+            {
+                Options = options ?? throw new ArgumentNullException(nameof(options));
+                _subscriber = subscriber ?? throw new ArgumentNullException(nameof(subscriber));
+            }
+
+            public SpawnOptions Options { get; }
+
+            public ISpawnObservable<T> WithOptions(SpawnOptions value) =>
+                ReferenceEquals(Options, value) ? this : Create(value, _subscriber);
+
+            public IDisposable Subscribe(IObserver<T> observer) =>
+                _subscriber(observer, Options);
+        }
+    }
+
     public interface ISpawner
     {
-        IObservable<T> Spawn<T>(string path, ProgramArguments args, string workingDirectory, Func<string, T> stdoutSelector, Func<string, T> stderrSelector);
+        IObservable<T> Spawn<T>(string path, ProgramArguments args, SpawnOptions options, Func<string, T> stdoutSelector, Func<string, T> stderrSelector);
     }
 
     public static class SpawnerExtensions
     {
-        public static IObservable<string> Spawn(this ISpawner spawner, string path, ProgramArguments args) =>
-            spawner.Spawn(path, args, null);
+        public static ISpawnObservable<T> ClearEnvironment<T>(this ISpawnObservable<T> source) =>
+            source.WithOptions(source.Options.ClearEnvironment());
 
-        public static IObservable<string> Spawn(this ISpawner spawner, string path, ProgramArguments args, string workingDirectory) =>
-            spawner.Spawn(path, args, workingDirectory, output => output, null);
+        public static ISpawnObservable<T> AddEnvironment<T>(this ISpawnObservable<T> source, string name, string value) =>
+            source.WithOptions(source.Options.AddEnvironment(name, value));
 
-        public static IObservable<KeyValuePair<T, string>> Spawn<T>(this ISpawner spawner, string path, ProgramArguments args, T stdoutKey, T stderrKey) =>
-            spawner.Spawn(path, args, null, stdoutKey, stderrKey);
+        public static ISpawnObservable<T> SetEnvironment<T>(this ISpawnObservable<T> source, string name, string value) =>
+            source.WithOptions(source.Options.SetEnvironment(name, value));
 
-        public static IObservable<KeyValuePair<T, string>> Spawn<T>(this ISpawner spawner, string path, ProgramArguments args, string workingDirectory, T stdoutKey, T stderrKey) =>
-            spawner.Spawn(path, args, workingDirectory,
-                               stdout => stdoutKey.AsKeyTo(stdout),
-                               stderr => stderrKey.AsKeyTo(stderr));
+        public static ISpawnObservable<T> UnsetEnvironment<T>(this ISpawnObservable<T> source, string name) =>
+            source.WithOptions(source.Options.UnsetEnvironment(name));
 
-        public static IObservable<T> Spawn<T>(this ISpawner spawner, string path, ProgramArguments args, Func<string, T> stdoutSelector, Func<string, T> stderrSelector) =>
-            spawner.Spawn(path, args, null, stdoutSelector, stderrSelector);
+        public static ISpawnObservable<T> WorkingDirectory<T>(this ISpawnObservable<T> source, string value) =>
+            source.WithOptions(source.Options.WithWorkingDirectory(value));
+
+        public static ISpawnObservable<string> Spawn(this ISpawner spawner, string path, ProgramArguments args) =>
+            spawner.Spawn(path, args, output => output, null);
+
+        public static ISpawnObservable<KeyValuePair<T, string>>
+            Spawn<T>(this ISpawner spawner,
+                     string path, ProgramArguments args,
+                     T stdoutKey, T stderrKey) =>
+            spawner.Spawn(path, args, stdout => stdoutKey.AsKeyTo(stdout),
+                                      stderr => stderrKey.AsKeyTo(stderr));
+
+        public static ISpawnObservable<T> Spawn<T>(this ISpawner spawner, string path, ProgramArguments args, Func<string, T> stdoutSelector, Func<string, T> stderrSelector) =>
+            SpawnObservable.Create<T>(SpawnOptions.Create(),
+                (observer, options) =>
+                    spawner.Spawn(path, args, options, stdoutSelector, stderrSelector).Subscribe(observer));
     }
 
     public static class Spawner
@@ -63,21 +107,24 @@ namespace WebLinq.Sys
 
         sealed class SysSpawner : ISpawner
         {
-            public IObservable<T> Spawn<T>(string path, ProgramArguments args, string workingDirectory, Func<string, T> stdoutSelector, Func<string, T> stderrSelector) =>
-                SpawnCore(path, args, workingDirectory, stdoutSelector, stderrSelector).ToObservable();
+            public IObservable<T> Spawn<T>(string path, ProgramArguments args, SpawnOptions options, Func<string, T> stdoutSelector, Func<string, T> stderrSelector) =>
+                SpawnCore(path, args, options, stdoutSelector, stderrSelector).ToObservable();
         }
 
         // TODO Make true observable
-        static IEnumerable<T> SpawnCore<T>(string path, ProgramArguments args, string workingDirectory, Func<string, T> stdoutSelector, Func<string, T> stderrSelector)
+        static IEnumerable<T> SpawnCore<T>(string path, ProgramArguments args, SpawnOptions options, Func<string, T> stdoutSelector, Func<string, T> stderrSelector)
         {
-            using (var process = Process.Start(new ProcessStartInfo(path, args.ToString())
+            var psi = new ProcessStartInfo(path, args.ToString())
             {
                 CreateNoWindow         = true,
                 UseShellExecute        = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError  = true,
-                WorkingDirectory       = workingDirectory,
-            }))
+            };
+
+            options.Update(psi);
+
+            using (var process = Process.Start(psi))
             {
                 Debug.Assert(process != null);
 

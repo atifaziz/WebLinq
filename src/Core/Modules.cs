@@ -224,45 +224,35 @@ namespace WebLinq.Modules
 
     public static class SpawnModule
     {
-        public static IObservable<string> Spawn(string path, ProgramArguments args) =>
-            Spawner.Default.Spawn(path, args, null);
+        public static ISpawnObservable<string> Spawn(string path, ProgramArguments args) =>
+            Spawner.Default.Spawn(path, args, output => output, null);
 
-        public static IObservable<string> Spawn(string path, ProgramArguments args, string workingDirectory) =>
-            Spawner.Default.Spawn(path, args, workingDirectory, output => output, null);
+        public static ISpawnObservable<KeyValuePair<T, string>> Spawn<T>(string path, ProgramArguments args, T stdoutKey, T stderrKey) =>
+            Spawner.Default.Spawn(path, args, stdoutKey, stderrKey);
 
-        public static IObservable<KeyValuePair<T, string>> Spawn<T>(string path, ProgramArguments args, T stdoutKey, T stderrKey) =>
-            Spawner.Default.Spawn(path, args, null, stdoutKey, stderrKey);
-
-        public static IObservable<KeyValuePair<T, string>> Spawn<T>(string path, ProgramArguments args, string workingDirectory, T stdoutKey, T stderrKey) =>
-            Spawner.Default.Spawn(path, args, workingDirectory,
-                                  stdout => stdoutKey.AsKeyTo(stdout),
-                                  stderr => stderrKey.AsKeyTo(stderr));
-
-        public static IObservable<T> Spawn<T>(string path, ProgramArguments args, Func<string, T> stdoutSelector, Func<string, T> stderrSelector) =>
-            Spawner.Default.Spawn(path, args, null, stdoutSelector, stderrSelector);
+        public static ISpawnObservable<T> Spawn<T>(string path, ProgramArguments args, Func<string, T> stdoutSelector, Func<string, T> stderrSelector) =>
+            Spawner.Default.Spawn(path, args, stdoutSelector, stderrSelector);
 
         //
 
         [Obsolete("Use the " + nameof(Spawn) + " overload taking" + nameof(ProgramArguments) + " instead.")]
-        public static IObservable<string> Spawn(string path, string args) =>
-            Spawner.Default.Spawn(path, ProgramArguments.Parse(args), null);
+        public static ISpawnObservable<string> Spawn(string path, string args) =>
+            Spawn(path, ProgramArguments.Parse(args));
 
         [Obsolete("Use the " + nameof(Spawn) + " overload taking" + nameof(ProgramArguments) + " instead.")]
-        public static IObservable<string> Spawn(string path, string args, string workingDirectory) =>
-            Spawner.Default.Spawn(path, ProgramArguments.Parse(args), workingDirectory, output => output, null);
+        public static ISpawnObservable<string> Spawn(string path, string args, string workingDirectory) =>
+            Spawn(path, args).WorkingDirectory(workingDirectory);
 
         [Obsolete("Use the " + nameof(Spawn) + " overload taking" + nameof(ProgramArguments) + " instead.")]
-        public static IObservable<KeyValuePair<T, string>> Spawn<T>(string path, string args, T stdoutKey, T stderrKey) =>
-            Spawner.Default.Spawn(path, ProgramArguments.Parse(args), null, stdoutKey, stderrKey);
+        public static ISpawnObservable<KeyValuePair<T, string>> Spawn<T>(string path, string args, T stdoutKey, T stderrKey) =>
+            Spawn(path, ProgramArguments.Parse(args), stdoutKey, stderrKey);
 
         [Obsolete("Use the " + nameof(Spawn) + " overload taking" + nameof(ProgramArguments) + " instead.")]
         public static IObservable<KeyValuePair<T, string>> Spawn<T>(string path, string args, string workingDirectory, T stdoutKey, T stderrKey) =>
-            Spawner.Default.Spawn(path, ProgramArguments.Parse(args), workingDirectory,
-                                  stdout => stdoutKey.AsKeyTo(stdout),
-                                  stderr => stderrKey.AsKeyTo(stderr));
+            Spawn(path, args, stdoutKey, stderrKey).WorkingDirectory(workingDirectory);
 
         [Obsolete("Use the " + nameof(Spawn) + " overload taking" + nameof(ProgramArguments) + " instead.")]
         public static IObservable<T> Spawn<T>(string path, string args, Func<string, T> stdoutSelector, Func<string, T> stderrSelector) =>
-            Spawner.Default.Spawn(path, ProgramArguments.Parse(args), null, stdoutSelector, stderrSelector);
+            Spawn(path, ProgramArguments.Parse(args), stdoutSelector, stderrSelector);
     }
 }
