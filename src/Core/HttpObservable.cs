@@ -32,6 +32,9 @@ namespace WebLinq
         IHttpObservable WithConfigurer(Func<HttpConfig, HttpConfig> modifier);
         IHttpObservable WithFilterPredicate(Func<HttpFetchInfo, bool> predicate);
         IObservable<HttpFetch<T>> ReadContent<T>(Func<HttpFetch<HttpContent>, Task<T>> reader);
+        IObservable<T> ReadContent<S, T>(Func<HttpFetch<HttpContent>, Task<S>> seeder,
+                                         Func<S, Task<(S, bool, T)>> looper,
+                                         Action<S> disposer);
     }
 
     public static partial class HttpObservable
@@ -131,6 +134,22 @@ namespace WebLinq
                 where FilterPredicate(f.Info)
                 from c in reader(f)
                 select f.WithContent(c);
+
+            public IObservable<T> ReadContent<S, T>(Func<HttpFetch<HttpContent>, Task<S>> seeder, Func<S, Task<(S, bool, T)>> looper, Action<S> disposer) =>
+                from e in
+                    _query(this)
+                        .SelectMany(async f => (State: await seeder(f), Continue: false, Item: default(T)))
+                        .Expand(s => Observable.Return(s.State).SelectMany(looper))
+                        .Skip(1)
+                        .Materialize()
+                        .Do(n =>
+                        {
+                            if (n.Kind == NotificationKind.OnError || n.Kind == NotificationKind.OnCompleted)
+                                disposer(n.Value.State);
+                        })
+                        .Dematerialize()
+                        .TakeWhile(e => e.Continue)
+                select e.Item;
         }
     }
 }
