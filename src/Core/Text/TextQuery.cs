@@ -17,6 +17,7 @@
 namespace WebLinq.Text
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Net.Http;
     using System.Reactive.Linq;
@@ -53,15 +54,73 @@ namespace WebLinq.Text
             from bytes in fetch.Content.ReadAsByteArrayAsync()
             select fetch.WithContent(encoding.GetString(bytes));
 
-        public static IObservable<string> Lines(this IHttpObservable query) =>
+        public static IContentObservable<string> Lines(this IHttpObservable query) =>
             Lines(query, null);
 
-        public static IObservable<string> Lines(this IHttpObservable query, Encoding encoding) =>
+        public static IContentObservable<string> Lines(this IHttpObservable query, Encoding encoding) =>
             Lines(query, encoding, false);
 
-        public static IObservable<string> Lines(this IHttpObservable query, Encoding encoding, bool force) =>
-            query.ExpandContent(
-                async f => new StreamReader(await f.Content.ReadAsStreamAsync(), encoding is Encoding e && force ? e : f.ContentCharSetEncoding ?? encoding),
-                async r => await r.ReadLineAsync() is string line ? (true, line) : default);
+        public static IContentObservable<string> Lines(this IHttpObservable query, Encoding encoding, bool force) =>
+            ContentObservable.Create<string>((options, observer) =>
+                query.ExpandContent(
+                    async f => new StreamReader(await f.Content.ReadAsStreamAsync(), encoding is Encoding e && force ? e : f.ContentCharSetEncoding ?? encoding),
+                    r => (Reader: r, Count: 0),
+                    async s => { Console.WriteLine("here"); return await s.Reader.ReadLineAsync() is string line && options.FilterPredicate(line, s.Count) ? ((s.Reader, s.Count + 1), true, line) : default; }).Subscribe(observer));
+    }
+
+    public sealed class ContentOptions<T>
+    {
+        public static readonly ContentOptions<T> Default = new ContentOptions<T>(delegate { return true; });
+
+        public Func<T, int, bool> FilterPredicate { get; private set; }
+
+        ContentOptions(Func<T, int, bool> filterPredicate) =>
+            FilterPredicate = filterPredicate;
+
+        ContentOptions(ContentOptions<T> other) :
+            this(other.FilterPredicate)  {}
+
+        public ContentOptions<T> WithFilterPredicate(Func<T, int, bool> value) =>
+            FilterPredicate == value ? this : new ContentOptions<T>(this) { FilterPredicate = value };
+    }
+
+    public interface IContentObservable<T> : IObservable<T>
+    {
+        ContentOptions<T> Options { get; }
+        IContentObservable<T> WithOptions(ContentOptions<T> value);
+    }
+
+    public sealed class ContentObservable<T> : IContentObservable<T>
+    {
+        readonly Func<ContentOptions<T>, IObserver<T>, IDisposable> _subscriber;
+
+        public ContentObservable(Func<ContentOptions<T>, IObserver<T>, IDisposable> subscriber) :
+            this(ContentOptions<T>.Default, subscriber) {}
+
+        ContentObservable(ContentOptions<T> options, Func<ContentOptions<T>, IObserver<T>, IDisposable> subscriber)
+        {
+            Options = options ?? throw new ArgumentNullException(nameof(options));
+            _subscriber = subscriber ?? throw new ArgumentNullException(nameof(subscriber));
+        }
+
+        public IDisposable Subscribe(IObserver<T> observer) =>
+            _subscriber(Options, observer);
+
+        public ContentOptions<T> Options { get; }
+
+        public IContentObservable<T> WithOptions(ContentOptions<T> value) =>
+            value == Options ? this : new ContentObservable<T>(value, _subscriber);
+    }
+
+    public static class ContentObservable
+    {
+        public static IContentObservable<T> Create<T>(Func<ContentOptions<T>, IObserver<T>, IDisposable> subscriber) =>
+            new ContentObservable<T>(subscriber);
+
+        public static IContentObservable<T> Where<T>(this IContentObservable<T> source, Func<T, int, bool> predicate) =>
+            source.WithOptions(source.Options.WithFilterPredicate((e, i) => source.Options.FilterPredicate(e, i) && predicate(e, i)));
+
+        public static IContentObservable<T> Take<T>(this IContentObservable<T> source, int count) =>
+            source.Where((e, i) => i < count);
     }
 }
