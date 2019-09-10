@@ -32,9 +32,10 @@ namespace WebLinq
         IHttpObservable WithConfigurer(Func<HttpConfig, HttpConfig> modifier);
         IHttpObservable WithFilterPredicate(Func<HttpFetchInfo, bool> predicate);
         IObservable<HttpFetch<T>> ReadContent<T>(Func<HttpFetch<HttpContent>, Task<T>> reader);
-        IObservable<T> ReadContent<S, T>(Func<HttpFetch<HttpContent>, Task<S>> seeder,
-                                         Func<S, Task<(S, bool, T)>> looper,
-                                         Action<S> disposer);
+        IObservable<T> ExpandContent<TSeed, TState, T>(Func<HttpFetch<HttpContent>, Task<TSeed>> seeder,
+                                                       Func<TSeed, TState> initializer,
+                                                       Func<TState, Task<(TState, bool, T)>> looper,
+                                                       Action<TSeed> disposer);
     }
 
     public static partial class HttpObservable
@@ -92,6 +93,21 @@ namespace WebLinq
         public static IObservable<HttpFetch<T>> WithReader<T>(this IHttpObservable query, Func<HttpFetch<HttpContent>, Task<T>> reader) =>
             query.ReadContent(reader);
 
+        public static IObservable<T>
+            ExpandContent<TResource, T>(this IHttpObservable query,
+                Func<HttpFetch<HttpContent>, Task<TResource>> seeder,
+                Func<TResource, Task<(bool, T)>> looper)
+                where TResource : IDisposable =>
+            query.ExpandContent(seeder, s => s, async s => { var (some, item) = await looper(s); return (s, some, item); });
+
+        public static IObservable<T>
+            ExpandContent<TSeed, TState, T>(this IHttpObservable query,
+                Func<HttpFetch<HttpContent>, Task<TSeed>> seeder,
+                Func<TSeed, TState> initializer,
+                Func<TState, Task<(TState, bool, T)>> looper)
+                where TSeed : IDisposable =>
+            query.ExpandContent(seeder, initializer, looper, r => r.Dispose());
+
         sealed class Impl : IHttpObservable
         {
             readonly Func<IHttpObservable, IObservable<HttpFetch<HttpContent>>> _query;
@@ -135,20 +151,19 @@ namespace WebLinq
                 from c in reader(f)
                 select f.WithContent(c);
 
-            public IObservable<T> ReadContent<S, T>(Func<HttpFetch<HttpContent>, Task<S>> seeder, Func<S, Task<(S, bool, T)>> looper, Action<S> disposer) =>
+            public IObservable<T> ExpandContent<TSeed, TState, T>(Func<HttpFetch<HttpContent>, Task<TSeed>> seeder, Func<TSeed, TState> initializer, Func<TState, Task<(TState, bool, T)>> looper,
+                Action<TSeed> disposer) =>
                 from e in
                     _query(this)
-                        .SelectMany(async f => (State: await seeder(f), Continue: false, Item: default(T)))
-                        .Expand(s => Observable.Return(s.State).SelectMany(looper))
-                        .Skip(1)
-                        .Materialize()
-                        .Do(n =>
-                        {
-                            if (n.Kind == NotificationKind.OnError || n.Kind == NotificationKind.OnCompleted)
-                                disposer(n.Value.State);
-                        })
-                        .Dematerialize()
-                        .TakeWhile(e => e.Continue)
+                        .SelectMany(seeder)
+                        .Select(seed =>
+                            Observable
+                                .Return((State: initializer(seed), Continue: false, Item: default(T)))
+                                .Expand(s => Observable.Return(s.State).SelectMany(looper))
+                                .Skip(1)
+                                .TakeWhile(e => e.Continue)
+                                .Finally(() => disposer(seed)))
+                        .Concat()
                 select e.Item;
         }
     }

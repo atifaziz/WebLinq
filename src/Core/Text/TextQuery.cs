@@ -52,5 +52,16 @@ namespace WebLinq.Text
             from fetch in query
             from bytes in fetch.Content.ReadAsByteArrayAsync()
             select fetch.WithContent(encoding.GetString(bytes));
+
+        public static IObservable<string> Lines(this IHttpObservable query) =>
+            Lines(query, null);
+
+        public static IObservable<string> Lines(this IHttpObservable query, Encoding encoding) =>
+            Lines(query, encoding, false);
+
+        public static IObservable<string> Lines(this IHttpObservable query, Encoding encoding, bool force) =>
+            query.ExpandContent(
+                async f => new StreamReader(await f.Content.ReadAsStreamAsync(), encoding is Encoding e && force ? e : f.ContentCharSetEncoding ?? encoding),
+                async r => await r.ReadLineAsync() is string line ? (true, line) : default);
     }
 }
