@@ -17,7 +17,6 @@
 namespace WebLinq.Text
 {
     using System;
-    using System.Collections.Generic;
     using System.IO;
     using System.Net.Http;
     using System.Reactive.Linq;
@@ -63,25 +62,47 @@ namespace WebLinq.Text
         public static IContentObservable<string> Lines(this IHttpObservable query, Encoding encoding, bool force) =>
             ContentObservable.Create<string>((options, observer) =>
                 query.ExpandContent(
-                    async f => new StreamReader(await f.Content.ReadAsStreamAsync(), encoding is Encoding e && force ? e : f.ContentCharSetEncoding ?? encoding),
-                    r => (Reader: r, Count: 0),
-                    async s => { Console.WriteLine("here"); return await s.Reader.ReadLineAsync() is string line && options.FilterPredicate(line, s.Count) ? ((s.Reader, s.Count + 1), true, line) : default; }).Subscribe(observer));
+                          async f => new StreamReader(await f.Content.ReadAsStreamAsync(),
+                                                      encoding is Encoding e && force ? e : f.ContentCharSetEncoding ?? encoding),
+                          r => (Reader: r, Previous: (string)null, Count: 0),
+                          async s => options.IterationPredicate(s.Count, s.Previous)
+                                     && await s.Reader.ReadLineAsync() is string line
+                                     && options.ContinuationPredicate(line, s.Count)
+                                   ? ((s.Reader, line, s.Count + 1), true, line)
+                                   : default)
+                    .Subscribe(observer));
     }
 
     public sealed class ContentOptions<T>
     {
-        public static readonly ContentOptions<T> Default = new ContentOptions<T>(delegate { return true; });
+        public static readonly ContentOptions<T> Default =
+            new ContentOptions<T>(delegate { return true;  },
+                                  delegate { return true; });
 
-        public Func<T, int, bool> FilterPredicate { get; private set; }
+        public Func<int, T, bool> IterationPredicate { get; private set; }
+        public Func<T, int, bool> ContinuationPredicate { get; private set; }
 
-        ContentOptions(Func<T, int, bool> filterPredicate) =>
-            FilterPredicate = filterPredicate;
+        ContentOptions(Func<int, T, bool> iterationPredicate,
+                       Func<T, int, bool> continuationPredicate)
+        {
+            IterationPredicate = iterationPredicate;
+            ContinuationPredicate = continuationPredicate;
+        }
 
         ContentOptions(ContentOptions<T> other) :
-            this(other.FilterPredicate)  {}
+            this(other.IterationPredicate, other.ContinuationPredicate) {}
 
-        public ContentOptions<T> WithFilterPredicate(Func<T, int, bool> value) =>
-            FilterPredicate == value ? this : new ContentOptions<T>(this) { FilterPredicate = value };
+        public ContentOptions<T> WithIterationPredicate(Func<int, T, bool> value) =>
+            IterationPredicate == value ? this : new ContentOptions<T>(this) { IterationPredicate = value };
+
+        public ContentOptions<T> AndIterationPredicate(Func<int, T, bool> predicate) =>
+            WithIterationPredicate((i, pe) => IterationPredicate(i, pe) && predicate(i, pe));
+
+        public ContentOptions<T> WithContinuationPredicate(Func<T, int, bool> value) =>
+            ContinuationPredicate == value ? this : new ContentOptions<T>(this) { ContinuationPredicate = value };
+
+        public ContentOptions<T> AndContinuationPredicate(Func<T, int, bool> predicate) =>
+            WithContinuationPredicate((e, i) => ContinuationPredicate(e, i) && predicate(e, i));
     }
 
     public interface IContentObservable<T> : IObservable<T>
@@ -117,10 +138,13 @@ namespace WebLinq.Text
         public static IContentObservable<T> Create<T>(Func<ContentOptions<T>, IObserver<T>, IDisposable> subscriber) =>
             new ContentObservable<T>(subscriber);
 
-        public static IContentObservable<T> Where<T>(this IContentObservable<T> source, Func<T, int, bool> predicate) =>
-            source.WithOptions(source.Options.WithFilterPredicate((e, i) => source.Options.FilterPredicate(e, i) && predicate(e, i)));
+        public static IContentObservable<T> TakeWhile<T>(this IContentObservable<T> source, Func<T, int, bool> predicate) =>
+            source.WithOptions(source.Options.AndContinuationPredicate(predicate));
 
         public static IContentObservable<T> Take<T>(this IContentObservable<T> source, int count) =>
-            source.Where((e, i) => i < count);
+            source.WithOptions(source.Options.AndIterationPredicate((i, _) => i < count));
+
+        public static IContentObservable<T> TakeUntil<T>(this IContentObservable<T> source, Func<T, bool> predicate) =>
+            source.WithOptions(source.Options.AndIterationPredicate((i, pe) => i == 0 || !predicate(pe)));
     }
 }

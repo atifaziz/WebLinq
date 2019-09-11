@@ -34,7 +34,7 @@ namespace WebLinq
         IObservable<HttpFetch<T>> ReadContent<T>(Func<HttpFetch<HttpContent>, Task<T>> reader);
         IObservable<T> ExpandContent<TSeed, TState, T>(Func<HttpFetch<HttpContent>, Task<TSeed>> seeder,
                                                        Func<TSeed, TState> initializer,
-                                                       Func<TState, Task<(TState, bool, T)>> looper,
+                                                       Func<TState, Task<(TState State, bool Continue, T Item)>> looper,
                                                        Action<TSeed> disposer);
     }
 
@@ -98,7 +98,7 @@ namespace WebLinq
                 Func<HttpFetch<HttpContent>, Task<TResource>> seeder,
                 Func<TResource, Task<(bool, T)>> looper)
                 where TResource : IDisposable =>
-            query.ExpandContent(seeder, s => s, async s => { var (some, item) = await looper(s); return (s, some, item); });
+            query.ExpandContent(seeder, r => r, async r => { var (some, item) = await looper(r); return (r, some, item); });
 
         public static IObservable<T>
             ExpandContent<TSeed, TState, T>(this IHttpObservable query,
@@ -151,17 +151,22 @@ namespace WebLinq
                 from c in reader(f)
                 select f.WithContent(c);
 
-            public IObservable<T> ExpandContent<TSeed, TState, T>(Func<HttpFetch<HttpContent>, Task<TSeed>> seeder, Func<TSeed, TState> initializer, Func<TState, Task<(TState, bool, T)>> looper,
-                Action<TSeed> disposer) =>
+            public IObservable<T>
+                ExpandContent<TSeed, TState, T>(
+                    Func<HttpFetch<HttpContent>, Task<TSeed>> seeder,
+                    Func<TSeed, TState> initializer,
+                    Func<TState, Task<(TState State, bool Continue, T Item)>> looper,
+                    Action<TSeed> disposer) =>
                 from e in
                     _query(this)
                         .SelectMany(seeder)
                         .Select(seed =>
                             Observable
-                                .Return((State: initializer(seed), Continue: false, Item: default(T)))
-                                .Expand(s => Observable.Return(s.State).SelectMany(looper))
+                                .Return((State: initializer(seed), Continue: true, Item: default(T)))
+                                .Expand(s => Observable.Return(s.State)
+                                                       .SelectMany(looper)
+                                                       .TakeWhile(e => e.Continue))
                                 .Skip(1)
-                                .TakeWhile(e => e.Continue)
                                 .Finally(() => disposer(seed)))
                         .Concat()
                 select e.Item;
