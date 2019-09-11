@@ -65,11 +65,26 @@ namespace WebLinq.Sys
 
     public interface ISpawner
     {
-        IObservable<T> Spawn<T>(string path, ProgramArguments args, SpawnOptions options, Func<string, T> stdoutSelector, Func<string, T> stderrSelector);
+        IObservable<T> Spawn<T>(string path, SpawnOptions options, Func<string, T> stdoutSelector, Func<string, T> stderrSelector);
     }
 
     public static class SpawnerExtensions
     {
+        public static ISpawnObservable<T> AddArgument<T>(this ISpawnObservable<T> source, string value) =>
+            source.WithOptions(source.Options.AddArgument(value));
+
+        public static ISpawnObservable<T> AddArgument<T>(this ISpawnObservable<T> source, string[] values) =>
+            source.WithOptions(source.Options.AddArgument(values));
+
+        public static ISpawnObservable<T> AddArguments<T>(this ISpawnObservable<T> source, IEnumerable<string> values) =>
+            source.WithOptions(source.Options.AddArguments(values));
+
+        public static ISpawnObservable<T> ClearArguments<T>(this ISpawnObservable<T> source) =>
+            source.WithOptions(source.Options.ClearArguments());
+
+        public static ISpawnObservable<T> SetCommandLine<T>(this ISpawnObservable<T> source, string value) =>
+            source.WithOptions(source.Options.SetCommandLine(value));
+
         public static ISpawnObservable<T> ClearEnvironment<T>(this ISpawnObservable<T> source) =>
             source.WithOptions(source.Options.ClearEnvironment());
 
@@ -96,9 +111,9 @@ namespace WebLinq.Sys
                                       stderr => stderrKey.AsKeyTo(stderr));
 
         public static ISpawnObservable<T> Spawn<T>(this ISpawner spawner, string path, ProgramArguments args, Func<string, T> stdoutSelector, Func<string, T> stderrSelector) =>
-            SpawnObservable.Create<T>(SpawnOptions.Create(),
+            SpawnObservable.Create<T>(SpawnOptions.Create().WithArguments(args),
                 (observer, options) =>
-                    spawner.Spawn(path, args, options, stdoutSelector, stderrSelector).Subscribe(observer));
+                    spawner.Spawn(path, options, stdoutSelector, stderrSelector).Subscribe(observer));
     }
 
     public static class Spawner
@@ -107,14 +122,14 @@ namespace WebLinq.Sys
 
         sealed class SysSpawner : ISpawner
         {
-            public IObservable<T> Spawn<T>(string path, ProgramArguments args, SpawnOptions options, Func<string, T> stdoutSelector, Func<string, T> stderrSelector) =>
-                SpawnCore(path, args, options, stdoutSelector, stderrSelector).ToObservable();
+            public IObservable<T> Spawn<T>(string path, SpawnOptions options, Func<string, T> stdoutSelector, Func<string, T> stderrSelector) =>
+                SpawnCore(path, options, stdoutSelector, stderrSelector).ToObservable();
         }
 
         // TODO Make true observable
-        static IEnumerable<T> SpawnCore<T>(string path, ProgramArguments args, SpawnOptions options, Func<string, T> stdoutSelector, Func<string, T> stderrSelector)
+        static IEnumerable<T> SpawnCore<T>(string path, SpawnOptions options, Func<string, T> stdoutSelector, Func<string, T> stderrSelector)
         {
-            var psi = new ProcessStartInfo(path, args.ToString())
+            var psi = new ProcessStartInfo(path, options.Arguments.ToString())
             {
                 CreateNoWindow         = true,
                 UseShellExecute        = false,

@@ -32,30 +32,64 @@ namespace WebLinq.Sys
     public sealed class SpawnOptions
     {
         public static SpawnOptions Create() =>
-            new SpawnOptions(System.Environment.CurrentDirectory,
+            new SpawnOptions(ProgramArguments.Empty,
+                             System.Environment.CurrentDirectory,
                              ImmutableArray.CreateRange(from DictionaryEntry e in System.Environment.GetEnvironmentVariables()
                                                         select ((string)e.Key).AsKeyTo((string)e.Value)));
 
-        SpawnOptions(string workingDirectory, ImmutableArray<KeyValuePair<string, string>> environment)
+        SpawnOptions(ProgramArguments arguments, string workingDirectory, ImmutableArray<KeyValuePair<string, string>> environment)
         {
+            Arguments = arguments;
             WorkingDirectory = workingDirectory;
             Environment = environment;
         }
 
-        public string WorkingDirectory { get; }
-        public ImmutableArray<KeyValuePair<string, string>> Environment { get; }
+        public SpawnOptions(SpawnOptions other) :
+            this(other.Arguments, other.WorkingDirectory, other.Environment) {}
+
+        public ProgramArguments Arguments { get; private set; }
+        public string WorkingDirectory { get; private set; }
+        public ImmutableArray<KeyValuePair<string, string>> Environment { get; private set; }
 
         public SpawnOptions WithEnvironment(ImmutableArray<KeyValuePair<string, string>> value) =>
-            Environment.IsEmpty && value.IsEmpty ? this : new SpawnOptions(WorkingDirectory, value);
+            Environment.IsEmpty && value.IsEmpty ? this : new SpawnOptions(this) { Environment = value };
 
         public SpawnOptions WithWorkingDirectory(string value)
             => value is null ? throw new ArgumentNullException(nameof(value))
              : value == WorkingDirectory ? this
-             : new SpawnOptions(value, Environment);
+             : new SpawnOptions(this) { WorkingDirectory = value };
+
+        public SpawnOptions WithArguments(ProgramArguments value)
+            => value is null ? throw new ArgumentNullException(nameof(value))
+             : value == Arguments || value.Count == 0 && Arguments.Count == 0 ? this
+             : new SpawnOptions(this) { Arguments = value };
     }
 
     public static class SpawnOptionsExtensions
     {
+        public static SpawnOptions AddArgument(this SpawnOptions options, string value)
+            => options is null
+             ? throw new ArgumentNullException(nameof(options))
+             : options.WithArguments(ProgramArguments.From(options.Arguments.Append(value)));
+
+        public static SpawnOptions AddArgument(this SpawnOptions options, string[] values) =>
+            options.AddArguments(values);
+
+        public static SpawnOptions AddArguments(this SpawnOptions options, IEnumerable<string> values)
+            => options is null
+             ? throw new ArgumentNullException(nameof(options))
+             : options.WithArguments(ProgramArguments.From(options.Arguments.Concat(values)));
+
+        public static SpawnOptions ClearArguments(this SpawnOptions options)
+            => options is null
+             ? throw new ArgumentNullException(nameof(options))
+             : options.WithArguments(ProgramArguments.Empty);
+
+        public static SpawnOptions SetCommandLine(this SpawnOptions options, string value)
+            => options is null
+             ? throw new ArgumentNullException(nameof(options))
+             : options.WithArguments(ProgramArguments.Parse(value));
+
         public static SpawnOptions AddEnvironment(this SpawnOptions options, string name, string value)
         {
             if (options is null) throw new ArgumentNullException(nameof(options));

@@ -32,14 +32,12 @@ namespace WebLinq.Tests
         sealed class Spawner : ISpawner
         {
             public string Path;
-            public ProgramArguments Args;
             public SpawnOptions Options;
             public List<(LineKind Kind, string Line)> Return = new List<(LineKind, string)>();
 
-            public IObservable<T> Spawn<T>(string path, ProgramArguments args, SpawnOptions options, Func<string, T> stdoutSelector, Func<string, T> stderrSelector)
+            public IObservable<T> Spawn<T>(string path, SpawnOptions options, Func<string, T> stdoutSelector, Func<string, T> stderrSelector)
             {
                 Path = path;
-                Args = args;
                 Options = options;
                 var output =
                     from e in Return
@@ -67,7 +65,7 @@ namespace WebLinq.Tests
             var output = spawn.ToEnumerable().ToArray();
 
             Assert.That(spawner.Path, Is.EqualTo("program"));
-            Assert.That(spawner.Args, Is.EqualTo(new[] { "foo", "bar", "baz" }));
+            Assert.That(spawner.Options.Arguments, Is.EqualTo(new[] { "foo", "bar", "baz" }));
             Assert.That(spawner.Options, Is.SameAs(spawn.Options));
             Assert.That(output, Is.EqualTo(new[] { "STDOUT: OUTPUT", "STDERR: ERROR" }));
         }
@@ -90,7 +88,7 @@ namespace WebLinq.Tests
                        .ToArray();
 
             Assert.That(spawner.Path, Is.EqualTo("program"));
-            Assert.That(spawner.Args, Is.EqualTo(new[] { "foo", "bar", "baz" }));
+            Assert.That(spawner.Options.Arguments, Is.EqualTo(new[] { "foo", "bar", "baz" }));
 
             Assert.That(output, Is.EqualTo(new[] { "output" }));
         }
@@ -113,7 +111,7 @@ namespace WebLinq.Tests
                        .ToArray();
 
             Assert.That(spawner.Path, Is.EqualTo("program"));
-            Assert.That(spawner.Args, Is.EqualTo(new[] { "foo", "bar", "baz" }));
+            Assert.That(spawner.Options.Arguments, Is.EqualTo(new[] { "foo", "bar", "baz" }));
 
             Assert.That(output, Is.EqualTo(new[]
             {
