@@ -33,7 +33,7 @@ namespace WebLinq.Tests
         {
             public string Path;
             public SpawnOptions Options;
-            public List<(LineKind Kind, string Line)> Return = new List<(LineKind, string)>();
+            public readonly List<(LineKind Kind, string Line)> Return = new List<(LineKind, string)>();
 
             public IObservable<T> Spawn<T>(string path, SpawnOptions options, Func<string, T> stdoutSelector, Func<string, T> stderrSelector)
             {
@@ -120,11 +120,13 @@ namespace WebLinq.Tests
             }));
         }
 
+        static ISpawnObservable<string> SpawnProgram() =>
+            new Spawner().Spawn("program", ProgramArguments.Empty);
+
         [Test]
         public void ClearEnvironment()
         {
-            var spawner = new Spawner();
-            var spawn1 = spawner.Spawn("program", ProgramArguments.Empty);
+            var spawn1 = SpawnProgram();
 
             Assert.That(spawn1.Options.Environment, Is.Not.Empty);
 
@@ -138,8 +140,7 @@ namespace WebLinq.Tests
         [Test]
         public void AddEnvironmentWithNullName()
         {
-            var spawner = new Spawner();
-            var spawn = spawner.Spawn("program", ProgramArguments.Empty);
+            var spawn = SpawnProgram();
 
             var e = Assert.Throws<ArgumentNullException>(() =>
                 spawn.AddEnvironment(null, string.Empty));
@@ -149,8 +150,7 @@ namespace WebLinq.Tests
         [Test]
         public void AddEnvironmentWithEmptyName()
         {
-            var spawner = new Spawner();
-            var spawn = spawner.Spawn("program", ProgramArguments.Empty);
+            var spawn = SpawnProgram();
 
             var e = Assert.Throws<ArgumentException>(() =>
                 spawn.AddEnvironment(string.Empty, string.Empty));
@@ -160,8 +160,7 @@ namespace WebLinq.Tests
         [Test]
         public void AddEnvironmentWithNullValue()
         {
-            var spawner = new Spawner();
-            var spawn = spawner.Spawn("program", ProgramArguments.Empty);
+            var spawn = SpawnProgram();
 
             var e = Assert.Throws<ArgumentNullException>(() =>
                 spawn.AddEnvironment("FOO", null));
@@ -171,12 +170,11 @@ namespace WebLinq.Tests
         [Test]
         public void AddEnvironment()
         {
-            var spawner = new Spawner();
             var options =
-                spawner.Spawn("program", ProgramArguments.Empty)
-                       .ClearEnvironment()
-                       .AddEnvironment("FOO", "BAR")
-                       .Options;
+                SpawnProgram()
+                   .ClearEnvironment()
+                   .AddEnvironment("FOO", "BAR")
+                   .Options;
 
             Assert.That(options.Environment, Is.EqualTo(new[]
             {
@@ -195,8 +193,7 @@ namespace WebLinq.Tests
         [Test]
         public void SetEnvironmentWithNullName()
         {
-            var spawner = new Spawner();
-            var spawn = spawner.Spawn("program", ProgramArguments.Empty);
+            var spawn = SpawnProgram();
 
             var e = Assert.Throws<ArgumentNullException>(() =>
                 spawn.SetEnvironment(null, string.Empty));
@@ -206,13 +203,12 @@ namespace WebLinq.Tests
         [Test]
         public void SetEnvironmentWithNullValueUnsets()
         {
-            var spawner = new Spawner();
-            var spawn = spawner.Spawn("program", ProgramArguments.Empty);
-
-            var options = spawn.ClearEnvironment()
-                               .AddEnvironment("FOO", "BAR")
-                               .AddEnvironment("FOO", "BAZ")
-                               .Options;
+            var options =
+                SpawnProgram()
+                    .ClearEnvironment()
+                    .AddEnvironment("FOO", "BAR")
+                    .AddEnvironment("FOO", "BAZ")
+                    .Options;
 
             Assert.That(options.Environment, Is.EqualTo(new[]
             {
@@ -228,8 +224,7 @@ namespace WebLinq.Tests
         [Test]
         public void UnsetEnvironmentWithNullName()
         {
-            var spawner = new Spawner();
-            var spawn = spawner.Spawn("program", ProgramArguments.Empty);
+            var spawn = SpawnProgram();
 
             var e = Assert.Throws<ArgumentNullException>(() =>
                 spawn.UnsetEnvironment(null));
@@ -240,8 +235,7 @@ namespace WebLinq.Tests
         [Test]
         public void UnsetEnvironmentWithEmptyName()
         {
-            var spawner = new Spawner();
-            var spawn = spawner.Spawn("program", ProgramArguments.Empty);
+            var spawn = SpawnProgram();
 
             var e = Assert.Throws<ArgumentException>(() =>
                 spawn.UnsetEnvironment(string.Empty));
@@ -251,12 +245,12 @@ namespace WebLinq.Tests
         [Test]
         public void UnsetEnvironment()
         {
-            var spawner = new Spawner();
-            var options = spawner.Spawn("program", ProgramArguments.Empty)
-                                  .ClearEnvironment()
-                                  .AddEnvironment("FOO", "BAR")
-                                  .AddEnvironment("FOO", "BAZ")
-                                  .Options;
+            var options =
+                SpawnProgram()
+                    .ClearEnvironment()
+                    .AddEnvironment("FOO", "BAR")
+                    .AddEnvironment("FOO", "BAZ")
+                    .Options;
 
             Assert.That(options.Environment, Is.EqualTo(new[]
             {
