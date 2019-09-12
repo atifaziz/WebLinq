@@ -17,14 +17,18 @@
 namespace WebLinq.Tests
 {
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
     using System.Collections;
-    using NUnit.Framework;
-    using Sys;
+    using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Diagnostics;
     using System.IO;
+    using System.Linq;
+    using System.Runtime.InteropServices;
+    using NUnit.Framework;
+    using NUnit.Framework.Constraints;
+    using Optuple;
+    using Sys;
+    using static Optuple.OptionModule;
 
     [TestFixture]
     public class SpawnOptionsTests
@@ -70,6 +74,8 @@ namespace WebLinq.Tests
 
             var psi = new ProcessStartInfo();
 
+            var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+
             var windowStyle             = psi.WindowStyle;
             var verb                    = psi.Verb;
             var errorDialogParentHandle = psi.ErrorDialogParentHandle;
@@ -82,40 +88,44 @@ namespace WebLinq.Tests
             var redirectStandardOutput  = psi.RedirectStandardOutput;
             var redirectStandardInput   = psi.RedirectStandardInput;
             var redirectStandardError   = psi.RedirectStandardError;
-            var password                = psi.Password;
-            var loadUserProfile         = psi.LoadUserProfile;
+            var password                = isWindows ? Some(psi.Password) : default;
+            var loadUserProfile         = isWindows ? Some(psi.LoadUserProfile) : default;
             var fileName                = psi.FileName;
-            var domain                  = psi.Domain;
+            var domain                  = isWindows ? Some(psi.Domain) : default;
             var createNoWindow          = psi.CreateNoWindow;
             var argumentList            = psi.ArgumentList;
             var arguments               = psi.Arguments;
-            var passwordInClearText     = psi.PasswordInClearText;
+            var passwordInClearText     = isWindows ? Some(psi.PasswordInClearText) : default;
 
             options.Update(psi);
 
             Assert.That(psi.WorkingDirectory, Is.SameAs(options.WorkingDirectory));
             Assert.That(psi.Environment, Is.EqualTo(options.Environment));
 
-            Assert.That(psi.WindowStyle            , Is.EqualTo(windowStyle            ));
-            Assert.That(psi.Verb                   , Is.SameAs (verb                   ));
-            Assert.That(psi.ErrorDialogParentHandle, Is.EqualTo(errorDialogParentHandle));
-            Assert.That(psi.ErrorDialog            , Is.EqualTo(errorDialog            ));
-            Assert.That(psi.UseShellExecute        , Is.EqualTo(useShellExecute        ));
-            Assert.That(psi.UserName               , Is.SameAs (userName               ));
-            Assert.That(psi.StandardOutputEncoding , Is.SameAs (standardOutputEncoding ));
-            Assert.That(psi.StandardInputEncoding  , Is.SameAs (standardInputEncoding  ));
-            Assert.That(psi.StandardErrorEncoding  , Is.SameAs (standardErrorEncoding  ));
-            Assert.That(psi.RedirectStandardOutput , Is.EqualTo(redirectStandardOutput ));
-            Assert.That(psi.RedirectStandardInput  , Is.EqualTo(redirectStandardInput  ));
-            Assert.That(psi.RedirectStandardError  , Is.EqualTo(redirectStandardError  ));
-            Assert.That(psi.Password               , Is.SameAs (password               ));
-            Assert.That(psi.LoadUserProfile        , Is.EqualTo(loadUserProfile        ));
-            Assert.That(psi.FileName               , Is.SameAs (fileName               ));
-            Assert.That(psi.Domain                 , Is.SameAs (domain                 ));
-            Assert.That(psi.CreateNoWindow         , Is.EqualTo(createNoWindow         ));
-            Assert.That(psi.ArgumentList           , Is.SameAs (argumentList           ));
-            Assert.That(psi.Arguments              , Is.EqualTo(arguments              ));
-            Assert.That(psi.PasswordInClearText    , Is.SameAs (passwordInClearText    ));
+            Assert.That(psi.WindowStyle                , Is.EqualTo(windowStyle            ));
+            Assert.That(psi.Verb                       , Is.SameAs (verb                   ));
+            Assert.That(psi.ErrorDialogParentHandle    , Is.EqualTo(errorDialogParentHandle));
+            Assert.That(psi.ErrorDialog                , Is.EqualTo(errorDialog            ));
+            Assert.That(psi.UseShellExecute            , Is.EqualTo(useShellExecute        ));
+            Assert.That(psi.UserName                   , Is.SameAs (userName               ));
+            Assert.That(psi.StandardOutputEncoding     , Is.SameAs (standardOutputEncoding ));
+            Assert.That(psi.StandardInputEncoding      , Is.SameAs (standardInputEncoding  ));
+            Assert.That(psi.StandardErrorEncoding      , Is.SameAs (standardErrorEncoding  ));
+            Assert.That(psi.RedirectStandardOutput     , Is.EqualTo(redirectStandardOutput ));
+            Assert.That(psi.RedirectStandardInput      , Is.EqualTo(redirectStandardInput  ));
+            Assert.That(psi.RedirectStandardError      , Is.EqualTo(redirectStandardError  ));
+            Assert.That(psi.FileName                   , Is.SameAs (fileName               ));
+            Assert.That(psi.CreateNoWindow             , Is.EqualTo(createNoWindow         ));
+            Assert.That(psi.ArgumentList               , Is.SameAs (argumentList           ));
+            Assert.That(psi.Arguments                  , Is.EqualTo(arguments              ));
+
+            AssertThat(() => psi.Password           , Is.SameAs         , password           );
+            AssertThat(() => psi.LoadUserProfile    , v => Is.EqualTo(v), loadUserProfile    );
+            AssertThat(() => psi.Domain             , Is.SameAs         , domain             );
+            AssertThat(() => psi.PasswordInClearText, Is.SameAs         , passwordInClearText);
+
+            void AssertThat<T>(Func<T> actual, Func<T, IResolveConstraint> expression, (bool, T) option) =>
+                option.Do(v => Assert.That(actual(), expression(v)));
         }
 
         [Test]
