@@ -120,12 +120,12 @@ namespace WebLinq.Tests
             Assert.That(psi.Arguments                  , Is.EqualTo(arguments              ));
             Assert.That(psi.PasswordInClearText        , Is.SameAs (passwordInClearText    ));
 
-            AssertThat(() => psi.Password             , password           , Is.SameAs);
-            AssertThat(() => psi.LoadUserProfile      , loadUserProfile    , v => Is.EqualTo(v));
-            AssertThat(() => psi.Domain               , domain             , Is.SameAs);
-            AssertThat(() => psi.PasswordInClearText  , passwordInClearText, Is.SameAs);
+            AssertThat(() => psi.Password           , Is.SameAs         , password           );
+            AssertThat(() => psi.LoadUserProfile    , v => Is.EqualTo(v), loadUserProfile    );
+            AssertThat(() => psi.Domain             , Is.SameAs         , domain             );
+            AssertThat(() => psi.PasswordInClearText, Is.SameAs         , passwordInClearText);
 
-            void AssertThat<T>(Func<T> actual, (bool, T) option, Func<T, IResolveConstraint> expression) =>
+            void AssertThat<T>(Func<T> actual, Func<T, IResolveConstraint> expression, (bool, T) option) =>
                 option.Do(v => Assert.That(actual(), expression(v)));
         }
 
