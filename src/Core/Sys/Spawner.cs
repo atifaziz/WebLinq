@@ -73,7 +73,7 @@ namespace WebLinq.Sys
         public static ISpawnObservable<T> AddArgument<T>(this ISpawnObservable<T> source, string value) =>
             source.WithOptions(source.Options.AddArgument(value));
 
-        public static ISpawnObservable<T> AddArgument<T>(this ISpawnObservable<T> source, string[] values) =>
+        public static ISpawnObservable<T> AddArgument<T>(this ISpawnObservable<T> source, params string[] values) =>
             source.WithOptions(source.Options.AddArgument(values));
 
         public static ISpawnObservable<T> AddArguments<T>(this ISpawnObservable<T> source, IEnumerable<string> values) =>

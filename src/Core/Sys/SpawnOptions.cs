@@ -72,7 +72,7 @@ namespace WebLinq.Sys
              ? throw new ArgumentNullException(nameof(options))
              : options.WithArguments(ProgramArguments.From(options.Arguments.Append(value)));
 
-        public static SpawnOptions AddArgument(this SpawnOptions options, string[] values) =>
+        public static SpawnOptions AddArgument(this SpawnOptions options, params string[] values) =>
             options.AddArguments(values);
 
         public static SpawnOptions AddArguments(this SpawnOptions options, IEnumerable<string> values)
