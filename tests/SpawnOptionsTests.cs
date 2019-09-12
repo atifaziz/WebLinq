@@ -91,7 +91,7 @@ namespace WebLinq.Tests
             var password                = isWindows ? Some(psi.Password) : default;
             var loadUserProfile         = isWindows ? Some(psi.LoadUserProfile) : default;
             var fileName                = psi.FileName;
-            var domain                  = psi.Domain;
+            var domain                  = isWindows ? Some(psi.Domain) : default;
             var createNoWindow          = psi.CreateNoWindow;
             var argumentList            = psi.ArgumentList;
             var arguments               = psi.Arguments;
@@ -115,7 +115,6 @@ namespace WebLinq.Tests
             Assert.That(psi.RedirectStandardInput      , Is.EqualTo(redirectStandardInput  ));
             Assert.That(psi.RedirectStandardError      , Is.EqualTo(redirectStandardError  ));
             Assert.That(psi.FileName                   , Is.SameAs (fileName               ));
-            Assert.That(psi.Domain                     , Is.SameAs (domain                 ));
             Assert.That(psi.CreateNoWindow             , Is.EqualTo(createNoWindow         ));
             Assert.That(psi.ArgumentList               , Is.SameAs (argumentList           ));
             Assert.That(psi.Arguments                  , Is.EqualTo(arguments              ));
@@ -123,6 +122,7 @@ namespace WebLinq.Tests
 
             AssertThat(() => psi.Password       , password       , Is.SameAs);
             AssertThat(() => psi.LoadUserProfile, loadUserProfile, v => Is.EqualTo(v));
+            AssertThat(() => psi.Domain         , domain         , Is.SameAs);
 
             void AssertThat<T>(Func<T> actual, (bool, T) option, Func<T, IResolveConstraint> expression) =>
                 option.Do(v => Assert.That(actual(), expression(v)));
