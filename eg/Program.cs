@@ -44,7 +44,8 @@ namespace WebLinq.Samples
                     new { Title = nameof(DuckDuckGo)            , Query = DuckDuckGo()             , IsWindowsOnly = false },
                     new { Title = nameof(QueenSongs)            , Query = QueenSongs()             , IsWindowsOnly = false },
                     new { Title = nameof(ScheduledTasksViaSpawn), Query = ScheduledTasksViaSpawn() , IsWindowsOnly = true  },
-                    new { Title = nameof(PowerShellDirViaSpawn) , Query = PowerShellDirViaSpawn()  , IsWindowsOnly = true  },
+                    new { Title = nameof(PowerShellDirViaSpawn) , Query = PowerShellDirViaSpawn(Environment.GetEnvironmentVariable("WINDIR") ?? Environment.SystemDirectory),
+                                                                                                     IsWindowsOnly = true  },
                     new { Title = nameof(TopHackerNews)         , Query = TopHackerNews(100)       , IsWindowsOnly = false },
                     new { Title = nameof(MsdnBooksXmlSample)    , Query = MsdnBooksXmlSample()     , IsWindowsOnly = false },
                     new { Title = nameof(MockarooCsv)           , Query = MockarooCsv()            , IsWindowsOnly = false },
@@ -113,14 +114,31 @@ namespace WebLinq.Samples
                 Arguments = (string)e.Element(ns + "Arguments"),
             };
 
-        static IObservable<object> PowerShellDirViaSpawn() =>
+        static ISpawnObservable<string>
+            SpawnPowerShell(string command,
+                            bool noLogo = false,
+                            bool noProfile = false,
+                            bool nonInteractive = false) =>
+            Spawn("PowerShell", ProgramArguments.Empty)
+                .AddArguments(
+                    from @switch in new[]
+                    {
+                        new { Present = noLogo        , Text = "-NoLogo"         },
+                        new { Present = noProfile     , Text = "-NoProfile"      },
+                        new { Present = nonInteractive, Text = "-NonInteractive" },
+                    }
+                    where @switch.Present
+                    select @switch.Text)
+                .AddArgument("-C", command);
+
+        static IObservable<object> PowerShellDirViaSpawn(string dir) =>
 
             from row in
-                Spawn("PowerShell",
-                      ProgramArguments.Var(@"-C",
-                          "Get-ChildItem $env:WINDIR " +
-                          "| Select-Object FullName, Mode, Length " +
-                          "| ConvertTo-Csv -NoType"))
+                SpawnPowerShell(string.Join("|", "Get-ChildItem $env:DIR",
+                                                 "Select-Object FullName, Mode, Length",
+                                                 "ConvertTo-Csv -NoType"),
+                                noProfile: true)
+                    .AddEnvironment("DIR", dir)
                     .ParseCsv(hr => new
                               {
                                   FullName = hr.GetFirstIndex("FullName"),
