@@ -125,7 +125,7 @@ namespace WebLinq.Tests
             AssertThat(() => psi.LoadUserProfile, loadUserProfile, v => Is.EqualTo(v));
 
             void AssertThat<T>(Func<T> actual, (bool, T) option, Func<T, IResolveConstraint> expression) =>
-                option.Do(v => Assert.That(actual, expression(v)));
+                option.Do(v => Assert.That(actual(), expression(v)));
         }
 
         [Test]
