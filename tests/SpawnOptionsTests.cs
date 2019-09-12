@@ -118,7 +118,6 @@ namespace WebLinq.Tests
             Assert.That(psi.CreateNoWindow             , Is.EqualTo(createNoWindow         ));
             Assert.That(psi.ArgumentList               , Is.SameAs (argumentList           ));
             Assert.That(psi.Arguments                  , Is.EqualTo(arguments              ));
-            Assert.That(psi.PasswordInClearText        , Is.SameAs (passwordInClearText    ));
 
             AssertThat(() => psi.Password           , Is.SameAs         , password           );
             AssertThat(() => psi.LoadUserProfile    , v => Is.EqualTo(v), loadUserProfile    );
