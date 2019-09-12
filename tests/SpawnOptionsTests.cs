@@ -25,6 +25,7 @@ namespace WebLinq.Tests
     using System.Linq;
     using System.Runtime.InteropServices;
     using NUnit.Framework;
+    using NUnit.Framework.Constraints;
     using Optuple;
     using Sys;
     using static Optuple.OptionModule;
@@ -88,7 +89,7 @@ namespace WebLinq.Tests
             var redirectStandardInput   = psi.RedirectStandardInput;
             var redirectStandardError   = psi.RedirectStandardError;
             var password                = isWindows ? Some(psi.Password) : default;
-            var loadUserProfile         = psi.LoadUserProfile;
+            var loadUserProfile         = isWindows ? Some(psi.LoadUserProfile) : default;
             var fileName                = psi.FileName;
             var domain                  = psi.Domain;
             var createNoWindow          = psi.CreateNoWindow;
@@ -113,14 +114,18 @@ namespace WebLinq.Tests
             Assert.That(psi.RedirectStandardOutput     , Is.EqualTo(redirectStandardOutput ));
             Assert.That(psi.RedirectStandardInput      , Is.EqualTo(redirectStandardInput  ));
             Assert.That(psi.RedirectStandardError      , Is.EqualTo(redirectStandardError  ));
-            password.Do(pwd => Assert.That(psi.Password, Is.SameAs (pwd                    )));
-            Assert.That(psi.LoadUserProfile            , Is.EqualTo(loadUserProfile        ));
             Assert.That(psi.FileName                   , Is.SameAs (fileName               ));
             Assert.That(psi.Domain                     , Is.SameAs (domain                 ));
             Assert.That(psi.CreateNoWindow             , Is.EqualTo(createNoWindow         ));
             Assert.That(psi.ArgumentList               , Is.SameAs (argumentList           ));
             Assert.That(psi.Arguments                  , Is.EqualTo(arguments              ));
             Assert.That(psi.PasswordInClearText        , Is.SameAs (passwordInClearText    ));
+
+            AssertThat(() => psi.Password       , password       , Is.SameAs);
+            AssertThat(() => psi.LoadUserProfile, loadUserProfile, v => Is.EqualTo(v));
+
+            void AssertThat<T>(Func<T> actual, (bool, T) option, Func<T, IResolveConstraint> expression) =>
+                option.Do(v => Assert.That(actual, expression(v)));
         }
 
         [Test]
