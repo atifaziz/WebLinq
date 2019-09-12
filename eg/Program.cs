@@ -13,6 +13,7 @@ namespace WebLinq.Samples
     using System.Runtime.InteropServices;
     using System.Text.RegularExpressions;
     using System.Xml.Linq;
+    using Dsv;
     using Collections;
     using Html;
     using Modules;
@@ -43,6 +44,7 @@ namespace WebLinq.Samples
                     new { Title = nameof(DuckDuckGo)            , Query = DuckDuckGo()             , IsWindowsOnly = false },
                     new { Title = nameof(QueenSongs)            , Query = QueenSongs()             , IsWindowsOnly = false },
                     new { Title = nameof(ScheduledTasksViaSpawn), Query = ScheduledTasksViaSpawn() , IsWindowsOnly = true  },
+                    new { Title = nameof(PowerShellDirViaSpawn) , Query = PowerShellDirViaSpawn()  , IsWindowsOnly = true  },
                     new { Title = nameof(TopHackerNews)         , Query = TopHackerNews(100)       , IsWindowsOnly = false },
                     new { Title = nameof(MsdnBooksXmlSample)    , Query = MsdnBooksXmlSample()     , IsWindowsOnly = false },
                     new { Title = nameof(MockarooCsv)           , Query = MockarooCsv()            , IsWindowsOnly = false },
@@ -111,7 +113,32 @@ namespace WebLinq.Samples
                 Arguments = (string)e.Element(ns + "Arguments"),
             };
 
-        static IObservable<object> QueenSongs() =>
+        static IObservable<object> PowerShellDirViaSpawn() =>
+
+            from row in
+                Spawn("PowerShell",
+                      ProgramArguments.Var(@"-C",
+                          "Get-ChildItem $env:WINDIR " +
+                          "| Select-Object FullName, Mode, Length " +
+                          "| ConvertTo-Csv -NoType"))
+                    .ParseCsv(hr => new
+                              {
+                                  FullName = hr.GetFirstIndex("FullName"),
+                                  Mode     = hr.GetFirstIndex("Mode"),
+                                  Length   = hr.GetFirstIndex("Length"),
+                              },
+                              (hr, dr) => new { Header = hr, Data = dr })
+            select new
+            {
+                Mode     = row.Data[row.Header.Mode],
+                Length = long.TryParse(row.Data[row.Header.Length], NumberStyles.None,
+                                                                      CultureInfo.InvariantCulture,
+                                                                      out var length)
+                         ? length : (long?)null,
+                FullName = row.Data[row.Header.FullName],
+            };
+
+    static IObservable<object> QueenSongs() =>
 
             from dg in Http.Get(new Uri("https://en.wikipedia.org/wiki/Queen_discography"))
                            .Html()
