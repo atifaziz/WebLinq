@@ -95,7 +95,7 @@ namespace WebLinq.Tests
             var createNoWindow          = psi.CreateNoWindow;
             var argumentList            = psi.ArgumentList;
             var arguments               = psi.Arguments;
-            var passwordInClearText     = psi.PasswordInClearText;
+            var passwordInClearText     = isWindows ? Some(psi.PasswordInClearText) : default;
 
             options.Update(psi);
 
@@ -120,9 +120,10 @@ namespace WebLinq.Tests
             Assert.That(psi.Arguments                  , Is.EqualTo(arguments              ));
             Assert.That(psi.PasswordInClearText        , Is.SameAs (passwordInClearText    ));
 
-            AssertThat(() => psi.Password       , password       , Is.SameAs);
-            AssertThat(() => psi.LoadUserProfile, loadUserProfile, v => Is.EqualTo(v));
-            AssertThat(() => psi.Domain         , domain         , Is.SameAs);
+            AssertThat(() => psi.Password             , password           , Is.SameAs);
+            AssertThat(() => psi.LoadUserProfile      , loadUserProfile    , v => Is.EqualTo(v));
+            AssertThat(() => psi.Domain               , domain             , Is.SameAs);
+            AssertThat(() => psi.PasswordInClearText  , passwordInClearText, Is.SameAs);
 
             void AssertThat<T>(Func<T> actual, (bool, T) option, Func<T, IResolveConstraint> expression) =>
                 option.Do(v => Assert.That(actual(), expression(v)));
