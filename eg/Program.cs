@@ -17,6 +17,8 @@ namespace WebLinq.Samples
     using Collections;
     using Html;
     using Modules;
+    using Mono.Unix;
+    using Mono.Unix.Native;
     using Newtonsoft.Json;
     using Sys;
     using Text;
@@ -45,7 +47,7 @@ namespace WebLinq.Samples
                     new { Title = nameof(QueenSongs)            , Query = QueenSongs()             , IsWindowsOnly = false },
                     new { Title = nameof(ScheduledTasksViaSpawn), Query = ScheduledTasksViaSpawn() , IsWindowsOnly = true  },
                     new { Title = nameof(PowerShellDirViaSpawn) , Query = PowerShellDirViaSpawn(Environment.GetEnvironmentVariable("WINDIR") ?? Environment.SystemDirectory),
-                                                                                                     IsWindowsOnly = true  },
+                                                                                                     IsWindowsOnly = false },
                     new { Title = nameof(TopHackerNews)         , Query = TopHackerNews(100)       , IsWindowsOnly = false },
                     new { Title = nameof(MsdnBooksXmlSample)    , Query = MsdnBooksXmlSample()     , IsWindowsOnly = false },
                     new { Title = nameof(MockarooCsv)           , Query = MockarooCsv()            , IsWindowsOnly = false },
@@ -119,7 +121,8 @@ namespace WebLinq.Samples
                             bool noLogo = false,
                             bool noProfile = false,
                             bool nonInteractive = false) =>
-            Spawn("PowerShell", ProgramArguments.Empty)
+            Spawn(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "PowerShell" : "pwsh",
+                  ProgramArguments.Empty)
                 .AddArguments(
                     from @switch in new[]
                     {
@@ -131,29 +134,43 @@ namespace WebLinq.Samples
                     select @switch.Text)
                 .AddArgument("-C", command);
 
+        static string FindExecutableInSystemPath(params string[] fileNames) =>
+            Environment.GetEnvironmentVariable("PATH")
+                       .Split(Path.PathSeparator)
+                       .SelectMany(dp => fileNames, (dp, fn) => Path.Join(dp, fn))
+                       .FirstOrDefault(
+                           fp => RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                               ? File.Exists(fp)
+                               : UnixFileSystemInfo.TryGetFileSystemEntry(fp, out var info)
+                                 && info.Exists
+                                 && info.CanAccess(AccessModes.X_OK));
+
         static IObservable<object> PowerShellDirViaSpawn(string dir) =>
 
-            from row in
-                SpawnPowerShell(string.Join("|", "Get-ChildItem $env:DIR",
-                                                 "Select-Object FullName, Mode, Length",
-                                                 "ConvertTo-Csv -NoType"),
+            from spawn in Observable.Return(
+                SpawnPowerShell(string.Join(" | ", "Get-ChildItem $env:DIR",
+                                                   "Select-Object FullName, Mode, Length",
+                                                   "ConvertTo-Csv -NoType"),
                                 noProfile: true)
-                    .AddEnvironment("DIR", dir)
-                    .ParseCsv(hr => new
-                              {
-                                  FullName = hr.GetFirstIndex("FullName"),
-                                  Mode     = hr.GetFirstIndex("Mode"),
-                                  Length   = hr.GetFirstIndex("Length"),
-                              },
-                              (hr, dr) => new { Header = hr, Data = dr })
+                    .AddEnvironment("DIR", dir))
+            select RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || FindExecutableInSystemPath("pwsh") != null
+                 ? spawn
+                 : Observable.Empty<string>() // no PowerShell so return empty result
+            into spawn
+            from e in spawn.ParseCsv(hr => new
+                                     {
+                                         FullName = hr.GetFirstIndex("FullName"),
+                                         Mode     = hr.GetFirstIndex("Mode"),
+                                         Length   = hr.GetFirstIndex("Length"),
+                                     })
             select new
             {
-                Mode     = row.Data[row.Header.Mode],
-                Length = long.TryParse(row.Data[row.Header.Length], NumberStyles.None,
-                                                                      CultureInfo.InvariantCulture,
-                                                                      out var length)
+                Mode     = e.Row[e.Header.Mode],
+                Length   = long.TryParse(e.Row[e.Header.Length], NumberStyles.None,
+                                                                 CultureInfo.InvariantCulture,
+                                                                 out var length)
                          ? length : (long?)null,
-                FullName = row.Data[row.Header.FullName],
+                FullName = e.Row[e.Header.FullName],
             };
 
     static IObservable<object> QueenSongs() =>
