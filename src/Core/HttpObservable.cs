@@ -32,10 +32,11 @@ namespace WebLinq
         IHttpObservable WithConfigurer(Func<HttpConfig, HttpConfig> modifier);
         IHttpObservable WithFilterPredicate(Func<HttpFetchInfo, bool> predicate);
         IObservable<HttpFetch<T>> ReadContent<T>(Func<HttpFetch<HttpContent>, Task<T>> reader);
-        IObservable<T> ExpandContent<TSeed, TState, T>(Func<HttpFetch<HttpContent>, Task<TSeed>> seeder,
-                                                       Func<TSeed, TState> initializer,
-                                                       Func<TState, Task<(TState State, bool Continue, T Item)>> looper,
-                                                       Action<TSeed> disposer);
+        IContentObservable<T>
+            ExpandContent<TSeed, TState, T>(Func<HttpFetch<HttpContent>, Task<TSeed>> seeder,
+                                            Func<TSeed, TState> initializer,
+                                            Func<TState, Task<(TState State, bool Continue, T Item)>> looper,
+                                            Action<TSeed> disposer);
     }
 
     public static partial class HttpObservable
@@ -93,14 +94,14 @@ namespace WebLinq
         public static IObservable<HttpFetch<T>> WithReader<T>(this IHttpObservable query, Func<HttpFetch<HttpContent>, Task<T>> reader) =>
             query.ReadContent(reader);
 
-        public static IObservable<T>
+        public static IContentObservable<T>
             ExpandContent<TResource, T>(this IHttpObservable query,
                 Func<HttpFetch<HttpContent>, Task<TResource>> seeder,
                 Func<TResource, Task<(bool, T)>> looper)
                 where TResource : IDisposable =>
             query.ExpandContent(seeder, r => r, async r => { var (some, item) = await looper(r); return (r, some, item); });
 
-        public static IObservable<T>
+        public static IContentObservable<T>
             ExpandContent<TSeed, TState, T>(this IHttpObservable query,
                 Func<HttpFetch<HttpContent>, Task<TSeed>> seeder,
                 Func<TSeed, TState> initializer,
@@ -151,25 +152,110 @@ namespace WebLinq
                 from c in reader(f)
                 select f.WithContent(c);
 
-            public IObservable<T>
+            public IContentObservable<T>
                 ExpandContent<TSeed, TState, T>(
                     Func<HttpFetch<HttpContent>, Task<TSeed>> seeder,
                     Func<TSeed, TState> initializer,
                     Func<TState, Task<(TState State, bool Continue, T Item)>> looper,
                     Action<TSeed> disposer) =>
-                from e in
+                ContentObservable.Create<T>((options, observer) =>
                     _query(this)
                         .SelectMany(seeder)
                         .Select(seed =>
                             Observable
-                                .Return((State: initializer(seed), Continue: true, Item: default(T)))
-                                .Expand(s => Observable.Return(s.State)
-                                                       .SelectMany(looper)
-                                                       .TakeWhile(e => e.Continue))
+                                .Return((State   : initializer(seed),
+                                         Count   : 0,
+                                         Previous: default(T),
+                                         Continue: true,
+                                         Current : default(T)))
+                                .Expand(s => from e in options.IterationPredicate(s.Count, s.Previous)
+                                                     ? Observable.Return(s.State)
+                                                                 .SelectMany(looper)
+                                                                 .TakeWhile(e => e.Continue
+                                                                              && options.ContinuationPredicate(e.Item, s.Count))
+                                                     : Observable.Empty<(TState State, bool Continue, T Item)>()
+                                             select (e.State, s.Count + 1, e.Item, e.Continue, e.Item))
                                 .Skip(1)
                                 .Finally(() => disposer(seed)))
                         .Concat()
-                select e.Item;
+                        .Select(e => e.Current)
+                        .Subscribe(observer));
         }
+    }
+
+    public sealed class ContentOptions<T>
+    {
+        public static readonly ContentOptions<T> Default =
+            new ContentOptions<T>(delegate { return true; },
+                                  delegate { return true; });
+
+        public Func<int, T, bool> IterationPredicate { get; private set; }
+        public Func<T, int, bool> ContinuationPredicate { get; private set; }
+
+        ContentOptions(Func<int, T, bool> iterationPredicate,
+                       Func<T, int, bool> continuationPredicate)
+        {
+            IterationPredicate = iterationPredicate;
+            ContinuationPredicate = continuationPredicate;
+        }
+
+        ContentOptions(ContentOptions<T> other) :
+            this(other.IterationPredicate, other.ContinuationPredicate)
+        { }
+
+        public ContentOptions<T> WithIterationPredicate(Func<int, T, bool> value) =>
+            IterationPredicate == value ? this : new ContentOptions<T>(this) { IterationPredicate = value };
+
+        public ContentOptions<T> AndIterationPredicate(Func<int, T, bool> predicate) =>
+            WithIterationPredicate((i, pe) => IterationPredicate(i, pe) && predicate(i, pe));
+
+        public ContentOptions<T> WithContinuationPredicate(Func<T, int, bool> value) =>
+            ContinuationPredicate == value ? this : new ContentOptions<T>(this) { ContinuationPredicate = value };
+
+        public ContentOptions<T> AndContinuationPredicate(Func<T, int, bool> predicate) =>
+            WithContinuationPredicate((e, i) => ContinuationPredicate(e, i) && predicate(e, i));
+    }
+
+    public interface IContentObservable<T> : IObservable<T>
+    {
+        ContentOptions<T> Options { get; }
+        IContentObservable<T> WithOptions(ContentOptions<T> value);
+    }
+
+    public sealed class ContentObservable<T> : IContentObservable<T>
+    {
+        readonly Func<ContentOptions<T>, IObserver<T>, IDisposable> _subscriber;
+
+        public ContentObservable(Func<ContentOptions<T>, IObserver<T>, IDisposable> subscriber) :
+            this(ContentOptions<T>.Default, subscriber) {}
+
+        ContentObservable(ContentOptions<T> options, Func<ContentOptions<T>, IObserver<T>, IDisposable> subscriber)
+        {
+            Options     = options ?? throw new ArgumentNullException(nameof(options));
+            _subscriber = subscriber ?? throw new ArgumentNullException(nameof(subscriber));
+        }
+
+        public IDisposable Subscribe(IObserver<T> observer) =>
+            _subscriber(Options, observer);
+
+        public ContentOptions<T> Options { get; }
+
+        public IContentObservable<T> WithOptions(ContentOptions<T> value) =>
+            value == Options ? this : new ContentObservable<T>(value, _subscriber);
+    }
+
+    public static class ContentObservable
+    {
+        public static IContentObservable<T> Create<T>(Func<ContentOptions<T>, IObserver<T>, IDisposable> subscriber) =>
+            new ContentObservable<T>(subscriber);
+
+        public static IContentObservable<T> TakeWhile<T>(this IContentObservable<T> source, Func<T, int, bool> predicate) =>
+            source.WithOptions(source.Options.AndContinuationPredicate(predicate));
+
+        public static IContentObservable<T> Take<T>(this IContentObservable<T> source, int count) =>
+            source.WithOptions(source.Options.AndIterationPredicate((i, _) => i < count));
+
+        public static IContentObservable<T> TakeUntil<T>(this IContentObservable<T> source, Func<T, bool> predicate) =>
+            source.WithOptions(source.Options.AndIterationPredicate((i, pe) => i == 0 || !predicate(pe)));
     }
 }

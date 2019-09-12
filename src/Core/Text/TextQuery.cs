@@ -60,91 +60,12 @@ namespace WebLinq.Text
             Lines(query, encoding, false);
 
         public static IContentObservable<string> Lines(this IHttpObservable query, Encoding encoding, bool force) =>
-            ContentObservable.Create<string>((options, observer) =>
-                query.ExpandContent(
-                          async f => new StreamReader(await f.Content.ReadAsStreamAsync(),
-                                                      encoding is Encoding e && force ? e : f.ContentCharSetEncoding ?? encoding),
-                          r => (Reader: r, Previous: (string)null, Count: 0),
-                          async s => options.IterationPredicate(s.Count, s.Previous)
-                                     && await s.Reader.ReadLineAsync() is string line
-                                     && options.ContinuationPredicate(line, s.Count)
-                                   ? ((s.Reader, line, s.Count + 1), true, line)
-                                   : default)
-                    .Subscribe(observer));
-    }
-
-    public sealed class ContentOptions<T>
-    {
-        public static readonly ContentOptions<T> Default =
-            new ContentOptions<T>(delegate { return true;  },
-                                  delegate { return true; });
-
-        public Func<int, T, bool> IterationPredicate { get; private set; }
-        public Func<T, int, bool> ContinuationPredicate { get; private set; }
-
-        ContentOptions(Func<int, T, bool> iterationPredicate,
-                       Func<T, int, bool> continuationPredicate)
-        {
-            IterationPredicate = iterationPredicate;
-            ContinuationPredicate = continuationPredicate;
-        }
-
-        ContentOptions(ContentOptions<T> other) :
-            this(other.IterationPredicate, other.ContinuationPredicate) {}
-
-        public ContentOptions<T> WithIterationPredicate(Func<int, T, bool> value) =>
-            IterationPredicate == value ? this : new ContentOptions<T>(this) { IterationPredicate = value };
-
-        public ContentOptions<T> AndIterationPredicate(Func<int, T, bool> predicate) =>
-            WithIterationPredicate((i, pe) => IterationPredicate(i, pe) && predicate(i, pe));
-
-        public ContentOptions<T> WithContinuationPredicate(Func<T, int, bool> value) =>
-            ContinuationPredicate == value ? this : new ContentOptions<T>(this) { ContinuationPredicate = value };
-
-        public ContentOptions<T> AndContinuationPredicate(Func<T, int, bool> predicate) =>
-            WithContinuationPredicate((e, i) => ContinuationPredicate(e, i) && predicate(e, i));
-    }
-
-    public interface IContentObservable<T> : IObservable<T>
-    {
-        ContentOptions<T> Options { get; }
-        IContentObservable<T> WithOptions(ContentOptions<T> value);
-    }
-
-    public sealed class ContentObservable<T> : IContentObservable<T>
-    {
-        readonly Func<ContentOptions<T>, IObserver<T>, IDisposable> _subscriber;
-
-        public ContentObservable(Func<ContentOptions<T>, IObserver<T>, IDisposable> subscriber) :
-            this(ContentOptions<T>.Default, subscriber) {}
-
-        ContentObservable(ContentOptions<T> options, Func<ContentOptions<T>, IObserver<T>, IDisposable> subscriber)
-        {
-            Options = options ?? throw new ArgumentNullException(nameof(options));
-            _subscriber = subscriber ?? throw new ArgumentNullException(nameof(subscriber));
-        }
-
-        public IDisposable Subscribe(IObserver<T> observer) =>
-            _subscriber(Options, observer);
-
-        public ContentOptions<T> Options { get; }
-
-        public IContentObservable<T> WithOptions(ContentOptions<T> value) =>
-            value == Options ? this : new ContentObservable<T>(value, _subscriber);
-    }
-
-    public static class ContentObservable
-    {
-        public static IContentObservable<T> Create<T>(Func<ContentOptions<T>, IObserver<T>, IDisposable> subscriber) =>
-            new ContentObservable<T>(subscriber);
-
-        public static IContentObservable<T> TakeWhile<T>(this IContentObservable<T> source, Func<T, int, bool> predicate) =>
-            source.WithOptions(source.Options.AndContinuationPredicate(predicate));
-
-        public static IContentObservable<T> Take<T>(this IContentObservable<T> source, int count) =>
-            source.WithOptions(source.Options.AndIterationPredicate((i, _) => i < count));
-
-        public static IContentObservable<T> TakeUntil<T>(this IContentObservable<T> source, Func<T, bool> predicate) =>
-            source.WithOptions(source.Options.AndIterationPredicate((i, pe) => i == 0 || !predicate(pe)));
+            query.ExpandContent(
+                async f => new StreamReader(await f.Content.ReadAsStreamAsync(),
+                                            encoding is Encoding e && force ? e : f.ContentCharSetEncoding ?? encoding),
+                r => r,
+                async r => await r.ReadLineAsync() is string line
+                         ? (r, true, line)
+                         : default);
     }
 }
