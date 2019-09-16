@@ -202,8 +202,16 @@ namespace WebLinq
                     RequestMessage = new HttpRequestMessage(ParseHttpMethod(req.Method), rsp.ResponseUri),
                 };
 
+                // IMPORTANT! DO NOT access header values over the the
+                // `HttpWebResponse.Headers.GetValues(int)` overload since it has a regression with
+                // .NET Framework and can fold headers incorrectly, with the most notable case
+                // being "Set-Cookie". See https://github.com/dotnet/corefx/issues/39527 for more.
+
+                var sourceHeaders = rsp.Headers;
+
                 var headers =
-                    from e in rsp.Headers.AsEnumerable()
+                    from k in sourceHeaders.AllKeys
+                    select k.AsKeyTo(sourceHeaders.GetValues(k)) into e
                     group e by e.Key.StartsWith("Content-", StringComparison.OrdinalIgnoreCase)
                             || e.Key.Equals("Expires", StringComparison.OrdinalIgnoreCase)
                             || e.Key.Equals("Last-Modified", StringComparison.OrdinalIgnoreCase)
