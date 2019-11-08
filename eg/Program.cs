@@ -220,16 +220,16 @@ namespace WebLinq.Samples
                    .Select(th => th.NormalInnerText)
                    .ToArray()
             where hdrs != null
-            let idxs =
-                Enumerable.ToArray(
+            let his =
+                MoreLinq.MoreEnumerable.Fold(
                     from h in new[] { "Title", "Writer(s)", "Length" }
-                    select Array.FindIndex(hdrs, he => he == h))
-            let his = new
-            {
-                Title   = idxs[0],
-                Writers = idxs[1],
-                Length  = idxs[2],
-            }
+                    select Array.FindIndex(hdrs, he => he == h),
+                    (t, w, l) => new
+                    {
+                        Title   = t,
+                        Writers = w,
+                        Length  = l,
+                    })
             from tr in trs
             let tds =
                 tr.QuerySelectorAll("td")
