@@ -21,7 +21,7 @@ install:
 - sh: chmod +x dotnet-install.sh
 - ps: |
     if ($isLinux) {
-      ./dotnet-install.sh --version 3.1.100
+      ./dotnet-install.sh --version ((type .\global.json | ConvertFrom-Json).sdk.version)
       if ($LASTEXITCODE) {
         throw "dotnet-install failed (exit code = $LASTEXITCODE)."
       }
