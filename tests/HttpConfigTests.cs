@@ -45,6 +45,12 @@ namespace WebLinq.Tests
         }
 
         [Test]
+        public void DefaultConfigAutomaticCompressionIsNone()
+        {
+            Assert.That(HttpConfig.Default.AutomaticDecompression, Is.EqualTo(DecompressionMethods.None));
+        }
+
+        [Test]
         public void WithHeader()
         {
             var config = HttpConfig.Default
@@ -102,6 +108,16 @@ namespace WebLinq.Tests
         }
 
         [Test]
+        public void WithAutomaticDecompression()
+        {
+            var deflate = DecompressionMethods.Deflate;
+            var config = HttpConfig.Default.WithAutomaticDecompression(deflate);
+
+            Assert.That(config.AutomaticDecompression, Is.EqualTo(deflate));
+            AssertDefaultConfigEqual(config, ConfigAssertion.All.Except(ConfigAssertion.AutomaticDecompression));
+        }
+
+        [Test]
         public void WithCredentials()
         {
             var credentials = new NetworkCredential("admin", "admin");
@@ -147,6 +163,7 @@ namespace WebLinq.Tests
             public static readonly Action<HttpConfig, HttpConfig> UseDefaultCredentials          = (actual, expected) => Assert.That(actual.UseDefaultCredentials, Is.EqualTo(expected.UseDefaultCredentials));
             public static readonly Action<HttpConfig, HttpConfig> Credentials                    = (actual, expected) => Assert.That(actual.Credentials, Is.SameAs(expected.Credentials));
             public static readonly Action<HttpConfig, HttpConfig> UserAgent                      = (actual, expected) => Assert.That(actual.UserAgent, Is.EqualTo(expected.UserAgent));
+            public static readonly Action<HttpConfig, HttpConfig> AutomaticDecompression         = (actual, expected) => Assert.That(actual.AutomaticDecompression, Is.EqualTo(expected.AutomaticDecompression));
             public static readonly Action<HttpConfig, HttpConfig> Cookies                        = (actual, expected) => Assert.That(actual.Cookies, Is.SameAs(expected.Cookies));
             public static readonly Action<HttpConfig, HttpConfig> IgnoreInvalidServerCertificate = (actual, expected) => Assert.That(actual.IgnoreInvalidServerCertificate, Is.EqualTo(expected.IgnoreInvalidServerCertificate));
 
@@ -159,6 +176,7 @@ namespace WebLinq.Tests
                     yield return UseDefaultCredentials;
                     yield return Credentials;
                     yield return UserAgent;
+                    yield return AutomaticDecompression;
                     yield return Cookies;
                     yield return IgnoreInvalidServerCertificate;
                 }
