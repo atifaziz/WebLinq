@@ -20,7 +20,6 @@ namespace WebLinq.Xsv
     using System.Data;
     using System.Net.Http;
     using System.Reactive.Linq;
-    using Mannex.IO;
     using Text;
 
     public static class XsvQuery
