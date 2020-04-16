@@ -26,7 +26,6 @@ namespace WebLinq
     using System.Net.Http.Headers;
     using System.Threading.Tasks;
     using Mannex.Collections.Generic;
-    using Mannex.Collections.Specialized;
 
     public interface IHttpClient
     {
