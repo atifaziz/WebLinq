@@ -403,6 +403,22 @@ namespace WebLinq.Tests
             Assert.That(request.Config.Timeout, Is.EqualTo(new TimeSpan(0, 1, 0)));
         }
 
+        [TestCase(DecompressionMethods.Deflate)]
+        [TestCase(DecompressionMethods.GZip)]
+        [TestCase(DecompressionMethods.Deflate | DecompressionMethods.GZip)]
+        public async Task GetRequestWithAutomaticCompression(DecompressionMethods methods)
+        {
+            var tt = new TestTransport(HttpConfig.Default.WithAutomaticDecompression(methods))
+                .Enqueue(new byte[0]);
+
+            await tt.Http.Get(new Uri("https://www.example.com/"));
+            var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+
+            Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
+            Assert.That(request.Config.AutomaticDecompression, Is.EqualTo(methods));
+        }
+
         [Test]
         public async Task GetRequestWithCookies()
         {

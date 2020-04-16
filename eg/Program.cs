@@ -54,6 +54,7 @@ namespace WebLinq.Samples
                     new { Title = nameof(TeapotError)           , Query = TeapotError()            , IsWindowsOnly = false },
                     new { Title = nameof(BasicAuth)             , Query = BasicAuth()              , IsWindowsOnly = false },
                     new { Title = nameof(AutoRedirection)       , Query = AutoRedirection()        , IsWindowsOnly = false },
+                    new { Title = nameof(Compression)           , Query = Compression(),             IsWindowsOnly = false },
                     new { Title = nameof(FormPost)              , Query = FormPost()               , IsWindowsOnly = false },
                     new { Title = nameof(ITunesMovies)          , Query = ITunesMovies("Bollywood"), IsWindowsOnly = false },
                     new { Title = nameof(NuGetSignedStatusForMostDownloadedPackages),
@@ -358,6 +359,14 @@ namespace WebLinq.Samples
             from e in Http.Get(FormatUri($@"http://httpbin.org/redirect-to
                                                 ? url = {"http://example.com/"}"))
             select e.RequestUrl;
+
+        static IObservable<object> Compression() =>
+
+            Http.Get(new Uri("https://httpbin.org/gzip"))
+                .Accept("application/json")
+                .AutomaticDecompression(DecompressionMethods.GZip)
+                .Text()
+                .Content();
 
         static IObservable<object> FormPost() =>
 

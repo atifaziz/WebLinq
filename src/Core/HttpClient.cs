@@ -146,6 +146,8 @@ namespace WebLinq
             var userAgent = request.Headers.UserAgent.ToString();
             hwreq.UserAgent = userAgent.Length > 0 ? userAgent : config.UserAgent;
 
+            hwreq.AutomaticDecompression = config.AutomaticDecompression;
+
             if (request.Headers.Referrer is Uri referrerUrl)
                 hwreq.Referer = referrerUrl.AbsoluteUri;
             else if (config.Headers.TryGetValue("Referer", out var referrer))

@@ -17,6 +17,7 @@
 namespace WebLinq
 {
     using System;
+    using System.Net;
     using System.Net.Http;
     using System.Reactive;
     using System.Reactive.Linq;
@@ -52,6 +53,9 @@ namespace WebLinq
 
         public static IHttpObservable SetUserAgent(this IHttpObservable query, string value) =>
             query.WithConfigurer(c => query.Configurer(c).WithUserAgent(value));
+
+        public static IHttpObservable AutomaticDecompression(this IHttpObservable query, DecompressionMethods value) =>
+            query.WithConfigurer(c => query.Configurer(c).WithAutomaticDecompression(value));
 
         public static IObservable<HttpFetch<HttpContent>> Buffer(this IHttpObservable query) =>
             query.ReadContent(async f =>
