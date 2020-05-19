@@ -32,6 +32,8 @@ install:
       }
     }
 skip_tags: true
+before_build:
+- dotnet --info
 build_script:
 - ps: |
     $id = ([datetimeoffset]$env:APPVEYOR_REPO_COMMIT_TIMESTAMP).ToUniversalTime().ToString('yyyyMMdd''t''HHmm')
