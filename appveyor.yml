@@ -17,20 +17,13 @@ install:
 - cmd: eclint check -n "**/*.{cs,tt,cmd,sh,md,txt,yml}"
 - cmd: eclint check -w "**/*.{cs,tt,cmd,sh,md,txt,yml,json,sln,csproj,shfbproj}"
 - cmd: git reset --hard
+- cmd: curl -OsSL https://dot.net/v1/dotnet-install.ps1
+- ps: if ($isWindows) { ./dotnet-install.ps1 -JsonFile global.json }
 - sh: curl -OsSL https://dot.net/v1/dotnet-install.sh
 - sh: chmod +x dotnet-install.sh
-- ps: |
-    if ($isLinux) {
-      ./dotnet-install.sh --jsonfile global.json
-      if (!$?) {
-        throw "dotnet-install failed (exit code = $LASTEXITCODE)."
-      }
-      $env:PATH = "$(Join-Path $HOME '.dotnet'):$env:PATH"
-      ./dotnet-install.sh --runtime dotnet --version 2.1.15 --skip-non-versioned-files
-      if (!$?) {
-        throw "dotnet-install failed (exit code = $LASTEXITCODE)."
-      }
-    }
+- sh: ./dotnet-install.sh --jsonfile global.json
+- sh: ./dotnet-install.sh --runtime dotnet --version 2.1.15 --skip-non-versioned-files
+- sh: export PATH="$HOME/.dotnet:$PATH"
 skip_tags: true
 before_build:
 - dotnet --info
