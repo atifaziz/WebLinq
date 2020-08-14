@@ -28,6 +28,7 @@ namespace WebLinq.Samples
     using static Modules.XmlModule;
     using static Modules.UriModule;
     using static MoreLinq.Extensions.IndexExtension;
+    using static MoreLinq.Extensions.PartitionExtension;
 
     #endregion
 
@@ -39,6 +40,11 @@ namespace WebLinq.Samples
 
             var ruler1 = new string('=', Console.IsOutputRedirected ? 78 : Console.BufferWidth - 1);
             var ruler2 = new string('-', ruler1.Length);
+
+            var (include, exclude) =
+                args.Partition(a => a.Length == 0 || a[0] != '!',
+                               (i, e) => (i.ToHashSet(StringComparer.OrdinalIgnoreCase),
+                                          e.ToHashSet(StringComparer.OrdinalIgnoreCase)));
 
             var samples =
                 from s in new[]
@@ -61,8 +67,8 @@ namespace WebLinq.Samples
                                                                   Query = NuGetSignedStatusForMostDownloadedPackages(true),
                                                                                                      IsWindowsOnly = false },
                 }
-                where args.Length == 0
-                   || args.Any(a => s.Title.Equals(a, StringComparison.OrdinalIgnoreCase))
+                where include.Count == 0 || include.Contains(s.Title)
+                where !exclude.Contains($"!{s.Title}")
                 where !s.IsWindowsOnly
                    || RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
                 select s;
