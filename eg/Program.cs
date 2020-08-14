@@ -281,6 +281,7 @@ namespace WebLinq.Samples
 
             from html in
                 Http.Get(new Uri("https://msdn.microsoft.com/en-us/library/ms762271.aspx"))
+                    .SetUserAgent("Mozilla/5.0") // seems to be required
                     .Html()
                     .Content()
             select html.QuerySelector("#main pre code.lang-xml").InnerText.TrimStart()
