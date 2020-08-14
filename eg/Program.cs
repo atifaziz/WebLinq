@@ -41,8 +41,13 @@ namespace WebLinq.Samples
             var ruler1 = new string('=', Console.IsOutputRedirected ? 78 : Console.BufferWidth - 1);
             var ruler2 = new string('-', ruler1.Length);
 
-            var (include, exclude) =
-                args.Partition(a => a.Length == 0 || a[0] != '!',
+            var (options, tail) =
+                args.Partition(a => a.Length >= 3 && a.StartsWith("--") && a[^1] != '-');
+
+            var flags = options.Select(o => o.TrimStart('-')).ToHashSet(StringComparer.Ordinal);
+
+            var (includes, excludes) =
+                tail.Partition(a => a.Length == 0 || a[0] != '!',
                                (i, e) => (i.ToHashSet(StringComparer.OrdinalIgnoreCase),
                                           e.ToHashSet(StringComparer.OrdinalIgnoreCase)));
 
@@ -67,8 +72,8 @@ namespace WebLinq.Samples
                                                                   Query = NuGetSignedStatusForMostDownloadedPackages(true),
                                                                                                      IsWindowsOnly = false },
                 }
-                where include.Count == 0 || include.Contains(s.Title)
-                where !exclude.Contains($"!{s.Title}")
+                where includes.Count == 0 || includes.Contains(s.Title)
+                where !excludes.Contains($"!{s.Title}")
                 where !s.IsWindowsOnly
                    || RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
                 select s;
@@ -78,8 +83,17 @@ namespace WebLinq.Samples
                 Console.WriteLine(ruler1);
                 Console.WriteLine(sample.Title);
                 Console.WriteLine(ruler2);
-                foreach (var e in sample.Query.ToEnumerable())
-                    Console.WriteLine(e);
+                try
+                {
+                    foreach (var e in sample.Query.ToEnumerable())
+                        Console.WriteLine(e);
+                }
+                catch (Exception e)
+                {
+                    if (!flags.Contains("continue-on-error"))
+                        throw;
+                    Console.Error.WriteLine(e);
+                }
             }
         }
 
