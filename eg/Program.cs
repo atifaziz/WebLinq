@@ -37,8 +37,8 @@ namespace WebLinq.Samples
         {
             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
-            var ruler1 = new string('=', Console.BufferWidth - 1);
-            var ruler2 = new string('-', Console.BufferWidth - 1);
+            var ruler1 = new string('=', Console.IsOutputRedirected ? 78 : Console.BufferWidth - 1);
+            var ruler2 = new string('-', ruler1.Length);
 
             var samples =
                 from s in new[]
