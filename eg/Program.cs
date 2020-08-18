@@ -70,7 +70,7 @@ namespace WebLinq.Samples
 
         static IObservable<object> GoogleSearch() =>
 
-            from sr in Http.Get(new Uri("http://google.com/"))
+            from sr in Http.Get(new HttpUrl("http://google.com/"))
                            .Submit(0, SubmissionData.Set("q", "foobar"))
                            .Html()
                            .Expand(curr =>
@@ -78,7 +78,7 @@ namespace WebLinq.Samples
                                var next = curr.Content.TryBaseHref(curr.Content.QuerySelectorAll("#foot a.fl")
                                                                                .Last() // Next
                                                                                .GetAttributeValue("href"));
-                               return curr.Client.Get(new Uri(next)).Html();
+                               return curr.Client.Get(new HttpUrl(next)).Html();
                            })
                            .TakeWhile(h => (int.TryParse(HttpUtility.ParseQueryString(h.Content.BaseUrl.Query)["start"], out var n) ? n : 1) < 30)
             select sr.Content into sr
@@ -110,7 +110,7 @@ namespace WebLinq.Samples
 
         static IObservable<object> QueenSongs() =>
 
-            from dg in Http.Get(new Uri("https://en.wikipedia.org/wiki/Queen_discography"))
+            from dg in Http.Get(new HttpUrl("https://en.wikipedia.org/wiki/Queen_discography"))
                            .Html()
 
             from album in Observable.For(
@@ -129,14 +129,12 @@ namespace WebLinq.Samples
                     Href  = a.Owner.TryBaseHref(a.GetAttributeValue("href")?.Trim()),
                 }
                 into e
-                select new
-                {
-                    e.Http,
-                    e.Title,
-                    Url = Uri.TryCreate(e.Href, UriKind.Absolute, out var url) ? url : null,
-                }
+                where !string.IsNullOrEmpty(e.Title)
+                select HttpUrl.TryParse(e.Href, out var url)
+                     ? new { e.Http, e.Title, Url = url }
+                     : null
                 into e
-                where !string.IsNullOrEmpty(e.Title) && e.Url != null
+                where e != null
                 select e,
 
                 album =>
@@ -181,7 +179,7 @@ namespace WebLinq.Samples
 
         static IObservable<object> TopHackerNews(int score) =>
 
-            from sp in Http.Get(new Uri("https://news.ycombinator.com/"))
+            from sp in Http.Get(new HttpUrl("https://news.ycombinator.com/"))
                            .Html()
                            .Content()
             let scores =
@@ -214,7 +212,7 @@ namespace WebLinq.Samples
         static IObservable<object> MsdnBooksXmlSample() =>
 
             from html in
-                Http.Get(new Uri("https://msdn.microsoft.com/en-us/library/ms762271.aspx"))
+                Http.Get(new HttpUrl("https://msdn.microsoft.com/en-us/library/ms762271.aspx"))
                     .Html()
                     .Content()
             select html.QuerySelector("#main pre code.lang-xml").InnerText.TrimStart()
@@ -238,7 +236,7 @@ namespace WebLinq.Samples
 
         static IObservable<object> MockarooCsv() =>
 
-            from t in Http.Get(new Uri("https://www.mockaroo.com/"))
+            from t in Http.Get(new HttpUrl("https://www.mockaroo.com/"))
                           .SubmitTo(new Uri("https://www.mockaroo.com/schemas/download"), "#schema_form",
                               SubmissionData.Collect(
                                   SubmissionData.Set("preview", "false"),
@@ -266,7 +264,7 @@ namespace WebLinq.Samples
 
         static IObservable<object> TeapotError() =>
 
-            from e in Http.Get(new Uri("http://httpbin.org/status/418"))
+            from e in Http.Get(new HttpUrl("http://httpbin.org/status/418"))
                           .ReturnErroneousFetch()
             select new
             {
@@ -276,7 +274,7 @@ namespace WebLinq.Samples
 
         static IObservable<object> BasicAuth() =>
 
-            from url in Observable.Return(new Uri("http://httpbin.org/basic-auth/user/passwd"))
+            from url in Observable.Return(new HttpUrl("http://httpbin.org/basic-auth/user/passwd"))
             from fst in Http.Get(url)
                             .ReturnErroneousFetch()
             from snd in fst.Client.WithConfig(fst.Client.Config.WithCredentials(new NetworkCredential("user", "passwd")))
@@ -296,7 +294,7 @@ namespace WebLinq.Samples
 
         static IObservable<object> FormPost() =>
 
-            Http.Get(new Uri("http://httpbin.org/forms/post"))
+            Http.Get(new HttpUrl("http://httpbin.org/forms/post"))
                 .Submit(null,
                     SubmissionData.Collect(
                         SubmissionData.Set("custname" , "John Doe"           ),
@@ -308,17 +306,17 @@ namespace WebLinq.Samples
                 .Text()
                 .Content();
 
-        static IObservable<HttpFetch<IEnumerable<(string Title, Uri Url)>>>
+        static IObservable<HttpFetch<IEnumerable<(string Title, HttpUrl Url)>>>
             GetITunesMovieGenres(this IHttpClient http) =>
 
             from toc in
-                http.Get(new Uri("https://itunes.apple.com/us/genre/movies/id33"))
+                http.Get(new HttpUrl("https://itunes.apple.com/us/genre/movies/id33"))
                     .Html()
             select
                 toc.WithContent(
                     from a in toc.Content.QuerySelectorAll("#genre-nav ul > li a[href^=https]")
                     select (a.NormalInnerText,
-                            new Uri(toc.Content.TryBaseHref(a.GetAttributeValue("href")))));
+                            new HttpUrl(toc.Content.TryBaseHref(a.GetAttributeValue("href")))));
 
         static IObservable<object> ITunesMovies(string genreSought) =>
 
@@ -337,7 +335,7 @@ namespace WebLinq.Samples
                     select new
                     {
                         Title = a.NormalInnerText,
-                        Url    = new Uri(home.Content.TryBaseHref(a.GetAttributeValue("href"))),
+                        Url    = new HttpUrl(home.Content.TryBaseHref(a.GetAttributeValue("href"))),
                     }
                     into e
                     where Regex.IsMatch(e.Title, @"^[A-Z*]$")
@@ -352,7 +350,7 @@ namespace WebLinq.Samples
                                     select new
                                     {
                                         PageNumber = int.Parse(a.NormalInnerText, NumberStyles.None, CultureInfo.InvariantCulture),
-                                        Url = new Uri(home.Content.TryBaseHref(a.GetAttributeValue("href"))),
+                                        Url = new HttpUrl(home.Content.TryBaseHref(a.GetAttributeValue("href"))),
                                     }
                                     into e
                                     // We always have page 1 (which we prepend later, below)
@@ -390,7 +388,7 @@ namespace WebLinq.Samples
                 Url = page.Html.TryBaseHref(a.GetAttributeValue("href")),
                 Alpha = page.Title,
                 page.PageNumber,
-                SourceUrl = page.Url.AbsoluteUri,
+                SourceUrl = page.Url.ToString(),
             };
 
         //
@@ -434,7 +432,7 @@ namespace WebLinq.Samples
             from e in
                 Observable.Merge(maxConcurrent: 4, sources:
                     from page in
-                        Http.Get(new Uri("https://www.nuget.org/stats/packages"))
+                        Http.Get(new HttpUrl("https://www.nuget.org/stats/packages"))
                             .Html()
                             .Content()
 
@@ -457,7 +455,7 @@ namespace WebLinq.Samples
 
                     select
                         from json in
-                            Http.Get(new Uri($"https://api.nuget.org/v3-flatcontainer/{id}/index.json"))
+                            Http.Get(HttpUrl.Format($"https://api.nuget.org/v3-flatcontainer/{id}/index.json"))
                                 .Text()
                                 .Content()
                         let version = JsonConvert.DeserializeAnonymousType(json, prototype)
@@ -474,7 +472,7 @@ namespace WebLinq.Samples
             from nupkg in
                 File.Exists(downloadPath)
                 ? Observable.Return(new LocalFileContent(downloadPath))
-                : Http.Get(new Uri($"https://api.nuget.org/v3-flatcontainer/{e.Id}/{e.Version}/{e.NuPkgFileName}"))
+                : Http.Get(HttpUrl.Format($"https://api.nuget.org/v3-flatcontainer/{e.Id}/{e.Version}/{e.NuPkgFileName}"))
                       .Download(downloadPath)
                       .Content()
 
