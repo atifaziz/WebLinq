@@ -25,8 +25,7 @@ namespace WebLinq
 
     public static class HttpFetch
     {
-        public static HttpFetch<T> Create<T>(HttpFetchInfo info, T content) =>
-            new HttpFetch<T>(info, content);
+        public static HttpFetch<T> Create<T>(HttpFetchInfo info, T content) => new(info, content);
     }
 
     [DebuggerDisplay("Id = {Id}, StatusCode = {StatusCode} ({ReasonPhrase}), Content = {Content}")]
@@ -36,10 +35,9 @@ namespace WebLinq
         public T Content                           { get; }
 
         public int Id                              => Info.Id;
-        public IHttpClient Client                  => Info.Client;
         public Version HttpVersion                 => Info.HttpVersion;
         public HttpStatusCode StatusCode           => Info.StatusCode;
-        public string ReasonPhrase                 => Info.ReasonPhrase;
+        public string? ReasonPhrase                => Info.ReasonPhrase;
         public HttpHeaderCollection Headers        => Info.Headers;
         public HttpHeaderCollection ContentHeaders => Info.ContentHeaders;
         public Uri RequestUrl                      => Info.RequestUrl;
@@ -57,13 +55,13 @@ namespace WebLinq
         public bool IsSuccessStatusCode => Info.IsSuccessStatusCode;
         public bool IsSuccessStatusCodeInRange(int first, int last) => Info.IsSuccessStatusCodeInRange(first, last);
 
-        public bool IsContentType(string type) => Info.IsContentType(type);
-        public string ContentMediaType         => Info.ContentMediaType;
-        public string ContentCharSet           => Info.ContentCharSet;
-        public Encoding ContentCharSetEncoding => Info.ContentCharSetEncoding;
+        public bool IsContentType(string type)    => Info.IsContentType(type);
+        public string? ContentMediaType           => Info.ContentMediaType;
+        public string? ContentCharSet             => Info.ContentCharSet;
+        public Encoding? ContentCharSetEncoding   => Info.ContentCharSetEncoding;
 
-        public string ContentDispositionType     => Info.ContentDispositionType;
-        public string ContentDispositionFileName => Info.ContentDispositionFileName;
+        public string? ContentDispositionType     => Info.ContentDispositionType;
+        public string? ContentDispositionFileName => Info.ContentDispositionFileName;
 
         public long? ContentLength => Info.ContentLength;
     }
@@ -72,27 +70,27 @@ namespace WebLinq
     public sealed class HttpFetchInfo
     {
         public int Id                              { get; }
-        public IHttpClient Client                  { get; }
+        public HttpConfig Config                   { get; }
         public Version HttpVersion                 { get; }
         public HttpStatusCode StatusCode           { get; }
-        public string ReasonPhrase                 { get; }
+        public string? ReasonPhrase                { get; }
         public HttpHeaderCollection Headers        { get; }
         public HttpHeaderCollection ContentHeaders { get; }
         public Uri RequestUrl                      { get; }
         public HttpHeaderCollection RequestHeaders { get; }
 
         public HttpFetchInfo(int id,
-            IHttpClient client,
+            HttpConfig config,
             Version httpVersion,
             HttpStatusCode statusCode,
-            string reasonPhrase,
+            string? reasonPhrase,
             HttpHeaderCollection headers,
             HttpHeaderCollection contentHeaders,
             Uri requestUrl,
             HttpHeaderCollection requestHeaders)
         {
             Id             = id;
-            Client         = client;
+            Config         = config;
             HttpVersion    = httpVersion;
             StatusCode     = statusCode;
             ReasonPhrase   = reasonPhrase;
@@ -105,9 +103,9 @@ namespace WebLinq
         public bool IsSuccessStatusCode => IsSuccessStatusCodeInRange(200, 299);
         public bool IsSuccessStatusCodeInRange(int first, int last) => (int)StatusCode >= first && (int)StatusCode <= last;
 
-        (bool, MediaTypeHeaderValue Value) _contentType;
+        (bool, MediaTypeHeaderValue? Value) _contentType;
 
-        MediaTypeHeaderValue ContentType =>
+        MediaTypeHeaderValue? ContentType =>
             this.LazyGet(ref _contentType,
                          it => it.ContentHeaders.TryGetValue("Content-Type", out var value)
                          ? MediaTypeHeaderValue.Parse(value)
@@ -116,28 +114,28 @@ namespace WebLinq
         public bool IsContentType(string type) =>
             string.Equals(ContentType?.MediaType, type, StringComparison.OrdinalIgnoreCase);
 
-        public string ContentMediaType => ContentType?.MediaType;
-        public string ContentCharSet => ContentType?.CharSet;
+        public string? ContentMediaType => ContentType?.MediaType;
+        public string? ContentCharSet => ContentType?.CharSet;
 
-        public Encoding ContentCharSetEncoding
-            => ContentType?.CharSet is string s
+        public Encoding? ContentCharSetEncoding
+            => ContentType?.CharSet is { } s
              ? Encoding.GetEncoding(s)
              : null;
 
-        (bool, ContentDispositionHeaderValue Value) _contentDisposition;
+        (bool, ContentDispositionHeaderValue? Value) _contentDisposition;
 
-        ContentDispositionHeaderValue ContentDisposition =>
+        ContentDispositionHeaderValue? ContentDisposition =>
             this.LazyGet(ref _contentDisposition,
                          it => it.ContentHeaders.TryGetValue("Content-Disposition", out var value)
                              ? ContentDispositionHeaderValue.Parse(value)
                              : null);
 
-        public string ContentDispositionType => ContentDisposition?.DispositionType;
+        public string? ContentDispositionType => ContentDisposition?.DispositionType;
 
         static readonly char[] Quote = { '"' };
 
-        public string ContentDispositionFileName
-            => ContentDisposition is ContentDispositionHeaderValue h
+        public string? ContentDispositionFileName
+            => ContentDisposition is { } h
              ? (h.FileNameStar ?? h.FileName)?.Trim(Quote)
              : null;
 
@@ -147,6 +145,6 @@ namespace WebLinq
             this.LazyGet(ref _contentLength,
                          it => it.ContentHeaders.TryGetValue("Content-Length", out var str)
                              ? long.Parse(str.Single(), NumberStyles.None, CultureInfo.InvariantCulture)
-                             : (long?) null);
+                             : null);
     }
 }

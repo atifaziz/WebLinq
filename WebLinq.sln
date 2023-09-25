@@ -1,12 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27703.2035
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32929.385
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebLinq.Samples", "eg\WebLinq.Samples.csproj", "{B4C1F88A-ED2D-4CF1-807F-2B9C13D5C7FE}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebLinq", "src\Core\WebLinq.csproj", "{76FCF387-B33C-49B9-916F-F91862CB648C}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{F1FAE8C9-0AA0-471E-974F-A257ABB2F3E8}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
@@ -14,6 +10,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		build.cmd = build.cmd
 		build.sh = build.sh
 		COPYING.txt = COPYING.txt
+		Directory.Build.props = Directory.Build.props
 		global.json = global.json
 		pack.cmd = pack.cmd
 		pack.sh = pack.sh
@@ -22,7 +19,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		test.sh = test.sh
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebLinq.Tests", "tests\WebLinq.Tests.csproj", "{00CDA73A-CA20-4AEB-A29B-CEF37876941D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebLinq", "src\Core\WebLinq.csproj", "{17B0355E-7029-487D-BB17-74529E051082}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebLinq.Tests", "tests\WebLinq.Tests.csproj", "{7348390D-1034-4649-85BD-60EBE985A970}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -30,18 +29,14 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{B4C1F88A-ED2D-4CF1-807F-2B9C13D5C7FE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B4C1F88A-ED2D-4CF1-807F-2B9C13D5C7FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B4C1F88A-ED2D-4CF1-807F-2B9C13D5C7FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B4C1F88A-ED2D-4CF1-807F-2B9C13D5C7FE}.Release|Any CPU.Build.0 = Release|Any CPU
-		{76FCF387-B33C-49B9-916F-F91862CB648C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{76FCF387-B33C-49B9-916F-F91862CB648C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{76FCF387-B33C-49B9-916F-F91862CB648C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{76FCF387-B33C-49B9-916F-F91862CB648C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{00CDA73A-CA20-4AEB-A29B-CEF37876941D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{00CDA73A-CA20-4AEB-A29B-CEF37876941D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{00CDA73A-CA20-4AEB-A29B-CEF37876941D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{00CDA73A-CA20-4AEB-A29B-CEF37876941D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{17B0355E-7029-487D-BB17-74529E051082}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{17B0355E-7029-487D-BB17-74529E051082}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{17B0355E-7029-487D-BB17-74529E051082}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{17B0355E-7029-487D-BB17-74529E051082}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7348390D-1034-4649-85BD-60EBE985A970}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7348390D-1034-4649-85BD-60EBE985A970}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7348390D-1034-4649-85BD-60EBE985A970}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7348390D-1034-4649-85BD-60EBE985A970}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

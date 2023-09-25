@@ -21,24 +21,27 @@ namespace WebLinq.Html
 
     public struct HtmlString : IEquatable<HtmlString>
     {
-        string _encoded;
-        string _decoded;
+        string? _encoded;
+        string? _decoded;
 
-        public static HtmlString FromEncoded(string encoded) => new HtmlString(encoded: encoded, decoded: null);
-        public static HtmlString FromDecoded(string decoded) => new HtmlString(decoded: decoded, encoded: null);
+        public static HtmlString FromEncoded(string? encoded) => new(encoded: encoded, decoded: null);
+        public static HtmlString FromDecoded(string? decoded) => new(decoded: decoded, encoded: null);
 
-        HtmlString(string encoded, string decoded)
+        HtmlString(string? encoded, string? decoded)
         {
             _encoded = encoded;
             _decoded = decoded;
         }
 
-        public string Decoded => _decoded ?? (_encoded == null ? null : (_decoded = WebUtility.HtmlDecode(_encoded)));
-        public string Encoded => _encoded ?? (_decoded == null ? null : (_encoded = WebUtility.HtmlEncode(_decoded)));
+        public string? Decoded => _decoded ?? (_encoded is null ? null : _decoded = WebUtility.HtmlDecode(_encoded));
+        public string? Encoded => _encoded ?? (_decoded is null ? null : _encoded = WebUtility.HtmlEncode(_decoded));
 
-        public bool Equals(HtmlString other) => string.Equals(Decoded, other.Decoded);
-        public override bool Equals(object obj) => obj is HtmlString s && Equals(s);
-        public override int GetHashCode() => Decoded?.GetHashCode() ?? 0;
-        public override string ToString() => Encoded;
+        public bool Equals(HtmlString other) => string.Equals(Decoded, other.Decoded, StringComparison.Ordinal);
+        public override bool Equals(object? obj) => obj is HtmlString s && Equals(s);
+        public override int GetHashCode() => Decoded?.GetHashCode(StringComparison.Ordinal) ?? 0;
+        public override string ToString() => Encoded ?? string.Empty;
+
+        public static bool operator ==(HtmlString left, HtmlString right) => left.Equals(right);
+        public static bool operator !=(HtmlString left, HtmlString right) => !left.Equals(right);
     }
 }

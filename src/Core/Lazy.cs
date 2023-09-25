@@ -20,11 +20,12 @@ namespace WebLinq
 
     static class Lazy
     {
-        public static TResult LazyGet<T, TResult>(this T arg,
-            ref (bool, TResult) storage, Func<T, TResult> factory)
+        public static TResult
+            LazyGet<T, TResult>(this T arg, ref (bool, TResult) storage, Func<T, TResult> factory)
         {
-            if (arg == null) throw new ArgumentNullException(nameof(arg));
-            if (factory == null) throw new ArgumentNullException(nameof(factory));
+            ArgumentNullException.ThrowIfNull(arg);
+            ArgumentNullException.ThrowIfNull(factory);
+
             var (initialized, value) = storage;
             if (initialized)
                 return value;

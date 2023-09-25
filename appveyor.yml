@@ -1,6 +1,6 @@
 version: '{build}'
 image:
-  - Visual Studio 2019
+  - Visual Studio 2022
   - Ubuntu
 stack: node 6
 skip_commits:
@@ -19,10 +19,11 @@ install:
 - cmd: git reset --hard
 - cmd: curl -OsSL https://dot.net/v1/dotnet-install.ps1
 - ps: if ($isWindows) { ./dotnet-install.ps1 -JsonFile global.json }
+- ps: if ($isWindows) { ./dotnet-install.ps1 -Runtime dotnet -Version 6.0.26 -SkipNonVersionedFiles }
 - sh: curl -OsSL https://dot.net/v1/dotnet-install.sh
 - sh: chmod +x dotnet-install.sh
 - sh: ./dotnet-install.sh --jsonfile global.json
-- sh: ./dotnet-install.sh --runtime dotnet --version 2.1.15 --skip-non-versioned-files
+- sh: ./dotnet-install.sh --runtime dotnet --version 6.0.26 --skip-non-versioned-files
 - sh: export PATH="$HOME/.dotnet:$PATH"
 skip_tags: true
 before_build:

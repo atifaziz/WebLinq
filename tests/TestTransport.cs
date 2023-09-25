@@ -1,3 +1,5 @@
+#pragma warning disable CA2000 // Dispose objects before losing scope (FIXME)
+
 namespace WebLinq.Tests
 {
     using System;
@@ -5,26 +7,20 @@ namespace WebLinq.Tests
     using System.Net;
     using System.Net.Http;
     using System.Text;
+    using System.Threading;
     using System.Threading.Tasks;
-    using Modules;
 
-    sealed class TestTransport
+    sealed class TestTransport : IHttpClient
     {
         readonly Queue<HttpResponseMessage> _responses;
         readonly Queue<HttpRequestMessage> _requests;
         readonly Queue<HttpConfig> _requestConfigs;
 
-        public TestTransport(params HttpResponseMessage[] responses) :
-            this(HttpConfig.Default, responses) {}
-
-        public TestTransport(HttpConfig config, params HttpResponseMessage[] responses)
+        public TestTransport(params HttpResponseMessage[] responses)
         {
             _responses      = new Queue<HttpResponseMessage>(responses);
             _requests       = new Queue<HttpRequestMessage>();
             _requestConfigs = new Queue<HttpConfig>();
-
-            Http = HttpModule.Http.WithConfig(config)
-                                  .Wrap((_, req, cfg) => SendAsync(req, cfg));
         }
 
         public TestTransport Enqueue(HttpResponseMessage response)
@@ -71,15 +67,43 @@ namespace WebLinq.Tests
             return selector(request, config);
         }
 
-        public IHttpClient Http { get; }
-
-        Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpConfig config)
+        async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpConfig config)
         {
             _requestConfigs.Enqueue(config);
-            _requests.Enqueue(request);
+            _requests.Enqueue(await request.CloneAsync());
             var response = _responses.Dequeue();
             response.RequestMessage = request;
-            return Task.FromResult(response);
+            return response;
+        }
+
+        public CookieContainer GetCookieContainer() => throw new NotImplementedException();
+
+        public Task<HttpResponseMessage> SendAsync(HttpConfig config, HttpRequestMessage request,
+                                                   HttpCompletionOption completionOption,
+                                                   CancellationToken cancellationToken) =>
+            SendAsync(request, config);
+
+        public void Dispose() { }
+    }
+
+    file static class Extensions
+    {
+        public static async Task<HttpRequestMessage> CloneAsync(this HttpRequestMessage request)
+        {
+            var clone = new HttpRequestMessage(request.Method, request.RequestUri);
+
+            foreach (var (key, value) in request.Headers)
+                clone.Headers.TryAddWithoutValidation(key, value);
+
+            if (request.Content is { } content)
+            {
+                clone.Content = new ReadOnlyMemoryContent(await content.ReadAsByteArrayAsync().ConfigureAwait(false));
+
+                foreach (var (key, value) in content.Headers)
+                    clone.Content.Headers.TryAddWithoutValidation(key, value);
+            }
+
+            return clone;
         }
     }
 }

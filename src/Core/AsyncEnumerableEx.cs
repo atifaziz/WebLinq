@@ -1,4 +1,4 @@
-#region Copyright (c) 2016 Atif Aziz. All rights reserved.
+#region Copyright (c) 2022 Atif Aziz. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,9 +14,16 @@
 //
 #endregion
 
-using System;
-using System.Runtime.InteropServices;
+namespace WebLinq;
 
-[assembly: ComVisible(false)]
-[assembly: CLSCompliant(true)]
-[assembly: Guid("76fcf387-b33c-49b9-916f-f91862cb648c")]
+using System.Collections.Generic;
+
+static class AsyncEnumerableEx
+{
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+    public static async IAsyncEnumerator<T> Return<T>(T value)
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+    {
+        yield return value;
+    }
+}

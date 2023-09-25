@@ -19,53 +19,48 @@
 namespace WebLinq
 {
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
     using System.Net;
 
     partial class HttpConfig
     {
-        public static readonly HttpConfig Default;
+        public static readonly HttpConfig Default = InitDefault();
 
-        static HttpConfig()
+        static HttpConfig InitDefault()
         {
-            var req = WebRequest.CreateHttp("http://localhost/");
-            Default = new HttpConfig(HttpHeaderCollection.Empty,
-                                     TimeSpan.FromMilliseconds(req.Timeout),
-                                     req.UseDefaultCredentials, req.Credentials,
-                                     req.UserAgent,
-                                     req.AutomaticDecompression,
-                                     cookies: null,
-                                     ignoreInvalidServerCertificate: false);
+#pragma warning disable SYSLIB0014 // WebRequest, HttpWebRequest, ServicePoint, WebClient are obsolete
+            var req = WebRequest.CreateHttp(new Uri("http://localhost/"));
+#pragma warning restore SYSLIB0014 // WebRequest, HttpWebRequest, ServicePoint, WebClient are obsolete
+
+            return new HttpConfig(HttpHeaderCollection.Empty,
+                                  TimeSpan.FromMilliseconds(req.Timeout),
+                                  req.UseDefaultCredentials, req.Credentials,
+                                  req.UserAgent ?? string.Empty,
+                                  req.AutomaticDecompression,
+                                  ignoreInvalidServerCertificate: false);
         }
     }
 
     public sealed partial class HttpConfig
     {
-        public static readonly IEnumerable<Cookie> ZeroCookies = new Cookie[0];
-
-        public HttpHeaderCollection Headers        { get; private set; }
-        public TimeSpan Timeout                    { get; private set; }
-        public bool UseDefaultCredentials          { get; private set; }
-        public ICredentials Credentials            { get; private set; }
-        public string UserAgent                    { get; private set; }
-        public DecompressionMethods AutomaticDecompression { get; private set; }
-        public IReadOnlyCollection<Cookie> Cookies { get; private set; }
-        public bool IgnoreInvalidServerCertificate { get; private set; }
+        public HttpHeaderCollection Headers { get; init; }
+        public TimeSpan Timeout { get; init; }
+        public bool UseDefaultCredentials { get; init; }
+        public ICredentials? Credentials { get; init; }
+        public string UserAgent { get; init; }
+        public DecompressionMethods AutomaticDecompression { get; init; }
+        public bool IgnoreInvalidServerCertificate { get; init; }
 
         public HttpConfig(HttpHeaderCollection headers,
                           TimeSpan timeout,
-                          bool useDefaultCredentials, ICredentials credentials,
+                          bool useDefaultCredentials, ICredentials? credentials,
                           string userAgent,
                           DecompressionMethods automaticDecompression,
-                          IReadOnlyCollection<Cookie> cookies,
                           bool ignoreInvalidServerCertificate)
         {
-            Headers     = headers;
-            Timeout     = timeout;
-            UserAgent   = userAgent;
+            Headers = headers;
+            Timeout = timeout;
+            UserAgent = userAgent;
             AutomaticDecompression = automaticDecompression;
-            Cookies     = cookies;
             Credentials = credentials;
             UseDefaultCredentials = useDefaultCredentials;
             IgnoreInvalidServerCertificate = ignoreInvalidServerCertificate;
@@ -77,7 +72,6 @@ namespace WebLinq
                  other.UseDefaultCredentials, other.Credentials,
                  other.UserAgent,
                  other.AutomaticDecompression,
-                 other.Cookies,
                  other.IgnoreInvalidServerCertificate) { }
 
         public HttpConfig WithHeader(string name, string value) =>
@@ -96,18 +90,10 @@ namespace WebLinq
             Credentials == value ? this : new HttpConfig(this) { Credentials = value };
 
         public HttpConfig WithUserAgent(string value) =>
-            WithUserAgentImpl(value ?? string.Empty);
-
-        HttpConfig WithUserAgentImpl(string value) =>
             UserAgent == value ? this : new HttpConfig(this) { UserAgent = value };
 
         public HttpConfig WithAutomaticDecompression(DecompressionMethods value) =>
             AutomaticDecompression == value ? this : new HttpConfig(this) { AutomaticDecompression = value };
-
-        public HttpConfig WithCookies(IReadOnlyCollection<Cookie> value) =>
-            ReferenceEquals(Cookies, value) || Cookies?.SequenceEqual(value ?? ZeroCookies) == true
-            ? this
-            : new HttpConfig(this) { Cookies = value };
 
         public HttpConfig WithIgnoreInvalidServerCertificate(bool value) =>
             IgnoreInvalidServerCertificate == value

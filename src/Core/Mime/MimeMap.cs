@@ -19,17 +19,16 @@ namespace WebLinq.Mime
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using Mannex.Collections.Generic;
 
     static class MimeMapping
     {
-        public static string FindMimeTypeFromFileName(string fileName)
+        public static string? FindMimeTypeFromFileName(string fileName)
         {
             if (fileName == null) throw new ArgumentNullException(nameof(fileName));
             if (fileName[0] == '.' && fileName.IndexOf('.', 1) < 0)
                 return null;
-            var extension = Path.GetExtension(fileName);
-            return extension.Length > 0 ? Map.Find(extension) : null;
+            return Path.GetExtension(fileName) is { Length: > 0 } extension
+                   && Map.TryGetValue(extension, out var result) ? result : null;
         }
 
         #region MIME table

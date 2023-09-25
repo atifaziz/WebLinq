@@ -32,12 +32,6 @@ namespace WebLinq.Tests
         }
 
         [Test]
-        public void DefaultConfigCookiesIsNull()
-        {
-            Assert.That(HttpConfig.Default.Cookies, Is.Null);
-        }
-
-        [Test]
         public void DefaultConfigIgnoreInvalidServerCertificateIsFalse()
         {
             Assert.That(HttpConfig.Default.IgnoreInvalidServerCertificate, Is.False);
@@ -57,19 +51,12 @@ namespace WebLinq.Tests
                                    .WithHeader("name2", "value2")
                                    .WithHeader("name3", "value3");
 
-            var entry = config.Headers.Fold((e1, e2, e3) => new
+            Assert.That(config.Headers, Is.EquivalentTo(new[]
             {
-                First = e3, Second = e2, Third = e1,
-            });
-
-            Assert.That(entry.First.Key, Is.EqualTo("name1"));
-            Assert.That(entry.First.Value.Single(), Is.EqualTo("value1"));
-
-            Assert.That(entry.Second.Key, Is.EqualTo("name2"));
-            Assert.That(entry.Second.Value.Single(), Is.EqualTo("value2"));
-
-            Assert.That(entry.Third.Key, Is.EqualTo("name3"));
-            Assert.That(entry.Third.Value.Single(), Is.EqualTo("value3"));
+                KeyValuePair.Create("name1", new[] { "value1" }),
+                KeyValuePair.Create("name2", new[] { "value2" }),
+                KeyValuePair.Create("name3", new[] { "value3" }),
+            }));
 
             AssertDefaultConfigEqual(config, ConfigAssertion.All.Except(ConfigAssertion.Headers));
         }
@@ -137,16 +124,6 @@ namespace WebLinq.Tests
         }
 
         [Test]
-        public void WithCookies()
-        {
-            var cookies = new[] { new Cookie("name", "value") };
-            var config = HttpConfig.Default.WithCookies(cookies);
-
-            Assert.That(config.Cookies, Is.SameAs(cookies));
-            AssertDefaultConfigEqual(config, ConfigAssertion.All.Except(ConfigAssertion.Cookies));
-        }
-
-        [Test]
         public void WithIgnoreInvalidServerCertificate()
         {
             var config = HttpConfig.Default.WithIgnoreInvalidServerCertificate(true);
@@ -163,7 +140,6 @@ namespace WebLinq.Tests
             public static readonly Action<HttpConfig, HttpConfig> Credentials                    = (actual, expected) => Assert.That(actual.Credentials, Is.SameAs(expected.Credentials));
             public static readonly Action<HttpConfig, HttpConfig> UserAgent                      = (actual, expected) => Assert.That(actual.UserAgent, Is.EqualTo(expected.UserAgent));
             public static readonly Action<HttpConfig, HttpConfig> AutomaticDecompression         = (actual, expected) => Assert.That(actual.AutomaticDecompression, Is.EqualTo(expected.AutomaticDecompression));
-            public static readonly Action<HttpConfig, HttpConfig> Cookies                        = (actual, expected) => Assert.That(actual.Cookies, Is.SameAs(expected.Cookies));
             public static readonly Action<HttpConfig, HttpConfig> IgnoreInvalidServerCertificate = (actual, expected) => Assert.That(actual.IgnoreInvalidServerCertificate, Is.EqualTo(expected.IgnoreInvalidServerCertificate));
 
             public static IEnumerable<Action<HttpConfig, HttpConfig>> All
@@ -176,7 +152,6 @@ namespace WebLinq.Tests
                     yield return Credentials;
                     yield return UserAgent;
                     yield return AutomaticDecompression;
-                    yield return Cookies;
                     yield return IgnoreInvalidServerCertificate;
                 }
             }

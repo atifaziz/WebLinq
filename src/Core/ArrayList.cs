@@ -21,8 +21,6 @@ namespace WebLinq
 
     struct ArrayList<T>
     {
-        static readonly T[] Zero = new T[0];
-
         T[] _items;
 
         public int Count { get; private set; }
@@ -53,7 +51,7 @@ namespace WebLinq
         public T[] ToArray()
         {
             if (Count == 0)
-                return Zero;
+                return Array.Empty<T>();
             Array.Resize(ref _items, Count);
             return _items;
         }
@@ -65,7 +63,7 @@ namespace WebLinq
 
         public static int RoundUpToClosest(int x)
         {
-            if (x < 0 || x > Cache[Cache.Length - 1])
+            if (x < 0 || x > Cache[^1])
                 throw new ArgumentOutOfRangeException(nameof(x), x, null);
             var i = Array.BinarySearch(Cache, x);
             return Cache[i >= 0 ? i : ~i];

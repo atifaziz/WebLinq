@@ -24,6 +24,7 @@ namespace WebLinq.Html
     using System.Collections.Specialized;
     using System.Linq;
     using System.Net.Mime;
+    using System.Runtime.CompilerServices;
     using System.Text.RegularExpressions;
 
     #endregion
@@ -32,19 +33,19 @@ namespace WebLinq.Html
 
     public sealed partial class HtmlForm
     {
-        ReadOnlyCollection<HtmlFormControl> _controls;
-        Dictionary<HtmlObject, HtmlFormControl> _controlByElement;
+        ReadOnlyCollection<HtmlFormControl>? _controls;
+        Dictionary<HtmlObject, HtmlFormControl>? _controlByElement;
 
         public HtmlObject Element { get; }
-        public string Name { get; }
+        public string? Name { get; }
         public string Action { get; }
         public HtmlFormMethod Method { get; }
-        public ContentType EncType { get; }
+        public ContentType? EncType { get; }
 
         public IReadOnlyList<HtmlFormControl> Controls =>
-            _controls ?? (_controls = Array.AsReadOnly(GetControlsCore().ToArray()));
+            _controls ??= Array.AsReadOnly(GetControlsCore().ToArray());
 
-        internal HtmlForm(HtmlObject element, string name, string action, HtmlFormMethod method, ContentType encType)
+        internal HtmlForm(HtmlObject element, string? name, string action, HtmlFormMethod method, ContentType? encType)
         {
             Element  = element;
             Name     = name;
@@ -73,17 +74,17 @@ namespace WebLinq.Html
                             ? HtmlControlType.TextArea
                             : HtmlControlType.Input
             let inputType   = controlType == HtmlControlType.Input
-                            ? e.GetAttributeValue("type")?.Trim().Map(HtmlInputType.Parse)
+                            ? (e.GetAttributeValue("type")?.Trim() is { } t ? HtmlInputType.Parse(t) : null)
                             // Missing "type" attribute implies "text" since HTML 3.2
                             ?? HtmlInputType.Default
                             : null
             select new HtmlFormControl(this, e, name, controlType, inputType);
 
         Dictionary<HtmlObject, HtmlFormControl> ControlByElement =>
-            _controlByElement ?? (_controlByElement = Controls.ToDictionary(c => c.Element, c => c));
+            _controlByElement ??= Controls.ToDictionary(c => c.Element, c => c);
 
-        public HtmlFormControl QuerySelector(string selector) =>
-            Element.QuerySelector(selector) is HtmlObject element
+        public HtmlFormControl? QuerySelector(string selector) =>
+            Element.QuerySelector(selector) is { } element
             ? ControlByElement.TryGetValue(element, out var control) ? control : null
             : null;
 
@@ -119,9 +120,9 @@ namespace WebLinq.Html
         public T GetForm<T>(Func<NameValueCollection, NameValueCollection, NameValueCollection, T> selector) =>
             GetFormCore(selector3: selector);
 
-        T GetFormCore<T>(Func<NameValueCollection, T> selector1 = null,
-                         Func<NameValueCollection, NameValueCollection, T> selector2 = null,
-                         Func<NameValueCollection, NameValueCollection, NameValueCollection, T> selector3 = null)
+        T GetFormCore<T>(Func<NameValueCollection, T>? selector1 = null,
+                         Func<NameValueCollection, NameValueCollection, T>? selector2 = null,
+                         Func<NameValueCollection, NameValueCollection, NameValueCollection, T>? selector3 = null)
         {
             // TODO Validate formElement is FORM
             // TODO formmethod, formaction, formenctype
@@ -161,7 +162,7 @@ namespace WebLinq.Html
                     && field.ControlType != HtmlControlType.TextArea
                     && field.InputType.KnownType == KnownHtmlInputType.Other)
                 {
-                    throw new Exception($"Unexpected type of form field (\"{field.InputType}\").");
+                    throw new NotSupportedException($"Unexpected type of form field (\"{field.InputType}\").");
                 }
 
                 // TODO select first of multiple checked in a radio button group
@@ -191,10 +192,13 @@ namespace WebLinq.Html
                 bucket?.Add(field.Name, value);
             }
 
-            return selector3 != null ? selector3(all, form, submittables)
-                 : selector2 != null ? selector2(form, submittables)
-                 : selector1 != null ? selector1(form)
-                 : default;
+            return (all, submittables, selector1, selector2, selector3) switch
+            {
+                ({ } a, { } s, null  , null  , { } s3) => s3(a, form, s),
+                (null , { } s, null  , { } s2, null  ) => s2(form, s),
+                (null , null , { } s1, null  , null  ) => s1(form),
+                var unknown => throw new SwitchExpressionException(unknown)
+            };
         }
     }
 }

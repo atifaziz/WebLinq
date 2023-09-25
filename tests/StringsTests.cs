@@ -1,6 +1,9 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+#pragma warning disable CA1825 // Avoid zero-length array allocations
+#pragma warning disable NUnit2005 // Consider using Assert.That(actual, Is.EqualTo(expected)) instead of Assert.AreEqual(expected, actual)
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -84,13 +87,13 @@ namespace WebLinq.Tests
             {
                 var args = new[]
                 {
-                    (default(Strings), (object)null),
-                    (Strings.Empty, (object)null),
-                    (new Strings(ImmutableArray<string>.Empty), (object)null),
-                    (new Strings("abc"), (object)"abc"),
-                    (new Strings("abc"), (object)new[] { "abc" }),
-                    (new Strings(ImmutableArray.Create("abc")), (object)new[] { "abc" }),
-                    (new Strings(ImmutableArray.Create("abc", "bcd")), (object)new[] { "abc", "bcd" }),
+                    (default(Strings), (object?)null),
+                    (Strings.Empty, null),
+                    (new Strings(ImmutableArray<string>.Empty), null),
+                    (new Strings("abc"), "abc"),
+                    (new Strings("abc"), new[] { "abc" }),
+                    (new Strings(ImmutableArray.Create("abc")), new[] { "abc" }),
+                    (new Strings(ImmutableArray.Create("abc", "bcd")), new[] { "abc", "bcd" }),
                 };
                 return from a in args select new[] { a.Item1, a.Item2 };
             }
@@ -147,8 +150,8 @@ namespace WebLinq.Tests
         public void DefaultNullOrEmpty_ExpectedValues(Strings strings)
         {
             Assert.Empty(strings);
-            Assert.Null((string)strings);
-            Assert.Equal((string)null, strings);
+            Assert.Null((string)strings!);
+            Assert.Equal((string?)null, strings!);
             Assert.Equal(string.Empty, strings.ToString());
             Assert.Equal(new string[0], strings.ToArray());
 
@@ -156,10 +159,10 @@ namespace WebLinq.Tests
             Assert.Throws<IndexOutOfRangeException>(() => _ = strings[0]);
             Assert.Throws<IndexOutOfRangeException>(() => _ = ((IList<string>)strings)[0]);
             Assert.Equal(string.Empty, strings.ToString());
-            Assert.Equal(-1, ((IList<string>)strings).IndexOf(null));
+            Assert.Equal(-1, ((IList<string>)strings).IndexOf(null!));
             Assert.Equal(-1, ((IList<string>)strings).IndexOf(string.Empty));
             Assert.Equal(-1, ((IList<string>)strings).IndexOf("not there"));
-            Assert.False(((ICollection<string>)strings).Contains(null));
+            Assert.False(((ICollection<string>)strings).Contains(null!));
             Assert.False(((ICollection<string>)strings).Contains(string.Empty));
             Assert.False(((ICollection<string>)strings).Contains("not there"));
             Assert.Empty(strings);
@@ -168,10 +171,9 @@ namespace WebLinq.Tests
         [Test]
         public void ImplicitStringConverter_Works()
         {
-            string nullString = null;
-            Strings strings = nullString;
-            Assert.Null((string)strings);
-            Assert.Equal(new string[] { null }, (string[])strings);
+            string? nullString = null;
+            Strings strings = nullString!;
+            Assert.Null((string?)strings);
 
             string aString = "abc";
             strings = aString;
@@ -188,7 +190,7 @@ namespace WebLinq.Tests
             ImmutableArray<string> nullStringArray = default;
             Strings strings = nullStringArray;
             Assert.Empty(strings);
-            Assert.Null((string)strings);
+            Assert.Null((string?)strings);
             Assert.Empty((string[])strings);
 
             string aString = "abc";
@@ -340,22 +342,17 @@ namespace WebLinq.Tests
             Assert.Equal(expected, Strings.Concat(expectedStrings, strings));
 
 
-            Assert.Equal(new Strings(ImmutableArray.Create((string) null).AddRange(expected)),
-                         Strings.Concat((string)null, in expectedStrings));
+            Assert.Equal(new Strings(ImmutableArray.Create((string) null!).AddRange(expected)),
+                         Strings.Concat(null!, in expectedStrings));
 
-            Assert.Equal(new Strings(expected.Add(null)),
-                         Strings.Concat(in expectedStrings, (string)null));
+            Assert.Equal(new Strings(expected.Add(null!)),
+                         Strings.Concat(in expectedStrings, null!));
 
             string[] empty = new string[0];
-            Strings emptyStrings = new Strings(ImmutableArray<string>.Empty);
             Assert.Equal(empty, Strings.Concat(strings, Strings.Empty));
             Assert.Equal(empty, Strings.Concat(Strings.Empty, strings));
             Assert.Equal(empty, Strings.Concat(strings, new Strings()));
             Assert.Equal(empty, Strings.Concat(new Strings(), strings));
-
-            string[] @null = { null };
-            Assert.Equal(@null, Strings.Concat((string)null, in emptyStrings));
-            Assert.Equal(@null, Strings.Concat(in emptyStrings, (string)null));
         }
 
         [Theory]
@@ -491,43 +488,14 @@ namespace WebLinq.Tests
             Assert.False(Strings.Equals(strings, notEqual));
         }
 
-        [Test]
-        public void NullString()
-        {
-            var strings = new Strings((string)null);
-
-            Assert.AreEqual(1, strings.Count);
-            Assert.Null(strings[0]);
-            Assert.Null((string)strings);
-            Assert.IsEmpty(strings.ToString());
-            Assert.AreEqual(new string[] { null }, (string[])strings);
-            Assert.AreEqual(new string[] { null }, strings.ToArray());
-
-            var list = (IList<string>)strings;
-            Assert.AreEqual(0, list.IndexOf(null));
-            Assert.AreEqual(-1, list.IndexOf("foo"));
-            Assert.True(list.Contains(null));
-            Assert.False(list.Contains("foo"));
-            var array = new[] { "foo" };
-            list.CopyTo(array, 0);
-            Assert.AreEqual(null, array[0]);
-
-            Assert.True(Strings.IsNullOrEmpty(strings));
-
-            using (var e = strings.GetEnumerator())
-            {
-                Assert.True(e.MoveNext());
-                Assert.Null(e.Current);
-                Assert.False(e.MoveNext());
-            }
-        }
-
+#pragma warning disable CA1812 // Avoid uninstantiated internal classes
         class Assert : NAssert
+#pragma warning restore CA1812 // Avoid uninstantiated internal classes
         {
             public static void Empty(IEnumerable collection) => IsEmpty(collection);
             public static void Equal<T>(T expected, T actual) => That(actual, Is.EqualTo(expected));
-            public static void Equal(string[] expected, Strings actual) => That(actual, Is.EqualTo(expected));
-            public static void Equal(string expected, string actual) => AreEqual(actual, expected);
+            public static void Equal(string?[] expected, Strings actual) => That(actual, Is.EqualTo(expected));
+            public static void Equal(string? expected, string? actual) => AreEqual(actual, expected);
             public static void Single<T>(IEnumerable<T> collection) => That(collection.Count(), Is.EqualTo(1));
         }
     }

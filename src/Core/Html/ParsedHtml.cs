@@ -23,43 +23,43 @@ namespace WebLinq.Html
     using System.Globalization;
     using System.Linq;
     using System.Net.Mime;
-    using Mannex.Collections.Generic;
     using Mannex.Collections.Specialized;
 
     public abstract class ParsedHtml
     {
-        readonly Uri _baseUrl;
-        readonly Lazy<Uri> _inlineBaseUrl;
-        ReadOnlyCollection<HtmlForm> _forms;
+        readonly Uri? _baseUrl;
+        readonly Lazy<Uri?> _inlineBaseUrl;
+        ReadOnlyCollection<HtmlForm>? _forms;
 
         protected ParsedHtml() :
             this(null) {}
 
-        protected ParsedHtml(Uri baseUrl)
+        protected ParsedHtml(Uri? baseUrl)
         {
             _baseUrl = baseUrl;
-            _inlineBaseUrl = new Lazy<Uri>(TryGetInlineBaseUrl);
+            _inlineBaseUrl = new Lazy<Uri?>(TryGetInlineBaseUrl);
         }
 
-        public Uri BaseUrl => _baseUrl ?? _inlineBaseUrl.Value;
+        public Uri? BaseUrl => _baseUrl ?? _inlineBaseUrl.Value;
 
-        Uri TryGetInlineBaseUrl()
+        Uri? TryGetInlineBaseUrl()
         {
             var baseRef = QuerySelector("html > head > base[href]")?.GetAttributeValue("href");
             return Uri.TryCreate(baseRef, UriKind.Absolute, out var baseUrl)
                    && (baseUrl.Scheme == Uri.UriSchemeHttp || baseUrl.Scheme == Uri.UriSchemeHttps)
-                 ? baseUrl : null;
+                 ? baseUrl
+                 : null;
         }
 
         public IEnumerable<HtmlObject> QuerySelectorAll(string selector) =>
             QuerySelectorAll(selector, null);
 
-        public abstract IEnumerable<HtmlObject> QuerySelectorAll(string selector, HtmlObject context);
+        public abstract IEnumerable<HtmlObject> QuerySelectorAll(string selector, HtmlObject? context);
 
-        public HtmlObject QuerySelector(string selector) =>
+        public HtmlObject? QuerySelector(string selector) =>
             QuerySelector(selector, null);
 
-        public virtual HtmlObject QuerySelector(string selector, HtmlObject context) =>
+        public virtual HtmlObject? QuerySelector(string selector, HtmlObject? context) =>
             QuerySelectorAll(selector, context).FirstOrDefault();
 
         public abstract HtmlObject Root { get; }
@@ -69,7 +69,7 @@ namespace WebLinq.Html
 
         public override string ToString() => Root?.OuterHtml ?? string.Empty;
 
-        public IReadOnlyList<HtmlForm> Forms => _forms ?? (_forms = Array.AsReadOnly(GetFormsCore().ToArray()));
+        public IReadOnlyList<HtmlForm> Forms => _forms ??= Array.AsReadOnly(GetFormsCore().ToArray());
 
         IEnumerable <HtmlForm> GetFormsCore() =>
             from form in QuerySelectorAll("form[action]")
@@ -85,7 +85,7 @@ namespace WebLinq.Html
                                     : HtmlFormMethod.Get,
                                 enctype != null ? new ContentType(enctype) : null);
 
-        public IEnumerable<HtmlForm> QueryFormSelectorAll(string selector) =>
+        public IEnumerable<HtmlForm> QueryFormSelectorAll(string? selector) =>
             from e in QuerySelectorAll(selector ?? "form[action]")
             where selector == null || e.IsNamed("form")
             select Forms.FirstOrDefault(f => f.Element == e) into f
@@ -98,20 +98,21 @@ namespace WebLinq.Html
         public static IEnumerable<string> Links(this ParsedHtml html) =>
             html.Links((href, _) => href);
 
-        public static IEnumerable<T> Links<T>(this ParsedHtml self, Func<string, HtmlObject, T> selector)
-        {
-            return
-                from a in self.QuerySelectorAll("a[href]")
-                let href = a.GetAttributeValue("href")
-                where !string.IsNullOrWhiteSpace(href)
-                select selector(self.TryBaseHref(href), a);
-        }
+        public static IEnumerable<T> Links<T>(this ParsedHtml self, Func<string, HtmlObject, T> selector) =>
+#pragma warning disable CA1062 // Validate arguments of public methods (TODO)
+            from a in self.QuerySelectorAll("a[href]")
+#pragma warning restore CA1062 // Validate arguments of public methods
+            let href = a.GetAttributeValue("href")
+            where !string.IsNullOrWhiteSpace(href)
+            select selector(self.TryBaseHref(href), a);
 
         public static IEnumerable<HtmlObject> Tables(this ParsedHtml html) =>
             html.Tables(null);
 
-        public static IEnumerable<HtmlObject> Tables(this ParsedHtml self, string selector) =>
+        public static IEnumerable<HtmlObject> Tables(this ParsedHtml self, string? selector) =>
+#pragma warning disable CA1062 // Validate arguments of public methods (TODO)
             from e in self.QuerySelectorAll(selector ?? "table")
+#pragma warning restore CA1062 // Validate arguments of public methods
             where "table".Equals(e.Name, StringComparison.OrdinalIgnoreCase)
             select e;
 
@@ -180,25 +181,20 @@ namespace WebLinq.Html
             }
         }
 
-        struct CellSpan : IEquatable<CellSpan>
+        readonly record struct CellSpan(int Cols, int Rows)
         {
-            public static readonly CellSpan Zero = new CellSpan(0, 0);
-            public static readonly CellSpan One = new CellSpan(1, 1);
+            public static readonly CellSpan Zero = new(0, 0);
+            public static readonly CellSpan One = new(1, 1);
 
-            public readonly int Cols;
-            public readonly int Rows;
-
-            public CellSpan(int cols, int rows) { Rows = rows; Cols = cols; }
-            public bool Equals(CellSpan other) => Cols == other.Cols && Rows == other.Rows;
-            public override bool Equals(object obj) => obj is CellSpan cs && Equals(cs);
-            public override int GetHashCode() => unchecked((Cols * 397) ^ Rows);
             public override string ToString() => $"[{Cols}, {Rows}]";
         }
 
         public static DataTable FormsAsDataTable(this ParsedHtml html)
         {
             var forms =
+#pragma warning disable CA1062 // Validate arguments of public methods (TODO)
                 from f in html.Forms
+#pragma warning restore CA1062 // Validate arguments of public methods
                 select f.GetForm((fd, fs) => new
                 {
                     f.Name,
@@ -223,7 +219,7 @@ namespace WebLinq.Html
             });
 
             foreach (var form in
-                from fi in forms.Select((f, i) => (i + 1).AsKeyTo(f))
+                from fi in forms.Select((f, i) => KeyValuePair.Create(i + 1, f))
                 let form = fi.Value
                 from controls in new[]
                 {

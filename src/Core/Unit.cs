@@ -1,4 +1,4 @@
-#region Copyright (c) 2016 Atif Aziz. All rights reserved.
+#region Copyright (c) 2022 Atif Aziz. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,17 +14,9 @@
 //
 #endregion
 
-namespace WebLinq
-{
-    using System;
+namespace WebLinq;
 
-    static class Mapper
-    {
-        public static TResult Map<T, TResult>(this T input, Func<T, TResult> mapper)
-        {
-            if (input == null) throw new ArgumentNullException(nameof(input));
-            if (mapper == null) throw new ArgumentNullException(nameof(mapper));
-            return mapper(input);
-        }
-    }
+public readonly record struct Unit
+{
+    public override string ToString() => "()";
 }

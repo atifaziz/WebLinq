@@ -20,7 +20,7 @@ namespace WebLinq.Html
 
     public interface IHtmlParser
     {
-        ParsedHtml Parse(string html, Uri baseUrl);
+        ParsedHtml Parse(string html, Uri? baseUrl);
     }
 
     public static class HtmlParser
@@ -28,21 +28,20 @@ namespace WebLinq.Html
         public static IHtmlParser Default => new HapHtmlParser();
 
         public static ParsedHtml Parse(this IHtmlParser parser, string html) =>
+#pragma warning disable CA1062 // Validate arguments of public methods (TODO)
             parser.Parse(html, null);
+#pragma warning restore CA1062 // Validate arguments of public methods
 
-        public static IHtmlParser Wrap(this IHtmlParser parser, Func<IHtmlParser, string, Uri, ParsedHtml> impl) =>
+        public static IHtmlParser Wrap(this IHtmlParser parser, Func<IHtmlParser, string, Uri?, ParsedHtml> impl) =>
             new DelegatingHtmlParser((html, baseUrl) => impl(parser, html, baseUrl));
 
         sealed class DelegatingHtmlParser : IHtmlParser
         {
-            readonly Func<string, Uri, ParsedHtml> _parser;
+            readonly Func<string, Uri?, ParsedHtml> _parser;
 
-            public DelegatingHtmlParser(Func<string, Uri, ParsedHtml> parser)
-            {
-                _parser = parser;
-            }
+            public DelegatingHtmlParser(Func<string, Uri?, ParsedHtml> parser) => _parser = parser;
 
-            public ParsedHtml Parse(string html, Uri baseUrl) => _parser(html, baseUrl);
+            public ParsedHtml Parse(string html, Uri? baseUrl) => _parser(html, baseUrl);
         }
     }
 }

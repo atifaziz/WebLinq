@@ -29,10 +29,7 @@ namespace WebLinq.Html
 
     public sealed class HapHtmlParser : IHtmlParser
     {
-        public void Register(Action<Type, object> registrationHandler) =>
-            registrationHandler(typeof(IHtmlParser), this);
-
-        public ParsedHtml Parse(string html, Uri baseUrl)
+        public ParsedHtml Parse(string html, Uri? baseUrl)
         {
             var doc = new HtmlDocument();
             doc.LoadHtml2(html);
@@ -42,9 +39,9 @@ namespace WebLinq.Html
         sealed class HapParsedHtml : ParsedHtml
         {
             readonly HtmlDocument _document;
-            readonly ConditionalWeakTable<HtmlNode, HtmlObject> _map = new ConditionalWeakTable<HtmlNode, HtmlObject>();
+            readonly ConditionalWeakTable<HtmlNode, HtmlObject> _map = new();
 
-            public HapParsedHtml(HtmlDocument document, Uri baseUrl) :
+            public HapParsedHtml(HtmlDocument document, Uri? baseUrl) :
                 base(baseUrl)
             {
                 _document = document;
@@ -59,8 +56,8 @@ namespace WebLinq.Html
                 return obj;
             }
 
-            public override IEnumerable<HtmlObject> QuerySelectorAll(string selector, HtmlObject context) =>
-                from node in (((HapHtmlObject)context)?.Node ?? _document.DocumentNode).QuerySelectorAll(selector)
+            public override IEnumerable<HtmlObject> QuerySelectorAll(string selector, HtmlObject? context) =>
+                from node in (((HapHtmlObject?)context)?.Node ?? _document.DocumentNode).QuerySelectorAll(selector)
                 orderby node.StreamPosition
                 select GetPublicObject(node);
 
@@ -94,9 +91,9 @@ namespace WebLinq.Html
                 public override HtmlString InnerTextSource =>
                     HtmlString.FromEncoded(Node.InnerText);
 
-                public override HtmlObject ParentElement =>
-                    Node.ParentNode.NodeType == HtmlNodeType.Element
-                    ? _owner.GetPublicObject(Node.ParentNode)
+                public override HtmlObject? ParentElement =>
+                    Node.ParentNode is { NodeType: HtmlNodeType.Element } parentNode
+                    ? _owner.GetPublicObject(parentNode)
                     : null;
 
                 public override IEnumerable<HtmlObject> ChildElements =>
@@ -113,7 +110,7 @@ namespace WebLinq.Html
                     base(node, owner) {}
 
                 public override HtmlString InnerTextSource =>
-                    (_innerTextSource ?? (_innerTextSource = GetInnerTextSourceCore())).Value;
+                    _innerTextSource ??= GetInnerTextSourceCore();
 
                 HtmlString GetInnerTextSourceCore()
                 {

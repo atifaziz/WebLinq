@@ -1,80 +1,92 @@
 namespace WebLinq.Tests
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Net.Http;
     using System.Threading.Tasks;
-    using System.Reactive.Linq;
     using System.Collections.Specialized;
     using System.Net;
-    using System.Reactive.Threading.Tasks;
+    using System.Net.Http.Headers;
     using NUnit.Framework;
-    using static WebLinq.Modules.HttpModule;
 
     public class HttpQueryTests
     {
+        static readonly byte[] ZeroBytes = Array.Empty<byte>();
+
+        static Task<T> EvaluateAsync<T>(IHttpClient client, IHttpQuery<T> query) =>
+            EvaluateAsync(client, query, static e => e.SingleAsync());
+
+        static async Task<TResult> EvaluateAsync<T, TResult>(IHttpClient client, IHttpQuery<T> query,
+                                                             Func<IAsyncEnumerable<T>, ValueTask<TResult>> selector)
+        {
+            using var context = new HttpQueryContext(client);
+            return await selector(query.Share(context));
+        }
 
         [Test]
         public async Task AcceptSingleMediaType()
         {
-            var tt = new TestTransport().EnqueueText(string.Empty);
+            var q = Http.Get(new Uri("https://www.example.com/"))
+                        .Accept("text/plain");
 
-            await tt.Http.Get(new Uri("https://www.example.com/"))
-                         .Accept("text/plain");
+            using var tt = new TestTransport().EnqueueText(string.Empty);
+            _ = await EvaluateAsync(tt, q);
 
-            // Succeeds if it doesn't throw.
+            Assert.Pass(); // Succeeds if it doesn't throw.
         }
 
         [Test]
         public async Task AcceptMultipleMediaTypes()
         {
-            var tt = new TestTransport().EnqueueJson("{}");
+            var q = Http.Get(new Uri("https://www.example.com/"))
+                        .Accept("text/json", "application/json");
 
-            await tt.Http.Get(new Uri("https://www.example.com/"))
-                         .Accept("text/json", "application/json");
+            using var tt = new TestTransport().EnqueueJson("{}");
+            _ = await EvaluateAsync(tt, q);
 
-            // Succeeds if it doesn't throw.
+            Assert.Pass(); // Succeeds if it doesn't throw.
         }
 
         [Test]
         public void AcceptThrowsExceptionOnMediaTypeMismatch()
         {
-            var tt = new TestTransport().EnqueueText("foo");
+            var q = Http.Get(new Uri("https://www.example.com/"))
+                        .Accept("text/html");
 
-            Assert.ThrowsAsync<Exception>(() =>
-                tt.Http.Get(new Uri("https://www.example.com/"))
-                    .Accept("text/html")
-                    .ToTask());
+            using var tt = new TestTransport().EnqueueText("foo");
+            Assert.ThrowsAsync<UnacceptableMediaException>(() => EvaluateAsync(tt, q));
         }
 
         [Test]
         public void AcceptThrowsExceptionOnEmptyString()
         {
-            var tt = new TestTransport().Enqueue(new byte[0]);
+            var q = Http.Get(new Uri("https://www.example.com/"))
+                        .Accept("");
 
-            Assert.ThrowsAsync<Exception>(() =>
-                tt.Http.Get(new Uri("https://www.example.com/"))
-                    .Accept("")
-                    .ToTask());
+            using var tt = new TestTransport().Enqueue(ZeroBytes);
+            Assert.ThrowsAsync<UnacceptableMediaException>(() => EvaluateAsync(tt, q));
         }
 
         [Test]
         public async Task AcceptNoParameterTest()
         {
-            var tt = new TestTransport().Enqueue(new byte[0]);
+            var q = Http.Get(new Uri("https://www.example.com/"))
+                        .Accept();
 
-            await tt.Http.Get(new Uri("https://www.example.com/"))
-                         .Accept();
+            using var tt = new TestTransport().Enqueue(ZeroBytes);
+            _ = await EvaluateAsync(tt, q);
 
-            // Succeeds if it doesn't throw.
+            Assert.Pass(); // Succeeds if it doesn't throw.
         }
 
         [Test]
         public async Task GetRequestTest()
         {
-            var tt = new TestTransport().Enqueue(new byte[0]);
+            var q = Http.Get(new Uri("https://www.example.com/"));
 
-            await tt.Http.Get(new Uri("https://www.example.com/"));
+            using var tt = new TestTransport().Enqueue(ZeroBytes);
+            _ = await EvaluateAsync(tt, q);
             var request = tt.DequeueRequestMessage();
 
             Assert.That(request.Method, Is.EqualTo(HttpMethod.Get));
@@ -83,12 +95,50 @@ namespace WebLinq.Tests
         }
 
         [Test]
+        public async Task SetHeaderTest()
+        {
+            var q = Http.Get(new Uri("https://www.example.com/"))
+                        .SetHeader("foo", "bar")
+                        .SetHeader("bar", "baz")
+                        .SetHeader("baz", "qux");
+
+            using var tt = new TestTransport().Enqueue(ZeroBytes);
+            _ = await EvaluateAsync(tt, q);
+            var request = tt.DequeueRequestMessage();
+
+            Assert.That(request.Method, Is.EqualTo(HttpMethod.Get));
+            Assert.That(request.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
+            Assert.That(request.Headers.Count(), Is.EqualTo(3));
+            Assert.That(request.Headers.GetValues("foo"), Is.EqualTo(new[] { "bar" }));
+            Assert.That(request.Headers.GetValues("bar"), Is.EqualTo(new[] { "baz" }));
+            Assert.That(request.Headers.GetValues("baz"), Is.EqualTo(new[] { "qux" }));
+        }
+
+        [Test]
+        public async Task SetHeaderOnFirstRequestTest()
+        {
+            var q = Http.Get(new Uri("https://www.example.com/"))
+                        .SetHeader("foo", "bar")
+                        .Get(new Uri("https://www.example.com/"));
+
+            using var tt = new TestTransport().Enqueue(ZeroBytes).Enqueue(ZeroBytes);
+            _ = await EvaluateAsync(tt, q);
+            var request1 = tt.DequeueRequestMessage();
+            var request2 = tt.DequeueRequestMessage();
+
+            Assert.That(request1.Headers.Count(), Is.EqualTo(1));
+            Assert.That(request1.Headers.GetValues("foo"), Is.EqualTo(new[] { "bar" }));
+            Assert.That(request2.Headers, Is.Empty);
+        }
+
+        /* FIXME
+        [Test]
         public async Task GetRequestSetHeaderTest()
         {
             var tt = new TestTransport(HttpConfig.Default.WithHeaders(HttpHeaderCollection.Empty));
-            tt.Enqueue(new byte[0]);
+            tt.Enqueue(ZeroBytes);
 
-            await tt.Http.SetHeader("foo", "bar").Get(new Uri("https://www.example.com/"));
+            var q = Http.SetHeader("foo", "bar").Get(new Uri("https://www.example.com/"));
             var request = tt.DequeueRequest((m, c) => new { Message = m, c.Headers });
 
             Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Get));
@@ -97,6 +147,7 @@ namespace WebLinq.Tests
             Assert.That(request.Headers.Single().Key, Is.EqualTo("foo"));
             Assert.That(request.Headers.Single().Value.Single(), Is.EqualTo("bar"));
         }
+        */
 
         [TestCase(HttpStatusCode.NotFound)]
         [TestCase(HttpStatusCode.NotImplemented)]
@@ -105,10 +156,10 @@ namespace WebLinq.Tests
         [TestCase(HttpStatusCode.Forbidden)]
         public void NotFoundFetchThrowsException(HttpStatusCode statusCode)
         {
-            var tt = new TestTransport().Enqueue(new byte[0], statusCode);
+            var q = Http.Get(new Uri("https://www.example.com/"));
 
-            Assert.ThrowsAsync<HttpRequestException>(() =>
-                tt.Http.Get(new Uri("https://www.example.com/")).ToTask());
+            using var tt = new TestTransport().Enqueue(ZeroBytes, statusCode);
+            Assert.ThrowsAsync<HttpRequestException>(() => EvaluateAsync(tt, q));
         }
 
         [TestCase(HttpStatusCode.NotFound)]
@@ -118,31 +169,37 @@ namespace WebLinq.Tests
         [TestCase(HttpStatusCode.Forbidden)]
         public async Task NotFoundFetchReturnErroneousFetchTest(HttpStatusCode statusCode)
         {
-            var tt = new TestTransport().Enqueue(new byte[0], statusCode);
+            var q = Http.Get(new Uri("https://www.example.com/"))
+                        .ReturnErroneousFetch();
 
-            var result = await tt.Http.Get(new Uri("https://www.example.com/"))
-                                      .ReturnErroneousFetch();
+            using var tt = new TestTransport().Enqueue(ZeroBytes, statusCode);
+            var result = await EvaluateAsync(tt, q);
 
             Assert.That(result.RequestUrl, Is.EqualTo(new Uri("https://www.example.com/")));
             Assert.That(result.StatusCode, Is.EqualTo(statusCode));
         }
 
+        /*
         [Test]
         public async Task SetCookieHeaderInResponseTest()
         {
-            var tt = new TestTransport()
-                .Enqueue(new byte[0])
-                .Enqueue(new HttpResponseMessage
-                {
-                    Headers =
-                    {
-                        { "Set-Cookie", "foo=bar" }
-                    },
-                    Content = new ByteArrayContent(new byte[0]),
-                });
+            var q = Http.Get(new Uri("https://www.example.com/"))
+                        .Get(new Uri("https://www.example.com/page"));
 
-            var result = await tt.Http.Get(new Uri("https://www.example.com/"))
-                                   .Get(new Uri("https://www.example.com/page"));
+            using var response = new HttpResponseMessage
+            {
+                Headers =
+                {
+                    { "Set-Cookie", "foo=bar" }
+                },
+                Content = new ByteArrayContent(ZeroBytes),
+            };
+
+            using var tt = new TestTransport()
+                .Enqueue(ZeroBytes)
+                .Enqueue(response);
+
+            var result = await EvaluateAsync(tt, q);
 
             var request1 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
             var request2 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
@@ -151,81 +208,15 @@ namespace WebLinq.Tests
             Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
             Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Get));
             Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/page")));
-            Assert.That(result.Client.Config.Cookies.Single().Name, Is.EqualTo("foo"));
-            Assert.That(result.Client.Config.Cookies.Single().Value, Is.EqualTo("bar"));
-        }
-
-
-        [Test, Ignore("Currently not handled by WebLinq")]
-        public async Task SameCookiesDifferentDomainsKeptInConfiguration()
-        {
-            var tt = new TestTransport(
-                new HttpResponseMessage
-                {
-                    Headers =
-                    {
-                        { "Set-Cookie", "foo=bar" }
-                    },
-                    Content = new ByteArrayContent(new byte[0]),
-                },
-                new HttpResponseMessage
-                {
-                    Headers =
-                    {
-                        { "Set-Cookie", "foo=bar" }
-                    },
-                    Content = new ByteArrayContent(new byte[0]),
-                });
-
-            var result = await tt.Http.Get(new Uri("https://www.example.com/"))
-                                   .Get(new Uri("https://www.google.com/"));
-            var request1 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
-            var request2 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
-
-            Assert.That(request1.Message.Method, Is.EqualTo(HttpMethod.Get));
-            Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
-            Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Get));
-            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.google.com/")));
-            Assert.That(result.Client.Config.Cookies.Single(c => c.Domain.Equals("www.example.com")).Name, Is.EqualTo("foo"));
-            Assert.That(result.Client.Config.Cookies.Single(c => c.Domain.Equals("www.example.com")).Value, Is.EqualTo("bar"));
-            Assert.That(result.Client.Config.Cookies.Single(c => c.Domain.Equals("www.google.com")).Name, Is.EqualTo("foo"));
-            Assert.That(result.Client.Config.Cookies.Single(c => c.Domain.Equals("www.google.com")).Value, Is.EqualTo("bar"));
-        }
-
-        [Test]
-        public async Task CookiesKeptInSubdomainWhenSpecified()
-        {
-            var tt = new TestTransport()
-                .Enqueue(new byte[0])
-                .Enqueue(new HttpResponseMessage
-                {
-                    Headers =
-                    {
-                        { "Set-Cookie", "foo=bar;Domain=example.com" }
-                    },
-                    Content = new ByteArrayContent(new byte[0]),
-                });
-
-            var result = await
-                tt.Http.Get(new Uri("https://www.example.com/"))
-                               .Get(new Uri("https://mail.example.com/"));
-
-            var request1 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
-            var request2 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
-
-            Assert.That(request1.Message.Method, Is.EqualTo(HttpMethod.Get));
-            Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
-            Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Get));
-            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://mail.example.com/")));
-            Assert.That(result.Client.Config.Cookies.Single().Name, Is.EqualTo("foo"));
-            Assert.That(result.Client.Config.Cookies.Single().Value, Is.EqualTo("bar"));
+            Assert.That(result.Cookies.Single().Name, Is.EqualTo("foo"));
+            Assert.That(result.Cookies.Single().Value, Is.EqualTo("bar"));
         }
 
         [Test]
         public async Task WithHeaderGetRequestSetHeaderTest()
         {
             var tt = new TestTransport(HttpConfig.Default.WithHeader("name1", "value1"))
-                .Enqueue(new byte[0]);
+                .Enqueue(ZeroBytes);
 
             await tt.Http.SetHeader("name2", "value2").Get(new Uri("https://www.example.com/"));
             var request = tt.DequeueRequest((m, c) => new { Message = m, c.Headers });
@@ -242,7 +233,7 @@ namespace WebLinq.Tests
         public async Task GetRequestSetSameHeaderAsConfiguration()
         {
             var tt = new TestTransport(HttpConfig.Default.WithHeader("foo", "bar"))
-                .Enqueue(new byte[0]);
+                .Enqueue(ZeroBytes);
 
             await tt.Http.SetHeader("foo", "bar").Get(new Uri("https://www.example.com/"));
             var request = tt.DequeueRequest((m, c) => new { Message = m, c.Headers });
@@ -252,16 +243,20 @@ namespace WebLinq.Tests
             Assert.That(request.Headers.Single().Key, Is.EqualTo("foo"));
             Assert.That(request.Headers.Single().Value.Single(), Is.EqualTo("bar"));
         }
+        */
 
         [Test]
         public async Task ChainedGetRequests()
         {
-            var tt = new TestTransport()
-                .Enqueue(new byte[0])
-                .Enqueue(new byte[0]);
+            var q = Http.Get(new Uri("https://www.example.com/"))
+                        .Get(new Uri("https://www.example.com/page"));
 
-            await tt.Http.Get(new Uri("https://www.example.com/"))
-                         .Get(new Uri("https://www.example.com/page"));
+            using var tt = new TestTransport()
+                .Enqueue(ZeroBytes)
+                .Enqueue(ZeroBytes);
+
+            _ = await EvaluateAsync(tt, q);
+
             var request1 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
             var request2 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
 
@@ -276,14 +271,16 @@ namespace WebLinq.Tests
         [Test, Ignore("https://github.com/weblinq/WebLinq/issues/18")]
         public async Task ChainedGetRequestsWithDifferentHeaders()
         {
-            var tt = new TestTransport()
-                .Enqueue(new byte[0])
-                .Enqueue(new byte[0]);
+            var q = Http.SetHeader("h1", "v1")
+                        .Get(new Uri("https://www.example.com/"))
+                        .SetHeader("h2", "v2")
+                        .Get(new Uri("https://www.example.com/page"));
 
-            await tt.Http.SetHeader("h1", "v1")
-                         .Get(new Uri("https://www.example.com/"))
-                         .SetHeader("h2", "v2")
-                         .Get(new Uri("https://www.example.com/page"));
+            using var tt = new TestTransport()
+                     .Enqueue(ZeroBytes)
+                     .Enqueue(ZeroBytes);
+
+            await EvaluateAsync(tt, q);
 
             var request1 = tt.DequeueRequest((m, c) => new { Message = m, c.Headers });
             var request2 = tt.DequeueRequest((m, c) => new { Message = m, c.Headers });
@@ -301,12 +298,15 @@ namespace WebLinq.Tests
         [Test]
         public async Task SeparateRequestsWithDifferentHeaders()
         {
-            var tt = new TestTransport()
-                .Enqueue(new byte[0])
-                .Enqueue(new byte[0]);
+            var q1 = Http.SetHeader("h1", "v1").Get(new Uri("https://www.example.com/"));
+            var q2 = Http.SetHeader("h2", "v2").Get(new Uri("https://www.example.com/page"));
 
-            await tt.Http.SetHeader("h1", "v1").Get(new Uri("https://www.example.com/"));
-            await tt.Http.SetHeader("h2", "v2").Get(new Uri("https://www.example.com/page"));
+            using var tt = new TestTransport()
+                     .Enqueue(ZeroBytes)
+                     .Enqueue(ZeroBytes);
+
+            await EvaluateAsync(tt, q1);
+            await EvaluateAsync(tt, q2);
 
             var request1 = tt.DequeueRequest((m, c) => new { Message = m, c.Headers });
             var request2 = tt.DequeueRequest((m, c) => new { Message = m, c.Headers });
@@ -321,37 +321,17 @@ namespace WebLinq.Tests
             Assert.That(request2.Headers.Single().Value.Single(), Is.EqualTo("v2"));
         }
 
-        [Test, Ignore("https://github.com/weblinq/WebLinq/issues/18")]
-        public async Task ChainedGetRequestsWithDifferentHeaders2()
-        {
-            var tt = new TestTransport(HttpConfig.Default.WithHeader("h1","v1"))
-                .Enqueue(new byte[0])
-                .Enqueue(new byte[0]);
-
-            await tt.Http.Get(new Uri("https://www.example.com/"))
-                         .SetHeader("h2", "v2")
-                         .Get(new Uri("https://www.example.com/page"));
-
-            var request1 = tt.DequeueRequest((m, c) => new { Message = m, c.Headers });
-            var request2 = tt.DequeueRequest((m, c) => new { Message = m, c.Headers });
-
-            Assert.That(request1.Message.Method, Is.EqualTo(HttpMethod.Get));
-            Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Get));
-            Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
-            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/page")));
-            Assert.That(request1.Headers.Single().Key, Is.EqualTo("h1"));
-            Assert.That(request1.Headers.Single().Value.Single(), Is.EqualTo("v1"));
-            Assert.That(request2.Headers.Keys, Is.EquivalentTo(new[] { "h1", "h2" }));
-            Assert.That(request2.Headers.Values, Is.EquivalentTo(new[] { "v1", "v2" }));
-        }
-
         [Test]
         public async Task GetRequestWithHeader()
         {
-            var tt = new TestTransport(HttpConfig.Default.WithHeader("foo", "bar"))
-                .Enqueue(new byte[0]);
+            var q = Http.SetHeader("foo", "bar")
+                        .Get(new Uri("https://www.example.com/"));
 
-            await tt.Http.Get(new Uri("https://www.example.com/"));
+            using var tt = new TestTransport()
+                .Enqueue(ZeroBytes);
+
+            _ = await EvaluateAsync(tt, q);
+
             var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c});
 
             Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Get));
@@ -363,68 +343,49 @@ namespace WebLinq.Tests
         [Test]
         public async Task GetRequestWithUserAgent()
         {
-            var tt = new TestTransport(HttpConfig.Default.WithUserAgent("Spider/1.0"))
-                .Enqueue(new byte[0]);
+            var q = Http.Get(new Uri("https://www.example.com/"))
+                        .UserAgent("Spider/1.0");
 
-            await tt.Http.Get(new Uri("https://www.example.com/"));
+            using var tt = new TestTransport()
+                .Enqueue(ZeroBytes);
+
+            _ = await EvaluateAsync(tt, q);
+
             var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
 
             Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Get));
             Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
             Assert.That(request.Config.UserAgent, Is.EqualTo("Spider/1.0"));
+            Assert.That(request.Message.Headers.UserAgent, Is.EqualTo(new[] { ProductInfoHeaderValue.Parse("Spider/1.0") }));
         }
 
         [Test]
-        public async Task GetRequestWithCredentials()
+        public async Task ApplyConfig()
         {
             var credentials = new NetworkCredential("admin", "admin");
-            var tt = new TestTransport(HttpConfig.Default.WithCredentials(credentials))
-                .Enqueue(new byte[0]);
+            var config = HttpConfig.Default.WithCredentials(credentials);
+            var q = Http.Config(config)
+                        .Apply(Http.Get(new Uri("https://www.example.com/")));
 
-            await tt.Http.Get(new Uri("https://www.example.com/"));
+            using var tt = new TestTransport()
+                .Enqueue(ZeroBytes);
+
+            _ = await EvaluateAsync(tt, q);
+
             var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
 
             Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Get));
             Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
-            Assert.That(request.Config.Credentials, Is.SameAs(credentials));
+            Assert.That(request.Config, Is.SameAs(config));
         }
 
-        [Test]
-        public async Task GetRequestWithTimeout()
-        {
-            var tt = new TestTransport(HttpConfig.Default.WithTimeout(new TimeSpan(0, 1, 0)))
-                .Enqueue(new byte[0]);
-
-            await tt.Http.Get(new Uri("https://www.example.com/"));
-            var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
-
-            Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Get));
-            Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
-            Assert.That(request.Config.Timeout, Is.EqualTo(new TimeSpan(0, 1, 0)));
-        }
-
-        [TestCase(DecompressionMethods.Deflate)]
-        [TestCase(DecompressionMethods.GZip)]
-        [TestCase(DecompressionMethods.Deflate | DecompressionMethods.GZip)]
-        public async Task GetRequestWithAutomaticCompression(DecompressionMethods methods)
-        {
-            var tt = new TestTransport(HttpConfig.Default.WithAutomaticDecompression(methods))
-                .Enqueue(new byte[0]);
-
-            await tt.Http.Get(new Uri("https://www.example.com/"));
-            var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
-
-            Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Get));
-            Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
-            Assert.That(request.Config.AutomaticDecompression, Is.EqualTo(methods));
-        }
-
+        /*
         [Test]
         public async Task GetRequestWithCookies()
         {
             var cookie = new Cookie("name", "value");
             var tt = new TestTransport(HttpConfig.Default.WithCookies(new[] { cookie }))
-                .Enqueue(new byte[0]);
+                .Enqueue(ZeroBytes);
 
             await tt.Http.Get(new Uri("https://www.example.com/"));
             var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
@@ -439,8 +400,8 @@ namespace WebLinq.Tests
         {
             var cookie = new Cookie("name", "value");
             var tt = new TestTransport(HttpConfig.Default.WithCookies(new[] { cookie }))
-                .Enqueue(new byte[0])
-                .Enqueue(new byte[0]);
+                .Enqueue(ZeroBytes)
+                .Enqueue(ZeroBytes);
 
             await tt.Http.Get(new Uri("https://www.example.com"));
             await tt.Http.Get(new Uri("https://www.example.com/page"));
@@ -455,38 +416,24 @@ namespace WebLinq.Tests
             Assert.That(request1.Config.Cookies.Single(), Is.SameAs(cookie));
             Assert.That(request2.Config.Cookies.Single(), Is.SameAs(cookie));
         }
+        */
 
         [Test]
-        public async Task SeparateRequestsWithCredentials()
+        public async Task SeparateRequestsWithConfig()
         {
+            var qq = Http.Get(new Uri("https://www.example.com"))
+                         .Get(new Uri("https://www.example.com/page"));
+
             var credentials = new NetworkCredential("admin", "admin");
-            var tt = new TestTransport(HttpConfig.Default.WithCredentials(credentials))
-                .Enqueue(new byte[0])
-                .Enqueue(new byte[0]);
+            var config = HttpConfig.Default.WithCredentials(credentials);
 
-            await tt.Http.Get(new Uri("https://www.example.com"));
-            await tt.Http.Get(new Uri("https://www.example.com/page"));
+            var q = Http.Config(config).Apply(qq);
 
-            var request1 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
-            var request2 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
+            using var tt = new TestTransport()
+                .Enqueue(ZeroBytes)
+                .Enqueue(ZeroBytes);
 
-            Assert.That(request1.Message.Method, Is.EqualTo(HttpMethod.Get));
-            Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Get));
-            Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com")));
-            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/page")));
-            Assert.That(request1.Config.Credentials, Is.SameAs(credentials));
-            Assert.That(request2.Config.Credentials, Is.SameAs(credentials));
-        }
-
-        [Test]
-        public async Task SeparateRequestsWithHeader()
-        {
-            var tt = new TestTransport(HttpConfig.Default.WithHeader("name","value"))
-                .Enqueue(new byte[0])
-                .Enqueue(new byte[0]);
-
-            await tt.Http.Get(new Uri("https://www.example.com"));
-            await tt.Http.Get(new Uri("https://www.example.com/page"));
+            _ = await EvaluateAsync(tt, q);
 
             var request1 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
             var request2 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
@@ -495,60 +442,49 @@ namespace WebLinq.Tests
             Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Get));
             Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com")));
             Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/page")));
-            Assert.That(request1.Config.Headers.Single().Key, Is.EqualTo("name"));
-            Assert.That(request2.Config.Headers.Single().Value.Single(), Is.EqualTo("value"));
-        }
-
-        [Test]
-        public async Task SeparateRequestsWithTimeout()
-        {
-            var tt = new TestTransport(HttpConfig.Default.WithTimeout(new TimeSpan(0,1,0)))
-                .Enqueue(new byte[0])
-                .Enqueue(new byte[0]);
-
-            await tt.Http.Get(new Uri("https://www.example.com"));
-            await tt.Http.Get(new Uri("https://www.example.com/page"));
-
-            var request1 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
-            var request2 = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
-
-            Assert.That(request1.Message.Method, Is.EqualTo(HttpMethod.Get));
-            Assert.That(request2.Message.Method, Is.EqualTo(HttpMethod.Get));
-            Assert.That(request1.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com")));
-            Assert.That(request2.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/page")));
-            Assert.That(request1.Config.Timeout, Is.EqualTo(new TimeSpan(0, 1, 0)));
-            Assert.That(request2.Config.Timeout, Is.EqualTo(new TimeSpan(0, 1, 0)));
+            Assert.That(request1.Config, Is.SameAs(config));
+            Assert.That(request2.Config, Is.SameAs(config));
         }
 
         [Test]
         public async Task PostRequestTest()
         {
-            var tt = new TestTransport()
-                .Enqueue(new byte[0]);
-            var data = new NameValueCollection { ["name"] = "value" };
+            var q = Http.Post(new Uri("https://www.example.com/"), new NameValueCollection
+            {
+                ["name"] = "value"
+            });
 
-            await tt.Http.Post(new Uri("https://www.example.com/"), data);
+            using var tt = new TestTransport()
+                .Enqueue(ZeroBytes);
+
+            _ = await EvaluateAsync(tt, q);
+
             var request = tt.DequeueRequest((m, c) => new { Message = m, Config = c });
 
             Assert.That(request.Message.Method, Is.EqualTo(HttpMethod.Post));
             Assert.That(request.Message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
             Assert.That(request.Config.Headers, Is.Empty);
+            Assert.That(request.Message.Content, Is.Not.Null);
             Assert.That(await request.Message.Content.ReadAsStringAsync(), Is.EqualTo("name=value"));
         }
 
         [Test, Ignore("https://github.com/weblinq/WebLinq/issues/18")]
         public async Task ChainedPostRequestsWithDifferentHeaders()
         {
-            var tt = new TestTransport()
-                .Enqueue(new byte[0])
-                .Enqueue(new byte[0]);
             var data1 = new NameValueCollection { [""] = "" };
             var data2 = new NameValueCollection { [""] = "" };
 
-            await tt.Http.SetHeader("h1","v1")
-                         .Post(new Uri("https://www.example.com/"), data1)
-                         .SetHeader("h2", "v2")
-                         .Post(new Uri("https://www.google.com/"), data2);
+            var q = Http.SetHeader("h1","v1")
+                        .Post(new Uri("https://www.example.com/"), data1)
+                        .SetHeader("h2", "v2")
+                        .Post(new Uri("https://www.google.com/"), data2);
+
+            using var tt = new TestTransport()
+                     .Enqueue(ZeroBytes)
+                     .Enqueue(ZeroBytes);
+
+            _ = await EvaluateAsync(tt, q);
+
             var request1 = tt.DequeueRequest((m, c) => new { Message = m, c.Headers });
             var request2 = tt.DequeueRequest((m, c) => new { Message = m, c.Headers });
 
@@ -562,114 +498,130 @@ namespace WebLinq.Tests
             Assert.That(request2.Headers.Values.Select(v => v.Single()), Is.EquivalentTo(new[] { "v1", "v2" }));
         }
 
-
         [Test]
         public async Task ChainedPostRequests()
         {
-            var tt = new TestTransport()
-                .Enqueue(new byte[0])
-                .Enqueue(new byte[0]);
-            var data1 = new NameValueCollection { ["name1"] = "value1" };
-            var data2 = new NameValueCollection { ["name2"] = "value2" };
+            var q = Http.Post(new Uri("https://www.example.com/"), new NameValueCollection
+                        {
+                            ["name1"] = "value1"
+                        })
+                        .Post(new Uri("https://www.google.com/"), new NameValueCollection
+                        {
+                            ["name2"] = "value2"
+                        });
 
-            await tt.Http.Post(new Uri("https://www.example.com/"), data1)
-                .Post(new Uri("https://www.google.com/"), data2);
+            using var tt = new TestTransport()
+                .Enqueue(ZeroBytes)
+                .Enqueue(ZeroBytes);
+
+            _ = await EvaluateAsync(tt, q);
+
             var message1 = tt.DequeueRequestMessage();
             var message2 = tt.DequeueRequestMessage();
 
             Assert.That(message1.Method, Is.EqualTo(HttpMethod.Post));
             Assert.That(message1.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
+            Assert.That(message1.Content, Is.Not.Null);
+            Assert.That(await message1.Content.ReadAsStringAsync(), Is.EqualTo("name1=value1"));
             Assert.That(message2.Method, Is.EqualTo(HttpMethod.Post));
             Assert.That(message2.RequestUri, Is.EqualTo(new Uri("https://www.google.com/")));
-            Assert.That(await message1.Content.ReadAsStringAsync(), Is.EqualTo("name1=value1"));
+            Assert.That(message2.Content, Is.Not.Null);
             Assert.That(await message2.Content.ReadAsStringAsync(), Is.EqualTo("name2=value2"));
         }
 
         [Test]
         public async Task PostRequestWith2NameValuePairs()
         {
-            var tt = new TestTransport().Enqueue(new byte[0]);
-
-            var data = new NameValueCollection
+            var q = Http.Post(new Uri("https://www.example.com/"), new NameValueCollection
             {
                 ["name1"] = "value1",
                 ["name2"] = "value2",
-            };
+            });
 
-            await tt.Http.Post(new Uri("https://www.example.com/"), data);
+            using var tt = new TestTransport().Enqueue(ZeroBytes);
+
+            _ = await EvaluateAsync(tt, q);
+
             var message = tt.DequeueRequestMessage();
 
             Assert.That(message.Method, Is.EqualTo(HttpMethod.Post));
             Assert.That(message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
+            Assert.That(message.Content, Is.Not.Null);
             Assert.That(await message.Content.ReadAsStringAsync(), Is.EqualTo("name1=value1&name2=value2"));
         }
 
         [Test]
         public async Task PostRequestWithEmptyNameValuePair()
         {
-            var tt = new TestTransport().Enqueue(new byte[0]);
-
-            var data = new NameValueCollection
+            var q = Http.Post(new Uri("https://www.example.com/"), new NameValueCollection
             {
                 [""] = "",
-            };
+            });
 
-            await tt.Http.Post(new Uri("https://www.example.com/"), data);
+            using var tt = new TestTransport().Enqueue(ZeroBytes);
+
+            _ = await EvaluateAsync(tt, q);
+
             var message = tt.DequeueRequestMessage();
 
             Assert.That(message.Method, Is.EqualTo(HttpMethod.Post));
             Assert.That(message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
+            Assert.That(message.Content, Is.Not.Null);
             Assert.That(await message.Content.ReadAsStringAsync(), Is.EqualTo("="));
         }
 
         [Test]
         public async Task PostRequestWithAmpersandInNameValuePair()
         {
-            var tt = new TestTransport().Enqueue(new byte[0]);
+            var q = Http.Post(new Uri("https://www.example.com/"), new NameValueCollection
+            {
+                ["foo&bar"] = "baz"
+            });
 
-            var data = new NameValueCollection { ["foo&bar"] = "baz" };
+            using var tt = new TestTransport().Enqueue(ZeroBytes);
 
-            await tt.Http.Post(new Uri("https://www.example.com/"), data);
+            _ = await EvaluateAsync(tt, q);
+
             var message = tt.DequeueRequestMessage();
 
             Assert.That(message.Method, Is.EqualTo(HttpMethod.Post));
             Assert.That(message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
+            Assert.That(message.Content, Is.Not.Null);
             Assert.That(await message.Content.ReadAsStringAsync(), Is.EqualTo("foo%26bar=baz"));
         }
 
         [Test]
         public void PostNullDataTest()
         {
-            var tt = new TestTransport()
-                .Enqueue(new byte[0]);
-
-            Assert.ThrowsAsync<NullReferenceException>(() => tt.Http.Post(new Uri("https://www.example.com/"), data:null).ToTask());
+            Assert.Throws<ArgumentNullException>(() => Http.Post(new Uri("https://www.example.com/"), data: (string)null!));
         }
 
         [Test]
         public async Task SubmitDefaultMethodIsGetTest()
         {
-            var tt = new TestTransport()
-                .EnqueueHtml(@"
-                    <!DOCTYPE html>
-                    <html>
-                    <body>
-                      <h2> HTML Forms </h2>
-                      <form action='action_page.php'>
-                        <br><br>
-                    </form>
-                    </body>
-                    </html>")
-                .Enqueue(new byte[0]);
-
             var data = new NameValueCollection
             {
                 ["firstname"] = "Mickey",
                 ["lastname"] = "Mouse"
             };
+            var q = Http.Get(new Uri("https://www.example.com/"))
+                        .Submit(0, data);
 
-            await tt.Http.Get(new Uri("https://www.example.com/"))
-                                 .Submit(0, data);
+            using var tt = new TestTransport()
+                .EnqueueHtml("""
+                    <!DOCTYPE html>
+                    <html>
+                    <body>
+                      <h2> HTML Forms </h2>
+                      <form action="action_page.php">
+                        <br><br>
+                    </form>
+                    </body>
+                    </html>
+                    """)
+                .Enqueue(ZeroBytes);
+
+            _ = await EvaluateAsync(tt, q);
 
             var message1 = tt.DequeueRequestMessage();
             var message2 = tt.DequeueRequestMessage();
@@ -683,7 +635,10 @@ namespace WebLinq.Tests
         [Test]
         public async Task SubmitInputTest()
         {
-            var tt = new TestTransport()
+            var q = Http.Get(new Uri("https://www.example.com/"))
+                        .Submit(0, SubmissionData.None);
+
+            using var tt = new TestTransport()
                 .EnqueueHtml(@"
                     <!DOCTYPE html>
                     <html>
@@ -700,10 +655,9 @@ namespace WebLinq.Tests
                       </form>
                     </body>
                     </html>")
-                .Enqueue(new byte[0]);
+                .Enqueue(ZeroBytes);
 
-            await tt.Http.Get(new Uri("https://www.example.com/"))
-                         .Submit(0, SubmissionData.None);
+            _ = await EvaluateAsync(tt, q);
 
             var message1 = tt.DequeueRequestMessage();
             var message2 = tt.DequeueRequestMessage();
@@ -717,8 +671,11 @@ namespace WebLinq.Tests
         [Test]
         public async Task SubmitInputPostTest()
         {
-            var tt = new TestTransport()
-                .EnqueueHtml(@"
+            var q = Http.Get(new Uri("https://www.example.com/"))
+                        .Submit(0, SubmissionData.None);
+
+            using var tt = new TestTransport()
+                     .EnqueueHtml(@"
                     <!DOCTYPE html>
                     <html>
                     <body>
@@ -734,10 +691,9 @@ namespace WebLinq.Tests
                       </form>
                     </body>
                     </html>")
-                .Enqueue(new byte[0]);
+                     .Enqueue(ZeroBytes);
 
-            await tt.Http.Get(new Uri("https://www.example.com/"))
-                         .Submit(0, SubmissionData.None);
+            _ = await EvaluateAsync(tt, q);
 
             var message1 = tt.DequeueRequestMessage();
             var message2 = tt.DequeueRequestMessage();
@@ -746,6 +702,7 @@ namespace WebLinq.Tests
             Assert.That(message1.RequestUri, Is.EqualTo(new Uri("https://www.example.com/")));
             Assert.That(message2.Method, Is.EqualTo(HttpMethod.Post));
             Assert.That(message2.RequestUri, Is.EqualTo(new Uri("https://www.example.com/action_page.php")));
+            Assert.That(message2.Content, Is.Not.Null);
             Assert.That(await message2.Content.ReadAsStringAsync(), Is.EqualTo("firstname=Mickey&lastname=Mouse"));
             Assert.That(message2.Content.Headers.GetValues("Content-Type").Single(), Is.EqualTo("application/x-www-form-urlencoded"));
         }
@@ -770,11 +727,14 @@ namespace WebLinq.Tests
                 </body>
                 </html>";
 
-            var tt = new TestTransport().Enqueue(new byte[0]);
+            var q = Http.SubmitTo(new Uri("https://www.example.org/"),
+                                  Html.HtmlParser.Default.Parse(html, new Uri("https://www.example.com/")),
+                                  0, null);
 
-            await tt.Http.SubmitTo(new Uri("https://www.example.org/"),
-                                   Html.HtmlParser.Default.Parse(html, new Uri("https://www.example.com/")),
-                                   0, (NameValueCollection) null);
+            using var tt = new TestTransport().Enqueue(ZeroBytes);
+
+            _ = await EvaluateAsync(tt, q);
+
             var message = tt.DequeueRequestMessage();
 
             Assert.That(message.Method, Is.EqualTo(HttpMethod.Get));
@@ -795,16 +755,21 @@ namespace WebLinq.Tests
                 </form>
                 </body>
                 </html>";
-            var tt = new TestTransport().Enqueue(new byte[0]);
 
             var data = new NameValueCollection
             {
                 ["firstname"] = "Mickey",
                 ["lastname"] = "Mouse"
             };
-            await tt.Http.SubmitTo(new Uri("https://www.example.org/"),
-                                   Html.HtmlParser.Default.Parse(html, new Uri("https://www.example.com/")),
-                                   0, data);
+
+            var q = Http.SubmitTo(new Uri("https://www.example.org/"),
+                                  Html.HtmlParser.Default.Parse(html, new Uri("https://www.example.com/")),
+                                  0, data);
+
+            using var tt = new TestTransport().Enqueue(ZeroBytes);
+
+            _ = await EvaluateAsync(tt, q);
+
             var message = tt.DequeueRequestMessage();
 
             Assert.That(message.Method, Is.EqualTo(HttpMethod.Get));
@@ -820,68 +785,46 @@ namespace WebLinq.Tests
         [TestCase(70_000)]
         public async Task PostLargeData(int size)
         {
-            var tt = new TestTransport().Enqueue(new byte[0]);
-
-            await tt.Http.Post(new Uri("https://www.example.com/"), new NameValueCollection
+            var q = Http.Post(new Uri("https://www.example.com/"), new NameValueCollection
             {
-                ["foo"] = new string('*', size)
+                ["foo"] = new('*', size)
             });
 
+            using var tt = new TestTransport().Enqueue(ZeroBytes);
+
+            _ = await EvaluateAsync(tt, q);
+
             Assert.Pass();
-        }
-
-        [TestCase(HttpStatusCode.Ambiguous)]
-        [TestCase(HttpStatusCode.Moved)]
-        [TestCase(HttpStatusCode.Redirect)]
-        [TestCase(HttpStatusCode.RedirectMethod)]
-        [TestCase(HttpStatusCode.RedirectKeepVerb)]
-        public async Task RedirectionTests(HttpStatusCode statusCode)
-        {
-            var tt = new TestTransport()
-                .Enqueue(new HttpResponseMessage
-                {
-                    Content = new ByteArrayContent(new byte[0]),
-                    Headers =
-                    {
-                        Location =  new Uri("https://www.example.com/index.htm")
-                    },
-                    StatusCode = statusCode,
-                })
-                .Enqueue(new byte[0]);
-
-            await tt.Http.Get(new Uri("https://www.example.com/"));
-            tt.DequeueRequestMessage();
-            var message = tt.DequeueRequestMessage();
-
-            Assert.That(message.RequestUri, Is.EqualTo(new Uri("https://www.example.com/index.htm")));
         }
 
         [Test]
         public async Task FilterTrue()
         {
-            var tt = new TestTransport().EnqueueText(string.Empty, HttpStatusCode.BadRequest);
+            HttpFetchInfo? first = null;
+            HttpFetchInfo? second = null;
 
-            HttpFetchInfo first = null;
-            HttpFetchInfo second = null;
+            var q = Http.Get(new Uri("https://www.example.com/"))
+                        .ReturnErroneousFetch()
+                        .Filter(f =>
+                        {
+                            Assert.That(f, Is.InstanceOf<HttpFetchInfo>());
+                            Assert.That(second, Is.Null);
+                            first = f;
+                            return f.StatusCode == HttpStatusCode.BadRequest;
+                        })
+                        .Filter(f =>
+                        {
+                            Assert.That(f, Is.InstanceOf<HttpFetchInfo>());
+                            Assert.That(first, Is.Not.Null);
+                            Assert.That(f, Is.SameAs(first));
+                            second = f;
+                            return f.ContentHeaders["Content-Type"]
+                                    .Single().Split(';').First() == "text/plain";
+                        });
 
-            await tt.Http.Get(new Uri("https://www.example.com/"))
-                         .ReturnErroneousFetch()
-                         .Filter(f =>
-                         {
-                             Assert.That(f, Is.InstanceOf<HttpFetchInfo>());
-                             Assert.That(second, Is.Null);
-                             first = f;
-                             return f.StatusCode == HttpStatusCode.BadRequest;
-                         })
-                         .Filter(f =>
-                         {
-                             Assert.That(f, Is.InstanceOf<HttpFetchInfo>());
-                             Assert.That(first, Is.Not.Null);
-                             Assert.That(f, Is.SameAs(first));
-                             second = f;
-                             return f.ContentHeaders["Content-Type"]
-                                     .Single().Split(';').First() == "text/plain";
-                         });
+            using var tt = new TestTransport().EnqueueText(string.Empty, HttpStatusCode.BadRequest);
+
+            _ = await EvaluateAsync(tt, q);
 
             // Succeeds if it doesn't throw.
         }
@@ -889,16 +832,15 @@ namespace WebLinq.Tests
         [Test]
         public async Task FilterFalse()
         {
-            var tt = new TestTransport().EnqueueText(string.Empty);
+            var q = Http.Get(new Uri("https://www.example.com/"))
+                        .Filter(f => f.StatusCode == HttpStatusCode.BadRequest)
+                        .Filter(_ => { Assert.Fail(); return true; });
 
-            var result = await
-                tt.Http.Get(new Uri("https://www.example.com/"))
-                       .Filter(f => f.StatusCode == HttpStatusCode.BadRequest)
-                       .Filter(f => { Assert.Fail(); return true; })
-                       .Select(_ => { Assert.Fail(); return 42; })
-                       .SingleOrDefaultAsync();
+            using var tt = new TestTransport().EnqueueText(string.Empty);
 
-            Assert.That(result, Is.EqualTo(0));
+            var result = await EvaluateAsync(tt, q, stream => stream.SingleOrDefaultAsync());
+
+            Assert.That(result, Is.Null);
         }
     }
 }

@@ -20,7 +20,6 @@ namespace WebLinq.Html
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
-    using Mannex.Collections.Generic;
 
     /// <summary>
     /// Represents a <a href="https://www.w3.org/TR/html5/forms.html#attr-input-type">control
@@ -58,33 +57,33 @@ namespace WebLinq.Html
 
         public KnownHtmlInputType KnownType { get; }
 
-        public static readonly HtmlInputType Text     = new HtmlInputType(KnownHtmlInputType.Text    , "text");
-        public static readonly HtmlInputType Email    = new HtmlInputType(KnownHtmlInputType.Email   , "email");
-        public static readonly HtmlInputType Tel      = new HtmlInputType(KnownHtmlInputType.Tel     , "tel");
-        public static readonly HtmlInputType Number   = new HtmlInputType(KnownHtmlInputType.Number  , "number");
-        public static readonly HtmlInputType Date     = new HtmlInputType(KnownHtmlInputType.Date    , "date");
-        public static readonly HtmlInputType Time     = new HtmlInputType(KnownHtmlInputType.Time    , "time");
-        public static readonly HtmlInputType Password = new HtmlInputType(KnownHtmlInputType.Password, "password");
-        public static readonly HtmlInputType Checkbox = new HtmlInputType(KnownHtmlInputType.Checkbox, "checkbox");
-        public static readonly HtmlInputType Radio    = new HtmlInputType(KnownHtmlInputType.Radio   , "radio");
-        public static readonly HtmlInputType Submit   = new HtmlInputType(KnownHtmlInputType.Submit  , "submit");
-        public static readonly HtmlInputType Reset    = new HtmlInputType(KnownHtmlInputType.Reset   , "reset");
-        public static readonly HtmlInputType File     = new HtmlInputType(KnownHtmlInputType.File    , "file");
-        public static readonly HtmlInputType Hidden   = new HtmlInputType(KnownHtmlInputType.Hidden  , "hidden");
-        public static readonly HtmlInputType Image    = new HtmlInputType(KnownHtmlInputType.Image   , "image");
-        public static readonly HtmlInputType Button   = new HtmlInputType(KnownHtmlInputType.Button  , "button");
+        public static readonly HtmlInputType Text     = new(KnownHtmlInputType.Text    , "text");
+        public static readonly HtmlInputType Email    = new(KnownHtmlInputType.Email   , "email");
+        public static readonly HtmlInputType Tel      = new(KnownHtmlInputType.Tel     , "tel");
+        public static readonly HtmlInputType Number   = new(KnownHtmlInputType.Number  , "number");
+        public static readonly HtmlInputType Date     = new(KnownHtmlInputType.Date    , "date");
+        public static readonly HtmlInputType Time     = new(KnownHtmlInputType.Time    , "time");
+        public static readonly HtmlInputType Password = new(KnownHtmlInputType.Password, "password");
+        public static readonly HtmlInputType Checkbox = new(KnownHtmlInputType.Checkbox, "checkbox");
+        public static readonly HtmlInputType Radio    = new(KnownHtmlInputType.Radio   , "radio");
+        public static readonly HtmlInputType Submit   = new(KnownHtmlInputType.Submit  , "submit");
+        public static readonly HtmlInputType Reset    = new(KnownHtmlInputType.Reset   , "reset");
+        public static readonly HtmlInputType File     = new(KnownHtmlInputType.File    , "file");
+        public static readonly HtmlInputType Hidden   = new(KnownHtmlInputType.Hidden  , "hidden");
+        public static readonly HtmlInputType Image    = new(KnownHtmlInputType.Image   , "image");
+        public static readonly HtmlInputType Button   = new(KnownHtmlInputType.Button  , "button");
 
         public static HtmlInputType Default => Text;
 
-        static Dictionary<string, HtmlInputType> _lookup;
-        static Dictionary<string, HtmlInputType> Lookup => _lookup ?? (_lookup = CreateLookup());
+        static Dictionary<string, HtmlInputType>? _lookup;
+        static Dictionary<string, HtmlInputType> Lookup => _lookup ??= CreateLookup();
 
         static Dictionary<string, HtmlInputType> CreateLookup()
         {
             var types =
                 from f in typeof(HtmlInputType).GetFields(BindingFlags.Public | BindingFlags.Static)
                 where f.FieldType == typeof(HtmlInputType)
-                select (HtmlInputType) f.GetValue(null);
+                select (HtmlInputType)f.GetValue(null)!;
 
             return types.ToDictionary(e => e.ToString(), e => e, StringComparer.OrdinalIgnoreCase);
         }
@@ -94,10 +93,9 @@ namespace WebLinq.Html
             if (input == null) throw new ArgumentNullException(nameof(input));
             if (input.Length == 0) throw new ArgumentException(null, nameof(input));
 
-            var type = Lookup.Find(input);
-            return type == null ? new HtmlInputType(KnownHtmlInputType.Other, input)
-                 : type.ToString() == input ? type
-                 : new HtmlInputType(type.KnownType, input);
+            return Lookup.TryGetValue(input, out var type)
+                 ? type.ToString() == input ? type : new HtmlInputType(type.KnownType, input)
+                 : new HtmlInputType(KnownHtmlInputType.Other, input);
         }
 
         public HtmlInputType(KnownHtmlInputType knowType, string type)
@@ -118,13 +116,13 @@ namespace WebLinq.Html
             KnownType = knowType;
         }
 
-        public bool Equals(HtmlInputType other) =>
+        public bool Equals(HtmlInputType? other) =>
             other != null
             && ((other.KnownType == KnownHtmlInputType.Other
                     && string.Equals(_type, other._type, StringComparison.OrdinalIgnoreCase))
                 || KnownType == other.KnownType);
 
-        public override bool Equals(object obj) => Equals(obj as HtmlInputType);
+        public override bool Equals(object? obj) => Equals(obj as HtmlInputType);
 
         public override int GetHashCode() =>
             KnownType == KnownHtmlInputType.Other
@@ -133,9 +131,9 @@ namespace WebLinq.Html
 
         public override string ToString() => _type;
 
-        public static bool operator ==(HtmlInputType a, HtmlInputType b) =>
-            !ReferenceEquals(a, null) ? a.Equals(b) : ReferenceEquals(b, null);
+        public static bool operator ==(HtmlInputType? a, HtmlInputType? b) =>
+            a?.Equals(b) ?? ReferenceEquals(b, null);
 
-        public static bool operator !=(HtmlInputType a, HtmlInputType b) => !(a == b);
+        public static bool operator !=(HtmlInputType? a, HtmlInputType? b) => !(a == b);
     }
 }

@@ -19,7 +19,9 @@ namespace WebLinq
     #region Imports
 
     using System;
+    using System.Collections;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Diagnostics;
     using System.Linq;
     using System.Net.Http.Headers;
@@ -28,34 +30,38 @@ namespace WebLinq
     #endregion
 
     [DebuggerDisplay("Count = {Count}")]
-    public sealed class HttpHeaderCollection : MapBase<string, Strings>
+    public sealed class HttpHeaderCollection : IReadOnlyDictionary<string, Strings>
     {
-        public static readonly HttpHeaderCollection Empty = new HttpHeaderCollection();
+        public static readonly HttpHeaderCollection Empty = new();
 
-        readonly HttpHeaderCollection _link;
+        readonly ImmutableDictionary<string, Strings> _headers;
 
         public HttpHeaderCollection() :
-            base(StringComparer.OrdinalIgnoreCase) {}
+            this(ImmutableDictionary.Create<string, Strings>(StringComparer.OrdinalIgnoreCase)) { }
 
-        HttpHeaderCollection(HttpHeaderCollection link, string key, Strings values) :
-            base(key, values, link.Comparer)
-        {
-            if (key == null) throw new ArgumentNullException(nameof(key));
-            _link = link;
-        }
+        public HttpHeaderCollection(ImmutableDictionary<string, Strings> headers) =>
+            _headers = headers;
+
 
         public HttpHeaderCollection Set(string key, Strings values) =>
-            new HttpHeaderCollection(this, key, values);
+            new(_headers.SetItem(key, values));
 
         internal HttpHeaderCollection Set(HttpHeaders headers) =>
             headers.Aggregate(this, (h, e) => h.Set(e.Key, Strings.Sequence(e.Value)));
 
         public HttpHeaderCollection Remove(string key) =>
-            RemoveCore(Empty, key, (hs, k, vs) => hs.Set(k, vs));
+            new(_headers.Remove(key));
 
-        public override bool IsEmpty => _link == null;
+        public int Count => _headers.Count;
+        public bool ContainsKey(string key) => _headers.ContainsKey(key);
+        public bool TryGetValue(string key, out Strings value) => _headers.TryGetValue(key, out value);
+        public Strings this[string key] => _headers[key];
+        public IEnumerable<string> Keys => _headers.Keys;
+        public IEnumerable<Strings> Values => _headers.Values;
 
-        protected override IEnumerable<KeyValuePair<string, Strings>> Nodes =>
-            GetNodesCore(this, h => h._link);
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        public IEnumerator<KeyValuePair<string, Strings>> GetEnumerator() =>
+            _headers.GetEnumerator();
     }
 }

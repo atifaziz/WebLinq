@@ -19,58 +19,52 @@ namespace WebLinq.Html
     using System;
     using System.Data;
     using System.Net.Mime;
-    using System.Reactive.Linq;
 
     public static class HtmlQuery
     {
-        public static IObservable<HttpFetch<ParsedHtml>> Html(this IHttpObservable query, IHtmlParser parser) =>
-            query.Accept(MediaTypeNames.Text.Html)
-                 .ReadContent(async fetch =>
-                     parser.Parse(await fetch.Content.ReadAsStringAsync()
-                                                     .DontContinueOnCapturedContext(),
-                                  fetch.RequestUrl));
+        public static IHttpQuery<HttpFetch<ParsedHtml>> Html(this IHttpQuery query, IHtmlParser parser) =>
+            from e in query.Accept(MediaTypeNames.Text.Html)
+                           .Text()
+            select e.WithContent(parser.Parse(e.Content, e.RequestUrl));
 
-        public static IObservable<HttpFetch<string>> Links(this IObservable<HttpFetch<ParsedHtml>> query) =>
-            query.Links(null);
+        public static IHttpQuery<HttpFetch<string>> Links(this IHttpQuery<HttpFetch<ParsedHtml>> query) =>
+            Links(query, (href, _) => href);
 
-        public static IObservable<HttpFetch<T>> Links<T>(this IObservable<HttpFetch<ParsedHtml>> query, Func<string, HtmlObject, T> selector) =>
-            Links(query, null, selector);
-
-        public static IObservable<HttpFetch<string>> Links(this IObservable<HttpFetch<ParsedHtml>> query, Uri baseUrl) =>
-            Links(query, baseUrl, (href, _) => href);
-
-        public static IObservable<HttpFetch<T>> Links<T>(this IObservable<HttpFetch<ParsedHtml>> query, Uri baseUrl, Func<string, HtmlObject, T> selector) =>
+        public static IHttpQuery<HttpFetch<T>> Links<T>(this IHttpQuery<HttpFetch<ParsedHtml>> query,
+                                                        Func<string, HtmlObject, T> selector) =>
             from html in query
             from link in html.Content.Links((href, ho) => html.WithContent(selector(href, ho)))
             select link;
 
-        public static IObservable<HtmlObject> Tables(this IObservable<ParsedHtml> query) =>
+        public static IHttpQuery<HtmlObject> Tables(this IHttpQuery<ParsedHtml> query) =>
             from html in query
             from t in html.Tables()
             select t;
 
-        public static IObservable<HttpFetch<HtmlObject>> Tables(this IObservable<HttpFetch<ParsedHtml>> query) =>
+        public static IHttpQuery<HttpFetch<HtmlObject>> Tables(this IHttpQuery<HttpFetch<ParsedHtml>> query) =>
             query.LiftTranslate(Tables);
 
-        public static IObservable<DataTable> FormsAsDataTable(this IObservable<ParsedHtml> query) =>
+        public static IHttpQuery<DataTable> FormsAsDataTable(this IHttpQuery<ParsedHtml> query) =>
             from html in query
-            from forms in Observable.Return(html.FormsAsDataTable())
+            from forms in HttpQuery.Return(html.FormsAsDataTable())
             select forms;
 
-        public static IObservable<HttpFetch<DataTable>> FormsAsDataTable(this IObservable<HttpFetch<ParsedHtml>> query) =>
+        public static IHttpQuery<HttpFetch<DataTable>> FormsAsDataTable(this IHttpQuery<HttpFetch<ParsedHtml>> query) =>
             query.LiftTranslate(FormsAsDataTable);
 
-        public static IObservable<HtmlForm> Forms(this IObservable<ParsedHtml> query) =>
+        public static IHttpQuery<HtmlForm> Forms(this IHttpQuery<ParsedHtml> query) =>
             from html in query
-            from forms in html.Forms.ToObservable()
+            from forms in html.Forms
             select forms;
 
-        public static IObservable<HttpFetch<HtmlForm>> Forms(this IObservable<HttpFetch<ParsedHtml>> query) =>
+        public static IHttpQuery<HttpFetch<HtmlForm>> Forms(this IHttpQuery<HttpFetch<ParsedHtml>> query) =>
             query.LiftTranslate(Forms);
 
-        static IObservable<HttpFetch<TOutput>> LiftTranslate<TInput, TOutput>(this IObservable<HttpFetch<TInput>> query, Func<IObservable<TInput>, IObservable<TOutput>> converter) =>
+        static IHttpQuery<HttpFetch<TOutput>>
+            LiftTranslate<TInput, TOutput>(this IHttpQuery<HttpFetch<TInput>> query,
+                                           Func<IHttpQuery<TInput>, IHttpQuery<TOutput>> converter) =>
             from input in query
-            from output in converter(Observable.Return(input.Content))
+            from output in converter(HttpQuery.Return(input.Content))
             select input.WithContent(output);
     }
 }

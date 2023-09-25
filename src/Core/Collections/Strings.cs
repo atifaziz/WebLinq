@@ -7,7 +7,6 @@ namespace WebLinq.Collections
     using System.Collections;
     using System.Collections.Generic;
     using System.Collections.Immutable;
-    using Microsoft.Extensions.Internal;
 
     partial struct Strings
     {
@@ -44,40 +43,37 @@ namespace WebLinq.Collections
         IEquatable<Strings>,
         IEquatable<string>
     {
-        public static readonly Strings Empty = new Strings();
+#pragma warning disable CA1805 // Do not initialize unnecessarily
+        public static readonly Strings Empty = new();
+#pragma warning restore CA1805 // Do not initialize unnecessarily
 
-        readonly bool _hasValue;
-        readonly string _value;
+        readonly string? _value;
         readonly ImmutableArray<string> _values;
 
         public Strings(string value) :
-            this(true, value, default) {}
+            this(value, default) { }
 
         public Strings(ImmutableArray<string> values) :
-            this(false, null, values) {}
+            this(null, values) { }
 
-        Strings(bool hasValue, string value, ImmutableArray<string> values)
+        Strings(string? value, ImmutableArray<string> values)
         {
-            _hasValue = hasValue;
             _value = value;
-            _values = values.IsDefault && !_hasValue
+            _values = values.IsDefault && value is null
                     ? ImmutableArray<string>.Empty
                     : values;
         }
 
-        public static implicit operator Strings(string value) =>
-            new Strings(value);
+#pragma warning disable CA2225 // Operator overloads have named alternates
 
-        public static implicit operator Strings(ImmutableArray<string> values) =>
-            new Strings(values);
+        public static implicit operator Strings(string value) => new(value);
+        public static implicit operator Strings(ImmutableArray<string> values) => new(values);
+        public static implicit operator string?(Strings values) => values.GetStringValue();
+        public static implicit operator string[](Strings value) => value.GetArrayValue();
 
-        public static implicit operator string(Strings values) =>
-            values.GetStringValue();
+#pragma warning restore CA2225 // Operator overloads have named alternates
 
-        public static implicit operator string[](Strings value) =>
-            value.GetArrayValue();
-
-        public int Count => _hasValue ? 1
+        public int Count => _value is not null ? 1
                           : _values.IsDefault ? 0
                           : _values.Length;
 
@@ -91,13 +87,13 @@ namespace WebLinq.Collections
 
         public string this[int index]
             => !_values.IsDefault ? _values[index]
-             : index == 0 && _hasValue ? _value
-             : System.Array.Empty<string>()[0];
+             : index == 0 && _value is { } value ? value
+             : System.Array.Empty<string>()[0]; // throws "IndexOutOfRangeException"
 
         public override string ToString() =>
             GetStringValue() ?? string.Empty;
 
-        string GetStringValue()
+        string? GetStringValue()
         {
             if (_values.IsDefault)
                 return _value;
@@ -115,8 +111,8 @@ namespace WebLinq.Collections
 
         string[] GetArrayValue()
         {
-            if (_hasValue)
-                return new[] { _value };
+            if (_value is { } value)
+                return new[] { value };
 
             if (_values.IsDefault)
                 return System.Array.Empty<string>();
@@ -143,8 +139,8 @@ namespace WebLinq.Collections
                 return -1;
             }
 
-            return _hasValue
-                 ? string.Equals(_value, item, StringComparison.Ordinal) ? 0 : -1
+            return _value is { } value
+                 ? string.Equals(value, item, StringComparison.Ordinal) ? 0 : -1
                  : -1;
         }
 
@@ -162,7 +158,7 @@ namespace WebLinq.Collections
                 return;
             }
 
-            if (_hasValue)
+            if (_value is { } value)
             {
                 if (array == null)
                     throw new ArgumentNullException(nameof(array));
@@ -175,7 +171,7 @@ namespace WebLinq.Collections
                         $"'{nameof(array)}' is not long enough to copy all the items in the collection. Check '{nameof(arrayIndex)}' and '{nameof(array)}' length.");
                 }
 
-                array[arrayIndex] = _value;
+                array[arrayIndex] = value;
             }
         }
 
@@ -185,8 +181,7 @@ namespace WebLinq.Collections
         void IList<string>.RemoveAt(int index) => throw new NotSupportedException();
         void ICollection<string>.Clear() => throw new NotSupportedException();
 
-        public Enumerator GetEnumerator() =>
-            new Enumerator(_values, _value, Count);
+        public Enumerator GetEnumerator() => new(_values, _value, Count);
 
         IEnumerator<string> IEnumerable<string>.GetEnumerator() =>
             GetEnumerator();
@@ -273,8 +268,8 @@ namespace WebLinq.Collections
         public static bool Equals(Strings left, string right) =>
             Equals(left, new Strings(right));
 
-        public bool Equals(string other) =>
-            Equals(this, new Strings(other));
+        public bool Equals(string? other) =>
+            other is { } someOther && Equals(this, new Strings(someOther));
 
         public static bool Equals(string[] left, Strings right) =>
             Equals(right, left);
@@ -283,7 +278,7 @@ namespace WebLinq.Collections
         {
             var count = left.Count;
 
-            if (count != right.Length)
+            if (right is null || count != right.Length)
                 return false;
 
             for (var i = 0; i < count; i++)
@@ -334,7 +329,7 @@ namespace WebLinq.Collections
         public static bool operator !=(object left, Strings right) =>
             !right.Equals(left);
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             switch (obj)
             {
@@ -348,22 +343,22 @@ namespace WebLinq.Collections
 
         public override int GetHashCode()
         {
-            if (_values == null)
-                return _value == null ? 0 : _value.GetHashCode();
+            if (_value is { } value)
+                return value.GetHashCode(StringComparison.Ordinal);
 
-            var hcc = new HashCodeCombiner();
+            var hc = new HashCode();
             foreach (var v in _values)
-                hcc.Add(v);
-            return hcc.CombinedHash;
+                hc.Add(v);
+            return hc.ToHashCode();
         }
 
         public struct Enumerator : IEnumerator<string>
         {
             readonly ImmutableArray<string> _values;
-            string _current;
+            string? _current;
             int _index;
 
-            internal Enumerator(ImmutableArray<string> values, string value, int count)
+            internal Enumerator(ImmutableArray<string> values, string? value, int count)
             {
                _values = values;
                _current = value;
@@ -392,14 +387,14 @@ namespace WebLinq.Collections
                 return true;
             }
 
-            public string Current => _current;
+            public string Current => _current!;
 
-            object IEnumerator.Current => _current;
+            object IEnumerator.Current => Current;
 
             void IEnumerator.Reset() =>
                 throw new NotSupportedException();
 
-            public void Dispose() {}
+            public void Dispose() { }
         }
     }
 
@@ -410,21 +405,23 @@ namespace WebLinq.Collections
         public string First() =>
             Count > 0 ? this[0] : throw new InvalidOperationException();
 
-        public string FirstOrDefault() =>
+        public string? FirstOrDefault() =>
             Count > 0 ? this[0] : null;
 
-        int? LastIndex => Count > 0 ? Count - 1 : (int?)null;
+        int? LastIndex => Count > 0 ? Count - 1 : null;
 
         public string Last() =>
-            LastIndex is int i ? this[i] : throw new InvalidOperationException();
+            LastIndex is { } i ? this[i] : throw new InvalidOperationException();
 
-        public string LastOrDefault() =>
-            LastIndex is int i ? this[i] : null;
+        public string? LastOrDefault() =>
+            LastIndex is { } i ? this[i] : null;
 
+#pragma warning disable CA1720 // Identifier contains type name
         public string Single() =>
+#pragma warning restore CA1720 // Identifier contains type name
             Count == 1 ? this[0] : throw new InvalidOperationException();
 
-        public string SingleOrDefault() =>
+        public string? SingleOrDefault() =>
             Count == 1 ? this[0] : null;
     }
 }
