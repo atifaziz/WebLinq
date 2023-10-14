@@ -234,6 +234,8 @@ static partial class HttpQuery
 
 static partial class HttpQuery
 {
+    public static IHttpQuery<T> Empty<T>() => AsyncEnumerable.Empty<T>().ToHttpQuery();
+
     public static IHttpQuery<T> Return<T>(T value) =>
         Create((_, _) => AsyncEnumerableEx.Return(value));
 
