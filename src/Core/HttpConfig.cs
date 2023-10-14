@@ -49,6 +49,7 @@ namespace WebLinq
         public string UserAgent { get; init; }
         public DecompressionMethods AutomaticDecompression { get; init; }
         public bool IgnoreInvalidServerCertificate { get; init; }
+        public Uri? ProxyUrl { get; init; }
 
         public HttpConfig(HttpHeaderCollection headers,
                           TimeSpan timeout,
@@ -99,5 +100,8 @@ namespace WebLinq
             IgnoreInvalidServerCertificate == value
             ? this
             : new HttpConfig(this) { IgnoreInvalidServerCertificate = value };
+
+        public HttpConfig WithProxyUrl(Uri? value) =>
+            ProxyUrl == value ? this : new HttpConfig(this) { ProxyUrl = value };
     }
 }

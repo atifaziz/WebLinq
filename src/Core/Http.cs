@@ -73,6 +73,15 @@ public static class Http
         return config => modifier(config).WithHeader(name, value);
     }
 
+    public static HttpConfigModifier Proxy(Uri? url) => config => config.WithProxyUrl(url);
+
+    public static HttpConfigModifier Proxy(this HttpConfigModifier modifier, Uri? url)
+    {
+        if (modifier == null) throw new ArgumentNullException(nameof(modifier));
+
+        return modifier + Proxy(url);
+    }
+
     public static IHttpQuery Get(this HttpConfigModifier modifier, Uri url) =>
         modifier.Apply(Get(url));
 

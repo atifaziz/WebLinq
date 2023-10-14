@@ -35,6 +35,7 @@ public sealed class SocketsHandlerBasedHttpClient : IHttpClient
         public ICredentials? Credentials { get; init; }
         public DecompressionMethods AutomaticDecompression { get; init; }
         public bool IgnoreInvalidServerCertificate { get; init; }
+        public Uri? ProxyUrl { get; init; }
     }
 
     public CookieContainer? GetCookieContainer() => _cookies;
@@ -56,6 +57,7 @@ public sealed class SocketsHandlerBasedHttpClient : IHttpClient
             Credentials = config.Credentials,
             AutomaticDecompression = config.AutomaticDecompression,
             IgnoreInvalidServerCertificate = config.IgnoreInvalidServerCertificate,
+            ProxyUrl = config.ProxyUrl,
         };
 
         if (_client is null || handlerConfig != _config)
@@ -75,6 +77,9 @@ public sealed class SocketsHandlerBasedHttpClient : IHttpClient
                                     ? CredentialCache.DefaultCredentials
                                     : config.Credentials;
                 handler.AutomaticDecompression = config.AutomaticDecompression;
+
+                if (config.ProxyUrl is { } proxyUrl)
+                    handler.Proxy = new WebProxy(proxyUrl);
 
                 _client = new HttpClient(handler, disposeHandler: true)
                 {
