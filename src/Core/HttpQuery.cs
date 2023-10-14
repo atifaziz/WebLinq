@@ -322,6 +322,13 @@ static partial class HttpQuery
                                                     .Zip(second.Share(context))
                                                     .GetAsyncEnumerator(cancellationToken));
 
+    public static IHttpQuery<TResult> Choose<T, TResult>(T input, Func<T, (bool, TResult)> selector)
+    {
+        if (selector == null) throw new ArgumentNullException(nameof(selector));
+
+        return selector(input) is (true, var result) ? Return(result) : Empty<TResult>();
+    }
+
     public static async Task WaitAsync<T>(this IHttpQuery<T> query, CancellationToken cancellationToken)
     {
         if (query == null) throw new ArgumentNullException(nameof(query));
