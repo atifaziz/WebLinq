@@ -32,7 +32,7 @@ public interface IHttpContentReader<out T>
 public static class HttpContentReader
 {
     public static readonly IHttpContentReader<HttpFetchInfo> None =
-        Create(static (f, _, _) => Singleton(() => Task.FromResult(f)));
+        Create(static (f, _, _) => Task.FromResult(f));
 
     public static IHttpContentReader<TResult> Select<T, TResult>(this IHttpContentReader<T> reader, Func<T, TResult> selector)
     {
@@ -56,13 +56,13 @@ public static class HttpContentReader
     }
 
     public static IHttpContentReader<byte[]> Bytes() =>
-        Create(static (_, content, cancellationToken) => Singleton(() => content.ReadAsByteArrayAsync(cancellationToken)));
+        Create(static (_, content, cancellationToken) => content.ReadAsByteArrayAsync(cancellationToken));
 
     public static IHttpContentReader<string> Text() =>
-        Create(static (_, content, cancellationToken) => Singleton(() => content.ReadAsStringAsync(cancellationToken)));
+        Create(static (_, content, cancellationToken) => content.ReadAsStringAsync(cancellationToken));
 
     public static IHttpContentReader<string> Text(Encoding encoding) =>
-        Create((_, content, cancellationToken) => Singleton(async () =>
+        Create(async (_, content, cancellationToken) =>
         {
             var stream = await content.ReadAsStreamAsync(cancellationToken)
                                       .ConfigureAwait(false);
@@ -71,7 +71,7 @@ public static class HttpContentReader
                 var reader = new StreamReader(stream, encoding, leaveOpen: true); // disposed above
                 return await reader.ReadToEndAsync().ConfigureAwait(false);
             }
-        }));
+        });
 
     public static IHttpContentReader<string> Lines() => Lines(null);
 
@@ -108,13 +108,19 @@ public static class HttpContentReader
             }
         });
 
-    static async IAsyncEnumerator<T> Singleton<T>(Func<Task<T>> function)
-    {
-        yield return await function().ConfigureAwait(false);
-    }
-
     public static IHttpContentReader<T> Create<T>(Func<HttpFetchInfo, HttpContent, CancellationToken, IAsyncEnumerator<T>> function) =>
         new HttpContentReader<T>(function);
+
+    public static IHttpContentReader<T> Create<T>(Func<HttpFetchInfo, HttpContent, CancellationToken, Task<T>> function) =>
+        Create((info, content, cancellationToken) =>
+        {
+            return Iterator();
+
+            async IAsyncEnumerator<T> Iterator()
+            {
+                yield return await function(info, content, cancellationToken).ConfigureAwait(false);
+            }
+        });
 }
 
 sealed class HttpContentReader<T> : IHttpContentReader<T>
