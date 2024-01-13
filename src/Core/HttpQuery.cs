@@ -351,6 +351,32 @@ static partial class HttpQuery
         }
     }
 
+    public static IHttpQuery<T>
+        ExpandWhile<T>(this IHttpQuery<T> source, Func<T, IHttpQuery<T>> function)
+    {
+        return Create((context, cancellationToken) =>
+        {
+            return Iterator();
+
+            async IAsyncEnumerator<T> Iterator()
+            {
+                var queue = new Queue<IHttpQuery<T>>();
+                queue.Enqueue(source);
+
+                while (queue.TryDequeue(out var query))
+                {
+                    await foreach (var item in query.Share(context)
+                                                    .WithCancellation(cancellationToken)
+                                                    .ConfigureAwait(false))
+                    {
+                        yield return item;
+                        queue.Enqueue(function(item));
+                    }
+                }
+            }
+        });
+    }
+
     public static IHttpQuery<T> Content<T>(this IHttpQuery<HttpFetch<T>> query) =>
         from f in query
         select f.Content;
