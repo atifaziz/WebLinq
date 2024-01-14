@@ -21,6 +21,7 @@ using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using WebLinq.Html;
@@ -162,7 +163,10 @@ public static class Http
         return new HttpQuery((_, _) => Task.FromResult(CreatePostRequest(url, data)));
     }
 
-    public static IHttpQuery Post(Uri url, string data)
+    public static IHttpQuery PostJson(Uri url, object? data) =>
+        Post(url, JsonSerializer.Serialize(data), System.Net.Mime.MediaTypeNames.Application.Json);
+
+    public static IHttpQuery Post(Uri url, string data, string? mediaType = null)
     {
         if (url == null) throw new ArgumentNullException(nameof(url));
         if (data == null) throw new ArgumentNullException(nameof(data));
@@ -171,7 +175,7 @@ public static class Http
         {
             return Task.FromResult(new HttpRequestMessage(HttpMethod.Post, url)
             {
-                Content = new StringContent(data)
+                Content = new StringContent(data, null, mediaType)
             });
         });
     }
